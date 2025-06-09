@@ -1,0 +1,8 @@
+node_modules
+react-app/node_modules
+.idea
+.git
+machinet.conf
+react-app/.env
+dist
+builds
