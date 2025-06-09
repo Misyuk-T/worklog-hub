@@ -1,0 +1,20 @@
+.informationTabs {
+  .tabsList {
+    position: relative;
+    border: none;
+    gap: 1px;
+  }
+    .tabItem {
+      border-color: #b7aeae;
+      border-bottom: 1px solid;
+
+      &[aria-selected='false']{
+        border-bottom-color: transparent;
+      }
+
+      &[aria-selected='true'] {
+        border-color: #b7aeae;
+        border-bottom-color: #eaeaea;
+      }
+    }
+}
