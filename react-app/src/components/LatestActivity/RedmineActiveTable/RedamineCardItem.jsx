@@ -9,7 +9,7 @@ const RedmineCardItem = ({ activities, fontSize }) => {
   return (
     <Box mb={5}>
       {activities.map((activity) => {
-        const projectId = activity.issue.id;
+        const projectId = activity?.issue?.id || {}
         const project = projects.find((item) => item.id === projectId);
         const blb = activity.custom_fields[0].value === "3" ? "nblb" : "blb";
 

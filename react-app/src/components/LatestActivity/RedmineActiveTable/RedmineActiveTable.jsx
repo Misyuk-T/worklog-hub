@@ -101,16 +101,16 @@ const RedmineActivityTable = ({ panelSize }) => {
                   </Thead>
                   <Tbody>
                     {activities.map((activity) => {
-                      const projectId = activity.issue.id;
+                      const projectId = activity?.issue?.id || {}
                       const projectInfo = projects.find(
                         (p) => p.id === projectId
                       );
                       const blb =
-                        activity.custom_fields?.[0]?.value === "3"
+                        activity?.custom_fields?.[0]?.value === "3"
                           ? "nblb"
                           : "blb";
-                      const redmineIssueUrl = `https://redmine.anyforsoft.com/issues/${activity.issue.id}`;
-                      const redmineEditUrl = `https://redmine.anyforsoft.com/time_entries/${activity.id}/edit`;
+                      const redmineIssueUrl = `https://redmine.anyforsoft.com/issues/${activity?.issue?.id}`;
+                      const redmineEditUrl = `https://redmine.anyforsoft.com/time_entries/${activity?.id}/edit`;
                       return (
                         <Tr key={activity.id}>
                           <Td fontSize="14px" minWidth="200px">
@@ -124,7 +124,7 @@ const RedmineActivityTable = ({ panelSize }) => {
                                 {projectInfo.subject}
                               </Link>
                             ) : (
-                              activity.issue.id
+                              activity?.issue?.id
                             )}
                           </Td>
                           <Td
@@ -132,7 +132,7 @@ const RedmineActivityTable = ({ panelSize }) => {
                             color={blb === "blb" ? "green.600" : "orange.600"}
                             whiteSpace="nowrap"
                           >
-                            {round(activity.hours)}h ({blb})
+                            {round(activity?.hours)}h ({blb})
                           </Td>
                           <Td fontSize="14px" w="100%">
                             <Link
@@ -140,7 +140,7 @@ const RedmineActivityTable = ({ panelSize }) => {
                               href={redmineEditUrl}
                               isExternal
                             >
-                              {activity.comments || "No comment"}
+                              {activity?.comments || "No comment"}
                             </Link>
                           </Td>
                         </Tr>
