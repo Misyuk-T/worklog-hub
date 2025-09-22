@@ -34,7 +34,6 @@ import {
 } from "../../actions/redmine";
 import {
   getAssignedIssues,
-  getLatestJiraWorkLogs,
   jiraLogin,
 } from "../../actions/jira";
 
@@ -62,7 +61,6 @@ const SettingModal = () => {
     resetAdditionalAssignedIssues,
     addAssignedIssues,
     addAdditionalAssignedIssues,
-    addAllJiraWorklogs,
   } = useJiraStore();
   const { addOrganizationURL, addUser, addLatestActivity, addProjects } =
     useRedmineStore();
@@ -156,7 +154,9 @@ const SettingModal = () => {
               if (jiraUser) {
                 const assignedIssues = await getAssignedIssues(
                   currentJiraUrl,
-                  jiraUser.accountId
+                  jiraUser.accountId,
+                  null,
+                  []
                 );
                 addAssignedIssues(assignedIssues);
               }
@@ -175,7 +175,9 @@ const SettingModal = () => {
                     if (additionalUser) {
                       const assignedIssues = await getAssignedIssues(
                         jiraUrl,
-                        additionalUser.accountId
+                        additionalUser.accountId,
+                        null,
+                        []
                       );
                       addAdditionalAssignedIssues(jiraUrl, assignedIssues);
                     }

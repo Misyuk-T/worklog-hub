@@ -42,7 +42,9 @@ export const fetchAllData = async ({
       addJiraUser(jiraUser);
       const assignedIssues = await getAssignedIssues(
         jiraUrl,
-        jiraUser.accountId
+        jiraUser.accountId,
+        null,
+        []
       );
       addAssignedIssues(assignedIssues);
     }
@@ -57,7 +59,9 @@ export const fetchAllData = async ({
         if (userForAdditional && userForAdditional.accountId) {
           const assignedIssues = await getAssignedIssues(
             url,
-            userForAdditional.accountId
+            userForAdditional.accountId,
+            null,
+            []
           );
           addAdditionalAssignedIssues(url, assignedIssues);
         }

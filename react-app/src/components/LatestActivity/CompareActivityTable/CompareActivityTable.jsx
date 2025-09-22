@@ -32,8 +32,16 @@ import useJiraStore from "../../../store/jiraStore";
 
 const isCommentSimilar = (c1 = "", c2 = "") => {
   if (!c1 || !c2) return false;
-  const lower1 = c1.toLowerCase();
-  const lower2 = c2.toLowerCase();
+
+  // Convert both to strings safely
+  const str1 = typeof c1 === 'string' ? c1 : String(c1);
+  const str2 = typeof c2 === 'string' ? c2 : String(c2);
+
+  if (!str1 || !str2) return false;
+
+  const lower1 = str1.toLowerCase();
+  const lower2 = str2.toLowerCase();
+
   return lower1.includes(lower2) || lower2.includes(lower1);
 };
 
@@ -43,7 +51,8 @@ const pairLogsBySimilarity = (redmineEntries, jiraEntries) => {
   redmineEntries.forEach((redmineLog) => {
     const matchIndex = jiraEntries.findIndex((jiraLog, idx) => {
       if (usedJiraIndexes.has(idx)) return false;
-      return isCommentSimilar(redmineLog.comments, jiraLog.description);
+
+      return isCommentSimilar(redmineLog.comments, jiraLog?.description);
     });
     if (matchIndex > -1) {
       const jiraLog = jiraEntries[matchIndex];

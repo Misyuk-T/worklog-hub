@@ -12,7 +12,7 @@ import useJiraStore from "../store/jiraStore";
 
 export const jiraLogin = async (jiraUrl) => {
   try {
-    const response = await instance.get("/jira/rest/api/2/myself", {
+    const response = await instance.get("/jira/rest/api/3/myself", {
       params: {
         jiraUrl,
       },
@@ -60,31 +60,39 @@ export const getJiraWorklogIssues = async (
   startDate,
   endDate,
   jiraEmail,
-  offset = 0,
+  nextPageToken = null,
   prevIssues = [],
   showToast = true
 ) => {
   try {
-    const response = await instance.get("/jira/rest/api/2/search", {
+    const requestBody = {
+      jql: `worklogAuthor = '${jiraEmail}' AND worklogDate >= '${startDate}' AND worklogDate <= '${endDate}'`,
+      maxResults: 100,
+      fields: ["summary", "worklog", "issuetype", "parent", "project", "status", "assignee"],
+    };
+
+    console.log(nextPageToken, 'console');
+    if (nextPageToken) {
+      // TODO: could be bottleneck with new endpoint
+      requestBody.nextPageToken = nextPageToken;
+    }
+
+    const response = await instance.post("/jira/rest/api/3/search/jql", requestBody, {
       params: {
         jiraUrl,
-        jql: `worklogAuthor = '${jiraEmail}' AND worklogDate >= '${startDate}' AND worklogDate <= '${endDate}'`,
-        maxResults: 100,
-        startAt: offset,
-        fields: "summary,worklog,issuetype,parent,project,status,assignee",
       },
     });
 
     const issues = response.data.issues;
     const updatedIssues = [...prevIssues, ...issues];
 
-    if (issues.length === 100) {
+    if (response.data.nextPageToken) {
       return getJiraWorklogIssues(
         jiraUrl,
         startDate,
         endDate,
         jiraEmail,
-        offset + 100,
+        response.data.nextPageToken,
         updatedIssues,
         showToast
       );
@@ -101,7 +109,7 @@ export const getJiraWorklogIssues = async (
         const issueKey = issue.key;
 
         const workLogResponse = await instance.get(
-          `/jira/rest/api/2/issue/${issueKey}/worklog`,
+          `/jira/rest/api/3/issue/${issueKey}/worklog`,
           {
             params: {
               jiraUrl,
@@ -174,28 +182,34 @@ export const getJiraWorklogIssues = async (
 export const getAssignedIssues = async (
   jiraUrl,
   userId,
-  offset = 0,
+  nextPageToken = null,
   prevIssues = []
 ) => {
   try {
     const startDate = format(subDays(new Date(), 60), "yyyy-MM-dd");
     const endDate = format(new Date(), "yyyy-MM-dd");
 
-    const response = await instance.get("/jira/rest/api/2/search", {
+    const requestBody = {
+      jql: `assignee = '${userId}' OR assignee WAS '${userId}' DURING ("${startDate}", "${endDate} 23:59")`,
+      maxResults: 100,
+      fields: ["summary", "issuetype", "parent", "project", "status"],
+    };
+
+    if (nextPageToken) {
+      requestBody.nextPageToken = nextPageToken;
+    }
+
+    const response = await instance.post("/jira/rest/api/3/search/jql", requestBody, {
       params: {
         jiraUrl,
-        jql: `assignee = '${userId}' OR assignee WAS '${userId}' DURING ("${startDate}", "${endDate} 23:59")`,
-        maxResults: 100,
-        startAt: offset,
-        fields: "summary,issuetype,parent,project,status",
       },
     });
 
     const issues = response.data.issues;
     const updatedIssues = [...prevIssues, ...issues];
 
-    if (issues.length === 100) {
-      return getAssignedIssues(jiraUrl, userId, offset + 100, updatedIssues);
+    if (response.data.nextPageToken) {
+      return getAssignedIssues(jiraUrl, userId, response.data.nextPageToken, updatedIssues);
     } else {
       return updatedIssues.map((issue) => ({
         id: issue.id,
@@ -236,7 +250,7 @@ export const createJiraWorklogs = async (worklogs) => {
 
         // Make an API call to create the worklog and store the promise
         const request = instance.post(
-          `/jira/rest/api/2/issue/${task}/worklog`,
+          `/jira/rest/api/3/issue/${task}/worklog`,
           data,
           { params: { jiraUrl: worklog.jiraUrl } }
         );
@@ -307,7 +321,7 @@ export const fetchAllJiraWorklogs = async ({
         startDate,
         endDate,
         userEmail,
-        0,
+        null,
         [],
         false
       );
@@ -321,7 +335,7 @@ export const fetchAllJiraWorklogs = async ({
           startDate,
           endDate,
           userEmail,
-          0,
+          null,
           [],
           false
         );

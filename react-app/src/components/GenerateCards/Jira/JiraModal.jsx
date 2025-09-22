@@ -55,7 +55,10 @@ const JiraModal = ({ isOpen, onClose }) => {
           url,
           startDate,
           endDate,
-          user?.emailAddress
+          user?.emailAddress,
+          null,
+          [],
+          false
         );
 
         for (const [date, logs] of Object.entries(worklogs)) {
