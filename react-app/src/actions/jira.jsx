@@ -10,6 +10,23 @@ import { formatDateForJira } from "../helpers/getFormattedDate";
 import { validateWorkLogsData } from "../helpers/validateWorklogsData";
 import useJiraStore from "../store/jiraStore";
 
+// Helper function to convert text to Atlassian Document Format (ADF)
+const textToADF = (text) => ({
+  type: "doc",
+  version: 1,
+  content: [
+    {
+      type: "paragraph",
+      content: [
+        {
+          type: "text",
+          text: text || ""
+        }
+      ]
+    }
+  ]
+});
+
 export const jiraLogin = async (jiraUrl) => {
   try {
     const response = await instance.get("/jira/rest/api/3/myself", {
@@ -240,12 +257,11 @@ export const createJiraWorklogs = async (worklogs) => {
       for (const worklog of worklogsForDate) {
         const { description, hours, date, task } = worklog;
 
-        // Prepare the data for creating the worklog
+        // Prepare the data for creating the worklog in JIRA API v3 format
         const data = {
-          comment: description || "",
+          comment: textToADF(description),
           timeSpentSeconds: hours * 3600,
           started: formatDateForJira(date),
-          issueKey: task,
         };
 
         // Make an API call to create the worklog and store the promise
