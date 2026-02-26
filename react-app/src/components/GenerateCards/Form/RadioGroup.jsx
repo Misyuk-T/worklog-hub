@@ -93,7 +93,7 @@ const radioItem = [
         <ListItem>
           <Text mb={5}>Text file formatted as shown below:</Text>
 
-          <Text as="div" p={2} border="1px solid" borderRadius={3}>
+          <Text as="div" p={2} border="1px solid" borderRadius="0">
             <Text fontWeight={600} mt={2}>
               12.06
             </Text>
@@ -172,7 +172,7 @@ const RadioGroup = ({ control, onToggle }) => {
                       }}
                     />
                   </PopoverTrigger>
-                  <PopoverContent width="100%">
+                  <PopoverContent width="100%" borderRadius="0">
                     <PopoverArrow />
                     <PopoverCloseButton />
                     <PopoverHeader fontWeight={600} fontSize={18}>

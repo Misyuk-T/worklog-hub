@@ -2,32 +2,28 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   Button,
-  Card,
-  CardBody,
+  Divider,
   Flex,
   FormControl,
   FormErrorMessage,
   Stack,
   Text,
+  useColorModeValue,
+  Box,
 } from "@chakra-ui/react";
 
 import useWorkLogsStore from "../../../store/worklogsStore";
-
 import FileUpload from "./FileUpload";
 import RadioGroup from "./RadioGroup";
-
 import { sendWorkLogs } from "../../../actions/workLogs";
 
 const validateFiles = (value) => {
-  if (!value || value.length < 1) {
-    return "Files is required";
-  }
+  if (!value || value.length < 1) return "File is required";
+
   for (const file of Array.from(value)) {
     const fsMb = file.size / (1024 * 1024);
     const MAX_FILE_SIZE = 10;
-    if (fsMb > MAX_FILE_SIZE) {
-      return "Max file size 10mb";
-    }
+    if (fsMb > MAX_FILE_SIZE) return "Max file size is 10 MB";
   }
 
   return true;
@@ -36,6 +32,7 @@ const validateFiles = (value) => {
 const Form = () => {
   const { addWorkLogs, addWorkLogsError, resetWorkLogs, setIsJiraExport } =
     useWorkLogsStore();
+
   const {
     register,
     handleSubmit,
@@ -46,6 +43,10 @@ const Form = () => {
 
   const [isSent, setIsSent] = useState(false);
 
+  const border = useColorModeValue("gray.200", "gray.700");
+  const subtle = useColorModeValue("gray.600", "gray.400");
+  const sectionBg = useColorModeValue("gray.50", "gray.800");
+
   const onSubmit = handleSubmit(async (data) => {
     const formData = new FormData();
     const isJiraType = data.type === "jira";
@@ -54,8 +55,8 @@ const Form = () => {
     formData.append("type", data.type);
 
     await sendWorkLogs(formData)
-      .then((data) => {
-        data && addWorkLogs(data);
+      .then((resp) => {
+        resp && addWorkLogs(resp);
         setIsSent(true);
         setIsJiraExport(isJiraType);
       })
@@ -66,89 +67,108 @@ const Form = () => {
   });
 
   return (
-    <Card
+    <Box
       as="form"
-      position="relative"
       onSubmit={onSubmit}
       method="post"
       encType="multipart/form-data"
-      width="fit-content"
-      alignSelf="baseline"
-      boxShadow={"none"}
-      padding={0}
+      w="full"
     >
-      <CardBody
-        as={Stack}
-        justifyContent="space-between"
-        padding={0}
-        pb={"20px"}
-      >
-        <Flex
-          alignItems="end"
-          flexWrap="wrap"
-          justifyContent="space-between"
-          gap="13px"
-          w="100%"
+      <Stack gap={4}>
+        <Stack
+          borderWidth="1px"
+          borderColor={border}
+          borderRadius="0"
+          p={4}
+          bg={sectionBg}
+          gap={3}
         >
-          <Flex gap="15px">
-            <FormControl
-              as={Flex}
-              flexDirection="column"
-              justifyContent="space-between"
-              isInvalid={!!errors.file}
-              isRequired
-              width="130px"
-              px={2}
+          <Flex align="center" justify="space-between" gap={3}>
+            <Text
+              fontSize="xs"
+              fontWeight={700}
+              letterSpacing="0.08em"
+              textTransform="uppercase"
+              color={subtle}
             >
-              <Text
-                position="absolute"
-                as={FormErrorMessage}
-                fontSize="sm"
-                color="tomato"
-                top="12px"
-              >
-                {errors.file && errors?.file.message}
-              </Text>
-              <Text fontSize="md" fontWeight={500} whiteSpace="nowrap" m={0}>
-                Choose a file:
-              </Text>
-              <FileUpload
-                accept={"text"}
-                onReset={() => {
-                  resetField("file");
-                  setIsSent(false);
-                  resetWorkLogs();
-                }}
-                register={register("file", { validate: validateFiles })}
-              />
-            </FormControl>
-
-            <FormControl isInvalid={!!errors.type}>
-              <Text fontSize="md" whiteSpace="nowrap" m={0} fontWeight={500}>
-                Choose file type:
-              </Text>
-              <RadioGroup control={control} onToggle={setIsSent} />
-
-              <Text as={FormErrorMessage} fontSize="md" color="tomato">
-                {errors?.type && errors.type.message}
-              </Text>
-            </FormControl>
+              FILE
+            </Text>
+            <Text fontSize="sm" color={subtle} whiteSpace="nowrap">
+              Max 10 MB
+            </Text>
           </Flex>
 
+          <FormControl isInvalid={!!errors.file} isRequired>
+            <Text fontSize="sm" fontWeight={600} m={0} mb={2}>
+              Choose a file
+            </Text>
+
+            <FileUpload
+              accept={"text"}
+              onReset={() => {
+                resetField("file");
+                setIsSent(false);
+                resetWorkLogs();
+              }}
+              register={register("file", { validate: validateFiles })}
+            />
+
+            <FormErrorMessage mt={2} fontSize="sm">
+              {errors.file && errors.file.message}
+            </FormErrorMessage>
+          </FormControl>
+        </Stack>
+
+        <Stack
+          borderWidth="1px"
+          borderColor={border}
+          borderRadius="0"
+          p={4}
+          gap={3}
+        >
+          <Text
+            fontSize="xs"
+            fontWeight={700}
+            letterSpacing="0.08em"
+            textTransform="uppercase"
+            color={subtle}
+          >
+            FILE TYPE
+          </Text>
+
+          <FormControl isInvalid={!!errors.type} isRequired>
+            <Text fontSize="sm" fontWeight={600} m={0} mb={2}>
+              Choose file type
+            </Text>
+
+            <RadioGroup control={control} onToggle={setIsSent} />
+
+            <FormErrorMessage mt={2} fontSize="sm">
+              {errors?.type && errors.type.message}
+            </FormErrorMessage>
+          </FormControl>
+        </Stack>
+
+        <Divider />
+
+        <Flex justify="flex-end">
           <Button
-            flexShrink={0}
-            colorScheme="teal"
+            bg="gray.900"
+            color="white"
+            _hover={{ bg: "gray.800" }}
+            borderRadius="0"
+            h="34px"
             isLoading={isSubmitting}
             type="submit"
             isDisabled={isSent || !isValid}
-            fontSize="13px"
-            h="30px"
+            size="sm"
+            px={5}
           >
             Import
           </Button>
         </Flex>
-      </CardBody>
-    </Card>
+      </Stack>
+    </Box>
   );
 };
 

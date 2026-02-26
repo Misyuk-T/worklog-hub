@@ -42,9 +42,13 @@ const FileUpload = ({ register, accept, multiple, onReset }) => {
         <Button
           w={146}
           pl={2}
+          h="34px"
+          borderRadius="0"
           onClick={handleClearFile}
           rightIcon={<Icon color="tomato" as={DeleteIcon} />}
-          border="1px solid black"
+          borderWidth="1px"
+          borderColor="gray.800"
+          _hover={{ bg: "gray.100" }}
         >
           <Text noOfLines={1} display="block" fontSize="sm">
             {fileName}
@@ -53,10 +57,13 @@ const FileUpload = ({ register, accept, multiple, onReset }) => {
       ) : (
         <Button
           w={110}
-          border="1px solid black"
+          h="34px"
+          borderRadius="0"
+          borderWidth="1px"
+          borderColor="gray.800"
           fontSize="13px"
-          h="30px"
           leftIcon={<Icon as={AttachmentIcon} />}
+          _hover={{ bg: "gray.100" }}
         >
           Upload File
         </Button>

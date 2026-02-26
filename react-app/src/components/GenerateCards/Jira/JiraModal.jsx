@@ -14,6 +14,7 @@ import {
   ModalHeader,
   ModalOverlay,
   Stack,
+  useColorModeValue,
 } from "@chakra-ui/react";
 
 import useJiraStore from "../../../store/jiraStore";
@@ -28,9 +29,11 @@ const JiraModal = ({ isOpen, onClose }) => {
   const [selectedUrls, setSelectedUrls] = useState({});
   const [isLoading, setIsLoading] = useState(false);
 
+  const border = useColorModeValue("gray.200", "gray.700");
+
   const truncatedOrganizationUrl = organizationURL?.slice(
     8,
-    organizationURL.length
+    organizationURL.length,
   );
 
   const handleCheckboxChange = (url) => {
@@ -58,7 +61,7 @@ const JiraModal = ({ isOpen, onClose }) => {
           user?.emailAddress,
           null,
           [],
-          false
+          false,
         );
 
         for (const [date, logs] of Object.entries(worklogs)) {
@@ -89,20 +92,23 @@ const JiraModal = ({ isOpen, onClose }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <ModalOverlay />
-      <ModalContent>
+      <ModalContent borderRadius="0" borderWidth="1px" borderColor={border}>
         <ModalHeader
           w="100%"
-          p="20px 30px"
-          borderBottom="1px solid"
-          borderColor="gray.300"
-          mb="20px"
-          textAlign={"center"}
+          p={5}
+          borderBottomWidth="1px"
+          borderBottomColor={border}
+          textAlign="center"
+          fontSize="xs"
+          fontWeight={700}
+          letterSpacing="0.03em"
+          textTransform="uppercase"
         >
           Select date range and URLs to export worklogs
         </ModalHeader>
         <ModalCloseButton />
 
-        <Stack as={ModalBody} alignItems="center" mb={3}>
+        <Stack as={ModalBody} alignItems="center" mb={3} px={5}>
           <DayPicker
             mode="range"
             selected={range}
@@ -127,8 +133,13 @@ const JiraModal = ({ isOpen, onClose }) => {
               },
             }}
           />
-          <Stack spacing={3} w={"100%"} maxW={"280px"}>
-            <Checkbox isChecked isDisabled size={"lg"}>
+          <Stack spacing={3} w="100%" maxW="280px">
+            <Checkbox
+              isChecked
+              isDisabled
+              size="lg"
+              sx={{ "& .chakra-checkbox__control": { borderRadius: 0 } }}
+            >
               <Link
                 ml={2}
                 color="blue.500"
@@ -144,7 +155,8 @@ const JiraModal = ({ isOpen, onClose }) => {
                 key={url}
                 isChecked={!!selectedUrls[url]}
                 onChange={() => handleCheckboxChange(url)}
-                size={"lg"}
+                size="lg"
+                sx={{ "& .chakra-checkbox__control": { borderRadius: 0 } }}
               >
                 <Link
                   ml={2}
@@ -160,9 +172,13 @@ const JiraModal = ({ isOpen, onClose }) => {
           </Stack>
         </Stack>
 
-        <ModalFooter>
+        <ModalFooter borderTopWidth="1px" borderTopColor={border} pt={4}>
           <Button
-            colorScheme="teal"
+            borderRadius="0"
+            h="34px"
+            bg="gray.900"
+            color="white"
+            _hover={{ bg: "gray.800" }}
             onClick={handleSubmit}
             isDisabled={!range?.from || !range?.to}
             isLoading={isLoading}

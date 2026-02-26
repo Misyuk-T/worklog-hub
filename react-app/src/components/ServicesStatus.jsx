@@ -17,36 +17,38 @@ const ServicesStatus = ({ title, user }) => {
     <Flex
       as={LinkBox}
       gap={1}
-      px={"8px"}
+      p={"2px 8px"}
       w="100%"
       alignItems="center"
       justifyContent="center"
       pointerEvents={avatarUrl ? "auto" : "none"}
     >
-      <Flex w="50%" alignItems="center" gap="5px">
-        <Box w={2} h={2} bg={user ? "green" : "red"} borderRadius="50%" />
-
+      <Flex flex="1" alignItems="center" gap={2} minW={0}>
+        <Box
+          w={2}
+          h={2}
+          bg={user ? "green" : "red"}
+          borderRadius="50%"
+          flexShrink={0}
+        />
         <LinkOverlay
           fontSize="12px"
-          textAlign="center"
           href={avatarUrl}
           textTransform="capitalize"
           target="_blank"
-          _hover={{
-            textDecoration: "underline",
-          }}
+          _hover={{ textDecoration: "underline" }}
           fontWeight="500"
         >
           {title}:
         </LinkOverlay>
       </Flex>
-
       <Text
-        w="50%"
+        flex="1"
         fontSize="xs"
         fontWeight={700}
-        textAlign="center"
+        textAlign="right"
         noOfLines={1}
+        minW={0}
       >
         {user ? userName : "Not connected"}
       </Text>

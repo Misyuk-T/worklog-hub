@@ -1,13 +1,14 @@
 import { useEffect } from "react";
 import {
   Box,
-  Button,
   ChakraProvider,
   Container,
   Flex,
+  IconButton,
   Stack,
-  Text,
+  useColorModeValue,
 } from "@chakra-ui/react";
+import { RepeatIcon } from "@chakra-ui/icons";
 import { ToastContainer } from "react-toastify";
 
 import useRedmineStore from "./store/redmineStore";
@@ -47,7 +48,7 @@ const App = () => {
   const saveOrganizationUrls = (jiraOrganization, redmineOrganization) => {
     const { redmineUrl, jiraUrl } = getOrganizationUrls(
       jiraOrganization,
-      redmineOrganization
+      redmineOrganization,
     );
 
     addOrganizationURL(redmineUrl);
@@ -67,6 +68,9 @@ const App = () => {
       saveOrganizationUrls,
     });
   };
+
+  const border = useColorModeValue("gray.200", "gray.700");
+  const hoverBg = useColorModeValue("gray.100", "gray.700");
 
   useEffect(() => {
     if (!isAuthObserve) {
@@ -92,56 +96,82 @@ const App = () => {
         centerContent
         gap="20px"
       >
-        <Stack>
-          <Flex justifyContent="space-between" gap={4}>
-            <LatestActivityTabs />
+        <Stack flex={1} minW={0} w="100%">
+          <Flex
+            alignItems="stretch"
+            gap={3}
+            w="100%"
+            minW={0}
+            flexWrap="nowrap"
+          >
+            <Box flex="1 1 35%" minW={0} maxW="35%">
+              <LatestActivityTabs />
+            </Box>
 
-            <Box>
+            <Box flex="1 1 35%" minW={0} maxW="35%">
               <GenerateCards isDisabled={!jiraUser || !user} />
             </Box>
 
             <Stack
-              gap={1}
-              alignSelf="flex-start"
+              flex="1 1 30%"
+              minW={0}
+              maxW="30%"
+              alignSelf="stretch"
               justifyContent="space-between"
-              w="100%"
-              height={"100%"}
-              maxW={"160px"}
+              gap={0}
             >
-              <Button
-                display="flex"
-                flexDirection="column"
-                alignItems="center"
-                onClick={handleRefresh}
-                isDisabled={!user || !jiraUser}
-                fontSize="xs"
-                w={"100%"}
-                p={3}
-                gap={1}
-                colorScheme="blue"
-                boxShadow="md"
-                whiteSpace="wrap"
-              >
-                <Text>Refresh Redmine & Jira</Text>
-              </Button>
-              <SettingModal />
-            </Stack>
-
-            <Stack width={"230px"} justifyContent={"space-between"}>
               <Avatar user={googleUser} />
 
-              <Stack
-                boxShadow="sm"
-                py={"2px"}
-                px={"5px"}
-                w="100%"
-                bg="white"
-                gap={0}
-                borderRadius={6}
-              >
-                <ServicesStatus title="redmine" user={user} />
-                <ServicesStatus title="jira" user={jiraUser} />
-              </Stack>
+              <Flex gap={0} align="stretch" w="100%" minW={0}>
+                <Stack
+                  flex={1}
+                  minW={0}
+                  boxShadow="sm"
+                  py={2}
+                  px={2}
+                  bg="white"
+                  gap={0}
+                  borderRadius="0"
+                  borderWidth="1px"
+                  borderColor={border}
+                >
+                  <ServicesStatus title="redmine" user={user} />
+                  <ServicesStatus title="jira" user={jiraUser} />
+                </Stack>
+
+                <Flex
+                  bg="white"
+                  gap={0}
+                  borderWidth="1px"
+                  borderLeftWidth="0"
+                  borderRadius="0"
+                  borderColor={border}
+                  overflow="hidden"
+                  boxShadow="sm"
+                  minH="52px"
+                >
+                  <IconButton
+                    aria-label="Refresh Redmine & Jira"
+                    icon={<RepeatIcon />}
+                    size="sm"
+                    variant="ghost"
+                    borderRadius="0"
+                    w="36px"
+                    h="100%"
+                    minH="52px"
+                    onClick={handleRefresh}
+                    isDisabled={!user || !jiraUser}
+                    borderRightWidth="1px"
+                    borderRightColor={border}
+                    _hover={{ bg: hoverBg }}
+                  />
+                  <SettingModal
+                    border={border}
+                    hoverBg={hoverBg}
+                    buttonMinH="52px"
+                  />
+                </Flex>
+              </Flex>
             </Stack>
           </Flex>
           <LatestActivityPanels />

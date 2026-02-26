@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Button,
+  IconButton,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -13,9 +14,10 @@ import {
   TabPanels,
   Tabs,
   Text,
+  useColorModeValue,
   useDisclosure,
 } from "@chakra-ui/react";
-import { AddIcon, StarIcon, UnlockIcon } from "@chakra-ui/icons";
+import { AddIcon, SettingsIcon, StarIcon } from "@chakra-ui/icons";
 
 import useRedmineStore from "../../store/redmineStore";
 import useJiraStore from "../../store/jiraStore";
@@ -32,10 +34,7 @@ import {
   getRedmineProjects,
   redmineLogin,
 } from "../../actions/redmine";
-import {
-  getAssignedIssues,
-  jiraLogin,
-} from "../../actions/jira";
+import { getAssignedIssues, jiraLogin } from "../../actions/jira";
 
 const defaultSetting = {
   presetName: "unnamed",
@@ -47,7 +46,7 @@ const defaultSetting = {
   clickupApiKey: "",
 };
 
-const SettingModal = () => {
+const SettingModal = ({ border, hoverBg, buttonMinH }) => {
   const {
     settings,
     updateSettings,
@@ -69,6 +68,9 @@ const SettingModal = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  const modalBorder = useColorModeValue("gray.200", "gray.700");
+  const tabHoverBg = useColorModeValue("gray.100", "gray.700");
 
   const isSettingsExist = settings && Object.entries(settings)?.length > 0;
   const settingsArray = isSettingsExist
@@ -107,7 +109,7 @@ const SettingModal = () => {
   const saveOrganizationUrls = (jiraOrganization, redmineOrganization) => {
     const { redmineUrl, jiraUrl } = getOrganizationUrls(
       jiraOrganization,
-      redmineOrganization
+      redmineOrganization,
     );
 
     addOrganizationURL(redmineUrl);
@@ -157,7 +159,7 @@ const SettingModal = () => {
                   currentJiraUrl,
                   jiraUser.accountId,
                   null,
-                  []
+                  [],
                 );
                 addAssignedIssues(assignedIssues);
               }
@@ -170,20 +172,19 @@ const SettingModal = () => {
                 async (jiraUrlObj) => {
                   const jiraUrl = jiraUrlObj.url;
                   if (jiraUrl && jiraUrl.length > 0) {
-                    const additionalUser = await fetchAdditionalJiraUser(
-                      jiraUrl
-                    );
+                    const additionalUser =
+                      await fetchAdditionalJiraUser(jiraUrl);
                     if (additionalUser) {
                       const assignedIssues = await getAssignedIssues(
                         jiraUrl,
                         additionalUser.accountId,
                         null,
-                        []
+                        [],
                       );
                       addAdditionalAssignedIssues(jiraUrl, assignedIssues);
                     }
                   }
-                }
+                },
               );
               await Promise.all(additionalFetches);
             }
@@ -205,32 +206,34 @@ const SettingModal = () => {
 
   return (
     <>
-      <Button
-        display="flex"
-        flexDirection="column"
+      <IconButton
+        aria-label="Settings"
+        icon={isLoading ? <Spinner size="sm" /> : <SettingsIcon />}
+        size="sm"
+        variant="ghost"
+        borderRadius="0"
+        w="36px"
+        h="100%"
+        minH={buttonMinH}
         onClick={onOpen}
-        fontSize="xs"
-        p={3}
-        gap={1}
-        colorScheme="orange"
-        boxShadow="md"
         isDisabled={!user || isLoading}
-        w={"100%"}
-      >
-        {isLoading ? <Spinner flexShrink={0} size={"sm"} /> : <UnlockIcon />}
-        <Text>Settings</Text>
-      </Button>
+        _hover={{ bg: hoverBg }}
+      />
 
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
-        <ModalContent maxWidth="fit-content">
+        <ModalContent maxWidth="fit-content" bg="gray.50" borderRadius="0">
           <ModalHeader
             w="100%"
             p="20px 30px"
             borderBottom="1px solid"
             borderColor="gray.300"
+            fontSize="xs"
+            fontWeight={700}
+            letterSpacing="0.08em"
+            textTransform="uppercase"
           >
-            Settings:
+            Settings
           </ModalHeader>
           <ModalCloseButton />
 

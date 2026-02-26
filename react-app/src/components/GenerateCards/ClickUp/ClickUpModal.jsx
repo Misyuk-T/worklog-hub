@@ -14,6 +14,7 @@ import {
   ModalHeader,
   ModalOverlay,
   Stack,
+  useColorModeValue,
 } from "@chakra-ui/react";
 
 import useClickUpStore from "../../../store/clickupStore";
@@ -27,6 +28,8 @@ const ClickUpModal = ({ isOpen, onClose }) => {
   const [range, setRange] = useState({ from: new Date(), to: new Date() });
   const [selectedTeams, setSelectedTeams] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+
+  const border = useColorModeValue("gray.200", "gray.700");
 
   const handleCheckboxChange = (teamId) => {
     setSelectedTeams((prevSelectedTeams) => ({
@@ -82,20 +85,23 @@ const ClickUpModal = ({ isOpen, onClose }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <ModalOverlay />
-      <ModalContent>
+      <ModalContent borderRadius="0" borderWidth="1px" borderColor={border}>
         <ModalHeader
           w="100%"
-          p="20px 30px"
-          borderBottom="1px solid"
-          borderColor="gray.300"
-          mb="20px"
-          textAlign={"center"}
+          p={5}
+          borderBottomWidth="1px"
+          borderBottomColor={border}
+          textAlign="center"
+          fontSize="xs"
+          fontWeight={700}
+          letterSpacing="0.08em"
+          textTransform="uppercase"
         >
           Select date range and teams to export time entries
         </ModalHeader>
         <ModalCloseButton />
 
-        <Stack as={ModalBody} alignItems="center" mb={3}>
+        <Stack as={ModalBody} alignItems="center" mb={3} px={5}>
           <DayPicker
             mode="range"
             selected={range}
@@ -120,9 +126,14 @@ const ClickUpModal = ({ isOpen, onClose }) => {
               },
             }}
           />
-          <Stack spacing={3} w={"100%"} maxW={"280px"}>
+          <Stack spacing={3} w="100%" maxW="280px">
             {selectedTeamId && (
-              <Checkbox isChecked isDisabled size={"lg"}>
+              <Checkbox
+                isChecked
+                isDisabled
+                size="lg"
+                sx={{ "& .chakra-checkbox__control": { borderRadius: 0 } }}
+              >
                 <Link
                   ml={2}
                   color="blue.500"
@@ -139,7 +150,8 @@ const ClickUpModal = ({ isOpen, onClose }) => {
                 key={teamId}
                 isChecked={!!selectedTeams[teamId]}
                 onChange={() => handleCheckboxChange(teamId)}
-                size={"lg"}
+                size="lg"
+                sx={{ "& .chakra-checkbox__control": { borderRadius: 0 } }}
               >
                 <Link
                   ml={2}
@@ -155,9 +167,13 @@ const ClickUpModal = ({ isOpen, onClose }) => {
           </Stack>
         </Stack>
 
-        <ModalFooter>
+        <ModalFooter borderTopWidth="1px" borderTopColor={border} pt={4}>
           <Button
-            colorScheme="teal"
+            borderRadius="0"
+            h="34px"
+            bg="gray.900"
+            color="white"
+            _hover={{ bg: "gray.800" }}
             onClick={handleSubmit}
             isDisabled={!range?.from || !range?.to}
             isLoading={isLoading}

@@ -34,6 +34,11 @@ const theme = extendTheme({
         flex: "1 0 auto",
       },
 
+      "input, select, textarea, [role='combobox'], button, [data-chakra-input], [data-chakra-select]":
+        {
+          fontFamily: "inherit",
+        },
+
       "*::-webkit-scrollbar": {
         width: "10px",
       },

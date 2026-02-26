@@ -10,7 +10,6 @@ import {
   OrderedList,
   SimpleGrid,
   TabPanel,
-  Divider,
   Heading,
   Box,
 } from "@chakra-ui/react";
@@ -34,12 +33,53 @@ import { fetchAllData } from "../../actions/workLogs";
 
 const fieldSections = [
   {
-    title: "General",
+    title: null,
+    fields: [
+      { name: "Preset Name", id: "presetName" },
+    ],
+  },
+  {
+    title: null,
     fields: [
       {
-        name: "Preset Name",
-        id: "presetName",
+        name: "JIRA Email",
+        id: "jiraEmail",
+        content: (
+          <OrderedList>
+            <ListItem>Atlassian account username</ListItem>
+            <Image mx="auto" border="1px solid" mt={5} src={JiraUserName} h={180} />
+          </OrderedList>
+        ),
+        leftAddon: "",
+        rightAddon: "",
       },
+      {
+        name: "JIRA API Key",
+        id: "jiraApiKey",
+        content: (
+          <OrderedList>
+            <ListItem>
+              Open next link:{" "}
+              <Link
+                href="https://id.atlassian.com/manage-profile/security/api-tokens"
+                target="_blank"
+                color="blue.500"
+              >
+                Generate Jira API key
+              </Link>
+            </ListItem>
+            <ListItem>Follow instruction to generate API key</ListItem>
+          </OrderedList>
+        ),
+        leftAddon: "",
+        rightAddon: "",
+      },
+    ],
+  },
+  {
+    title: "Jira URLs",
+    fields: [
+      { name: "Main Jira URL", id: "jiraUrl", leftAddon: "https://" },
     ],
   },
   {
@@ -62,49 +102,6 @@ const fieldSections = [
             </ListItem>
             <ListItem>Copy this key into field</ListItem>
             <Image mx="auto" border="1px solid" mt={5} src={RedmineApi} h={250} />
-          </OrderedList>
-        ),
-        leftAddon: "",
-        rightAddon: "",
-      },
-    ],
-  },
-  {
-    title: "Jira",
-    fields: [
-      {
-        name: "JIRA Email",
-        id: "jiraEmail",
-        content: (
-          <OrderedList>
-            <ListItem>Atlassian account username</ListItem>
-            <Image mx="auto" border="1px solid" mt={5} src={JiraUserName} h={180} />
-          </OrderedList>
-        ),
-        leftAddon: "",
-        rightAddon: "",
-      },
-      {
-        name: "Main Jira URL",
-        id: "jiraUrl",
-        leftAddon: "https://",
-      },
-      {
-        name: "JIRA API Key",
-        id: "jiraApiKey",
-        content: (
-          <OrderedList>
-            <ListItem>
-              Open next link:{" "}
-              <Link
-                href="https://id.atlassian.com/manage-profile/security/api-tokens"
-                target="_blank"
-                color="blue.500"
-              >
-                Generate Jira API key
-              </Link>
-            </ListItem>
-            <ListItem>Follow instruction to generate API key</ListItem>
           </OrderedList>
         ),
         leftAddon: "",
@@ -234,13 +231,30 @@ const SettingModalItem = ({
   }, []);
 
   return (
-    <TabPanel>
+    <TabPanel px={4} pb={4}>
       {fieldSections.map((section, sectionIndex) => (
-        <Box key={section.title} mb={6}>
-          <Heading size="sm" mb={3} color="gray.700">
-            {section.title}
-          </Heading>
-          <Divider mb={4} />
+        <Box
+          key={section.title ?? `section-${sectionIndex}`}
+          mb={4}
+          p={4}
+          bg="white"
+          borderWidth="1px"
+          borderColor="gray.200"
+          borderRadius="0"
+        >
+          {section.title && (
+            <Heading
+              size="sm"
+              mb={3}
+              color="gray.700"
+              fontSize="xs"
+              fontWeight={700}
+              letterSpacing="0.08em"
+              textTransform="uppercase"
+            >
+              {section.title}
+            </Heading>
+          )}
           <SimpleGrid templateColumns="repeat(2, 1fr)" gap={4}>
             {section.fields.map(({ id, name, content, leftAddon, rightAddon }) => (
               <React.Fragment key={id}>
@@ -279,7 +293,7 @@ const SettingModalItem = ({
         </Box>
       ))}
 
-      <Flex as={ModalFooter} gap={5} px={0} pt={10}>
+      <Flex as={ModalFooter} gap={5} px={0} pt={6}>
         <Button
           colorScheme="red"
           onClick={handleDelete}
