@@ -61,7 +61,8 @@ const LatestActivityTabs = () => {
       p={"10px"}
       borderRadius={"5px"}
       boxShadow={"sm"}
-      w={"435px"}
+      flex={1}
+      minW={"fit-content"}
     >
       <Stack height={"100%"} justifyContent={"space-between"}>
         <Text
