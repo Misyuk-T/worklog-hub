@@ -74,9 +74,7 @@
 - Task selector (autocomplete)
 - Створення worklogs для ClickUp
 
-⏳ **LocalStorage**
-- Збереження credentials
-- Auto-load при старті
+~~**LocalStorage**~~ - НЕ ПОТРІБНО (credentials зберігаються в Firebase через SettingModal)
 
 ## Швидкий старт для тестування
 

@@ -218,15 +218,7 @@ instance.interceptors.request.use(async (config) => {
 
 ### 3. LocalStorage Persistence (0%)
 
-**Потрібно**:
-- Створити helper для localStorage
-- Зберігати `clickupApiKey` в localStorage
-- Зберігати `clickupUser` в localStorage
-- Зберігати `clickupTeams` в localStorage
-- Автоматичне завантаження при старті
-- Синхронізація з store
-
-**Estimated time**: 30-60 хвилин
+**Примітка**: LocalStorage для credentials НЕ потрібен, бо у нас є Google авторизація і все зберігається в Firebase (як для Jira/Redmine). ClickUp API token буде зберігатись в Firebase через SettingModal, так само як jiraApiKey і redmineApiKey.
 
 ---
 

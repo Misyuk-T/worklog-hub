@@ -116,6 +116,9 @@
    - Better error messages
    - Tooltips
 
+### ~~LocalStorage Persistence~~ (НЕ ПОТРІБНО)
+**Примітка**: LocalStorage НЕ потрібен для credentials, бо все зберігається в Firebase через SettingModal (як для Jira/Redmine).
+
 ---
 
 ## Як продовжити роботу
