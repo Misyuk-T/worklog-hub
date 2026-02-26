@@ -81,7 +81,7 @@ const App = () => {
         as={Flex}
         position="relative"
         width="auto"
-        maxW="100%"
+        maxW="1200px"
         px={["16px", "24px"]}
         flexGrow={1}
         flexShrink={0}
@@ -92,8 +92,8 @@ const App = () => {
         centerContent
         gap="20px"
       >
-        <Stack w="100%">
-          <Flex justifyContent="space-between" gap={4} w="100%">
+        <Stack>
+          <Flex justifyContent="space-between" gap={4}>
             <LatestActivityTabs />
 
             <Box>
