@@ -5,11 +5,13 @@ import { toast } from "react-toastify";
 const initialState = {
   workLogs: null,
   isJiraExport: false,
+  isClickUpExport: false,
 };
 
 const useWorkLogsStore = create((set, get) => ({
   workLogs: null,
   isJiraExport: false,
+  isClickUpExport: false,
   addWorkLogs: (workLogs) => set({ workLogs }),
   resetWorkLogs: () => set({ workLogs: null }),
   addWorkLog: (date, data) => {
@@ -124,6 +126,62 @@ const useWorkLogsStore = create((set, get) => ({
     });
   },
   setIsJiraExport: (isJiraExport) => set({ isJiraExport }),
+  setIsClickUpExport: (isClickUpExport) => set({ isClickUpExport }),
+  bulkUpdateWorkLogsWithClickUp: (clickUpTasks) => {
+    set((state) => {
+      const oldState = { ...state.workLogs };
+
+      let updatedWorkLogs = [];
+
+      Object.keys(oldState).forEach((date) => {
+        oldState[date] = oldState[date].map((workLog) => {
+          const taskIdentifier = workLog.description.split(":")[0].trim();
+          const matchingTask = clickUpTasks.find(
+            (task) => task.key === taskIdentifier
+          );
+
+          if (matchingTask) {
+            updatedWorkLogs.push(workLog.description);
+            return {
+              ...workLog,
+              teamId: matchingTask.teamId,
+              task: matchingTask.id,
+            };
+          }
+          return workLog;
+        });
+      });
+
+      if (updatedWorkLogs.length > 0) {
+        toast.success(
+          `${updatedWorkLogs.length} worklog(s) successfully updated.`,
+          {
+            position: "bottom-center",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+          }
+        );
+      } else {
+        toast.info("No worklogs were updated.", {
+          position: "bottom-center",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+        });
+      }
+
+      return { workLogs: oldState };
+    });
+  },
   resetAll: () => set({ ...initialState }),
 }));
 

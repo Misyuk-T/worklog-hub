@@ -14,6 +14,7 @@ import {
 } from "@chakra-ui/react";
 
 import JiraModal from "./Jira/JiraModal";
+import ClickUpModal from "./ClickUp/ClickUpModal";
 import Form from "./Form/Form";
 
 const GenerateCards = ({ isDisabled }) => {
@@ -31,9 +32,17 @@ const GenerateCards = ({ isDisabled }) => {
     onClose: onJiraClose,
   } = useDisclosure();
 
+  const {
+    isOpen: isClickUpOpen,
+    onOpen: onClickUpOpen,
+    onClose: onClickUpClose,
+  } = useDisclosure();
+
   const handleGenerate = () => {
     if (selectedSource === "jira") {
       onJiraOpen();
+    } else if (selectedSource === "clickup") {
+      onClickUpOpen();
     } else if (selectedSource === "file") {
       onFileOpen();
     } else if (selectedSource === "redmine") {
@@ -75,6 +84,9 @@ const GenerateCards = ({ isDisabled }) => {
           <Radio value="jira" fontSize={"14px"}>
             Jira
           </Radio>
+          <Radio value="clickup" fontSize={"14px"}>
+            ClickUp
+          </Radio>
           <Radio value="file">File</Radio>
           <Radio value="redmine" fontSize={"13px"} isDisabled>
             Redmine
@@ -83,6 +95,7 @@ const GenerateCards = ({ isDisabled }) => {
       </RadioGroup>
 
       <JiraModal isOpen={isJiraOpen} onClose={onJiraClose} />
+      <ClickUpModal isOpen={isClickUpOpen} onClose={onClickUpClose} />
 
       <Modal isOpen={isFileOpen} onClose={onFileClose}>
         <ModalOverlay />

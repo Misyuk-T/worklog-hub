@@ -96,6 +96,13 @@ const LatestActivityTabs = () => {
             </Button>
             <Button
               size="sm"
+              variant={activeTab === "clickup" ? "solid" : "outline"}
+              onClick={() => handleTabClick("clickup")}
+            >
+              ClickUp
+            </Button>
+            <Button
+              size="sm"
               variant={activeTab === "compare" ? "solid" : "outline"}
               onClick={() => handleTabClick("compare")}
             >

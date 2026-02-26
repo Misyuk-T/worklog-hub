@@ -21,6 +21,11 @@ instance.interceptors.request.use(async (config) => {
       redmineApiKey: settings.redmineApiKey,
       redmineUrl: settings.redmineUrl,
     };
+  } else if (config.url.includes("clickup") && settings) {
+    config.params = {
+      ...config.params,
+      clickupApiKey: settings.clickupApiKey,
+    };
   }
 
   return config;

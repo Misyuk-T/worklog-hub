@@ -87,4 +87,30 @@ router.all("/jira/*", async (req, res) => {
   }
 });
 
+router.all("/clickup/*", async (req, res) => {
+  try {
+    const { clickupApiKey } = req.query;
+    const url = `https://api.clickup.com/api/v2${req.originalUrl.replace("/clickup", "")}`;
+
+    const axiosConfig = {
+      method: req.method,
+      url,
+      headers: {
+        Authorization: clickupApiKey,
+        "Content-Type": "application/json",
+      },
+    };
+
+    if (req.method !== "GET") {
+      axiosConfig.data = req.body;
+    }
+
+    const response = await limiter.schedule(() => axios(axiosConfig));
+    res.send(response.data);
+  } catch (error) {
+    console.error("Error while connecting to ClickUp: ", JSON.stringify(error));
+    res.status(500).send("Error while connecting to ClickUp");
+  }
+});
+
 module.exports = router;
