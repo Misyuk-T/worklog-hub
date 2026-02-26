@@ -44,6 +44,7 @@ const defaultSetting = {
   redmineApiKey: "",
   jiraApiKey: "",
   jiraEmail: "",
+  clickupApiKey: "",
 };
 
 const SettingModal = () => {
