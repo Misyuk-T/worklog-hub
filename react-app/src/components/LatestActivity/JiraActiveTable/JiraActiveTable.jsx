@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Heading,
@@ -12,6 +12,8 @@ import {
   Link,
   Flex,
   Collapse,
+  Spinner,
+  Center,
 } from "@chakra-ui/react";
 import { parse, isWeekend } from "date-fns";
 import { round } from "../../../helpers/getHours";
@@ -27,6 +29,7 @@ function isDayWeekend(dateString) {
 
 const JiraActivityTable = ({ panelSize }) => {
   const { allJiraWorklogs, user } = useJiraStore();
+  const [isLoading, setIsLoading] = useState(false);
   const groupedByDateArray = allJiraWorklogs
     ? Object.entries(allJiraWorklogs).sort((a, b) => {
         const dateA = parseJiraDate(a[0]);
@@ -41,7 +44,8 @@ const JiraActivityTable = ({ panelSize }) => {
 
   useEffect(() => {
     if (user && isInitialLoading) {
-      getLatestJiraWorkLogs();
+      setIsLoading(true);
+      getLatestJiraWorkLogs().finally(() => setIsLoading(false));
     }
   }, [user]);
 
@@ -59,7 +63,11 @@ const JiraActivityTable = ({ panelSize }) => {
         <Heading as="h2" size="md" mb={4}>
           Latest Jira Activity
         </Heading>
-        {groupedByDateArray.length ? (
+        {isLoading ? (
+          <Center minH="150px">
+            <Spinner size="xl" color="blue.500" thickness="4px" />
+          </Center>
+        ) : groupedByDateArray.length ? (
           groupedByDateArray.map(([date, logs]) => {
             const totalHours = logs.reduce((acc, log) => acc + log.hours, 0);
             const weekend = isDayWeekend(date);
