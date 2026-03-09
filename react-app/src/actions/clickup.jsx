@@ -1,6 +1,6 @@
 import { Stack, Text } from "@chakra-ui/react";
 import { toast } from "react-toastify";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 
 import { instance } from "./axios";
 import groupByField from "../helpers/groupByField";
@@ -193,7 +193,8 @@ export const createClickUpTimeEntries = async (worklogs) => {
       for (const worklog of worklogsForDate) {
         const { description, hours, date, task, teamId } = worklog;
 
-        const startTimestamp = new Date(date).getTime();
+        const dateObj = parse(date, "dd-MM-yyyy", new Date());
+        const startTimestamp = dateObj.getTime();
         const durationMs = hours * 3600 * 1000;
 
         const data = {
