@@ -102,7 +102,7 @@ export const getClickUpTimeEntries = async (
       date: format(new Date(parseInt(entry.start)), "yyyy-MM-dd"),
       teamId: teamId,
       billable: entry.billable,
-      url: entry.task?.url || null,
+      url: entry.task_url || entry.task?.url || null,
     }));
 
     if (showToast) {
