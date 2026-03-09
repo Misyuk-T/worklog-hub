@@ -13,6 +13,7 @@ import {
   Flex,
   Collapse,
 } from "@chakra-ui/react";
+import { Scrollbars } from "react-custom-scrollbars-2";
 import { parse, isWeekend } from "date-fns";
 import useRedmineStore from "../../../store/redmineStore";
 import groupByField from "../../../helpers/groupByField";
@@ -39,7 +40,7 @@ const RedmineActivityTable = ({ panelSize }) => {
       return dateB - dateA;
     });
   }, [groupedByDate]);
-  const containerMaxHeight = panelSize === "partial" ? "200px" : "auto";
+  const containerMaxHeight = panelSize === "partial" ? "400px" : "auto";
 
   return (
     <Collapse in={panelSize !== "collapsed"}>
@@ -49,13 +50,21 @@ const RedmineActivityTable = ({ panelSize }) => {
         transition="max-height 0.3s ease"
         border="1px solid lightgray"
         borderRadius="md"
-        overflow={"auto"}
+        overflow="hidden"
         p={4}
       >
         <Heading as="h2" size="md" mb={4}>
           Latest Redmine Activity
         </Heading>
         {groupedByDateArray.length ? (
+          <Scrollbars
+            autoHeight
+            autoHeightMin={150}
+            autoHeightMax={panelSize === "partial" ? 350 : 600}
+            renderThumbVertical={(props) => (
+              <div {...props} style={{ ...props.style, backgroundColor: "#CBD5E0", borderRadius: "4px" }} />
+            )}
+          >
           groupedByDateArray.map(([date, activities]) => {
             const totalHours = activities.reduce(
               (acc, item) => acc + item.hours,
@@ -151,6 +160,7 @@ const RedmineActivityTable = ({ panelSize }) => {
               </Box>
             );
           })
+          </Scrollbars>
         ) : (
           <Text>No latest activity</Text>
         )}
