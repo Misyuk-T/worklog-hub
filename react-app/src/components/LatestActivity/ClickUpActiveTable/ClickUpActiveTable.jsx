@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Heading,
@@ -12,7 +12,10 @@ import {
   Link,
   Flex,
   Collapse,
+  Spinner,
+  Center,
 } from "@chakra-ui/react";
+import { Scrollbars } from "react-custom-scrollbars-2";
 import { parse, isWeekend } from "date-fns";
 import { round } from "../../../helpers/getHours";
 import useClickUpStore from "../../../store/clickupStore";
@@ -28,6 +31,7 @@ const isDayWeekend = (dateString) => {
 
 const ClickUpActiveTable = ({ panelSize }) => {
   const { allClickUpTimeEntries, user, selectedTeamId } = useClickUpStore();
+  const [isLoading, setIsLoading] = useState(false);
   const groupedByDateArray = allClickUpTimeEntries
     ? Object.entries(allClickUpTimeEntries).sort((a, b) => {
         const dateA = parseClickUpDate(a[0]);
@@ -35,12 +39,13 @@ const ClickUpActiveTable = ({ panelSize }) => {
         return dateB - dateA;
       })
     : [];
-  const containerMaxHeight = panelSize === "partial" ? "200px" : "auto";
+  const containerMaxHeight = panelSize === "partial" ? "400px" : "auto";
   const isInitialLoading = allClickUpTimeEntries === null;
 
   useEffect(() => {
     if (user && isInitialLoading) {
-      getLatestClickUpTimeEntries();
+      setIsLoading(true);
+      getLatestClickUpTimeEntries().finally(() => setIsLoading(false));
     }
   }, [user]);
 
@@ -52,13 +57,25 @@ const ClickUpActiveTable = ({ panelSize }) => {
         transition="max-height 0.3s ease"
         border="1px solid lightgray"
         borderRadius="md"
-        overflow={"auto"}
+        overflow="hidden"
         p={4}
       >
         <Heading as="h2" size="md" mb={4}>
           Latest ClickUp Activity
         </Heading>
-        {groupedByDateArray.length ? (
+        {isLoading ? (
+          <Center minH="150px">
+            <Spinner size="xl" color="blue.500" thickness="4px" />
+          </Center>
+        ) : groupedByDateArray.length ? (
+          <Scrollbars
+            autoHeight
+            autoHeightMin={150}
+            autoHeightMax={panelSize === "partial" ? 350 : 600}
+            renderThumbVertical={(props) => (
+              <div {...props} style={{ ...props.style, backgroundColor: "#CBD5E0", borderRadius: "4px" }} />
+            )}
+          >
           groupedByDateArray.map(([date, entries]) => {
             const totalHours = entries.reduce(
               (acc, entry) => acc + entry.hours,
@@ -98,6 +115,7 @@ const ClickUpActiveTable = ({ panelSize }) => {
                     <Tr>
                       <Th fontSize="14px">Task</Th>
                       <Th fontSize="14px">Hours</Th>
+                      <Th fontSize="14px">Billable</Th>
                       <Th fontSize="14px">Description</Th>
                     </Tr>
                   </Thead>
@@ -109,6 +127,7 @@ const ClickUpActiveTable = ({ panelSize }) => {
                         (teamId && item.task
                           ? `https://app.clickup.com/t/${teamId}/${item.task}`
                           : null);
+                      const billableStatus = item.billable ? "blb" : "nblb";
                       return (
                         <Tr key={idx}>
                           <Td
@@ -125,6 +144,14 @@ const ClickUpActiveTable = ({ panelSize }) => {
                             )}
                           </Td>
                           <Td fontSize="14px">{round(item.hours)}h</Td>
+                          <Td
+                            fontSize="14px"
+                            color={item.billable ? "green.600" : "orange.600"}
+                            fontWeight="500"
+                            whiteSpace="nowrap"
+                          >
+                            {billableStatus}
+                          </Td>
                           <Td fontSize="14px" w={"100%"}>
                             {item.description || item.taskName || "-"}
                           </Td>
@@ -136,6 +163,7 @@ const ClickUpActiveTable = ({ panelSize }) => {
               </Box>
             );
           })
+          </Scrollbars>
         ) : (
           <Text>No latest activity</Text>
         )}
