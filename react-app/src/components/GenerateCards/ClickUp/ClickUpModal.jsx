@@ -19,10 +19,10 @@ import {
 
 import useClickUpStore from "../../../store/clickupStore";
 import useWorkLogsStore from "../../../store/worklogsStore";
-import { getClickUpTimeEntries } from "../../../actions/clickup";
+import { getClickUpTimeEntries, getAssignedTasks } from "../../../actions/clickup";
 
 const ClickUpModal = ({ isOpen, onClose }) => {
-  const { user, selectedTeamId, additionalAssignedTasks } = useClickUpStore();
+  const { user, selectedTeamId, additionalAssignedTasks, teams, addAdditionalAssignedTasks } = useClickUpStore();
   const { addWorkLogs, setIsClickUpExport, resetWorkLogs } = useWorkLogsStore();
 
   const [range, setRange] = useState({ from: new Date(), to: new Date() });
@@ -31,11 +31,18 @@ const ClickUpModal = ({ isOpen, onClose }) => {
 
   const border = useColorModeValue("gray.200", "gray.700");
 
-  const handleCheckboxChange = (teamId) => {
+  const handleCheckboxChange = async (teamId) => {
     setSelectedTeams((prevSelectedTeams) => ({
       ...prevSelectedTeams,
       [teamId]: !prevSelectedTeams[teamId],
     }));
+
+    if (!selectedTeams[teamId] && teamId !== selectedTeamId && user?.id) {
+      if (!additionalAssignedTasks[teamId]) {
+        const tasks = await getAssignedTasks(teamId, user.id);
+        addAdditionalAssignedTasks(teamId, tasks);
+      }
+    }
   };
 
   const handleSubmit = async () => {
@@ -141,7 +148,7 @@ const ClickUpModal = ({ isOpen, onClose }) => {
                   href={`https://app.clickup.com/${selectedTeamId}`}
                   target="_blank"
                 >
-                  Team {selectedTeamId}
+                  {teams.find((t) => t.id === selectedTeamId)?.name || `Team ${selectedTeamId}`}
                 </Link>
               </Checkbox>
             )}
@@ -160,7 +167,7 @@ const ClickUpModal = ({ isOpen, onClose }) => {
                   href={`https://app.clickup.com/${teamId}`}
                   target="_blank"
                 >
-                  Team {teamId}
+                  {teams.find((t) => t.id === teamId)?.name || `Team ${teamId}`}
                 </Link>
               </Checkbox>
             ))}

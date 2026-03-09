@@ -21,6 +21,7 @@ import { AddIcon, SettingsIcon, StarIcon } from "@chakra-ui/icons";
 
 import useRedmineStore from "../../store/redmineStore";
 import useJiraStore from "../../store/jiraStore";
+import useClickUpStore from "../../store/clickupStore";
 import useSettingsStore from "../../store/settingsStore";
 
 import { getCurrentSettings, getSettings } from "../../actions/settings";
@@ -35,6 +36,12 @@ import {
   redmineLogin,
 } from "../../actions/redmine";
 import { getAssignedIssues, jiraLogin } from "../../actions/jira";
+import {
+  clickupLogin,
+  getClickUpTeams,
+  getAssignedTasks,
+  getLatestClickUpTimeEntries,
+} from "../../actions/clickup";
 
 const defaultSetting = {
   presetName: "unnamed",
@@ -64,6 +71,12 @@ const SettingModal = ({ border, hoverBg, buttonMinH }) => {
   } = useJiraStore();
   const { addOrganizationURL, addUser, addLatestActivity, addProjects } =
     useRedmineStore();
+  const {
+    addUser: addClickUpUser,
+    addTeams: addClickUpTeams,
+    addAssignedTasks: addClickUpAssignedTasks,
+    setSelectedTeamId,
+  } = useClickUpStore();
 
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
@@ -93,6 +106,22 @@ const SettingModal = ({ border, hoverBg, buttonMinH }) => {
   const fetchAdditionalJiraUser = async (jiraUrl) => {
     // Do not call addJiraUser here to avoid overwriting the main user it just for checking jira url
     return await jiraLogin(jiraUrl);
+  };
+
+  const fetchClickUpUser = async () => {
+    const user = await clickupLogin();
+    if (user) {
+      addClickUpUser(user);
+      const teams = await getClickUpTeams();
+      if (teams && teams.length > 0) {
+        addClickUpTeams(teams);
+        const firstTeamId = teams[0].id;
+        setSelectedTeamId(firstTeamId);
+        const assignedTasks = await getAssignedTasks(firstTeamId, user.id);
+        addClickUpAssignedTasks(assignedTasks);
+      }
+    }
+    return user;
   };
 
   const handleAddNew = () => {
@@ -193,6 +222,14 @@ const SettingModal = ({ border, hoverBg, buttonMinH }) => {
             if (redmineUser) {
               addProjects(await getRedmineProjects(redmineUser.id));
               addLatestActivity(await getLatestRedmineWorkLogs(redmineUser.id));
+            }
+
+            const clickupApiKey = currentData?.clickupApiKey;
+            if (clickupApiKey) {
+              const clickupUser = await fetchClickUpUser();
+              if (clickupUser) {
+                await getLatestClickUpTimeEntries();
+              }
             }
           } else {
             handleAddNew();

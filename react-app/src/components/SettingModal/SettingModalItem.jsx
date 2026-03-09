@@ -16,6 +16,7 @@ import {
 
 import useRedmineStore from "../../store/redmineStore";
 import useJiraStore from "../../store/jiraStore";
+import useClickUpStore from "../../store/clickupStore";
 import useSettingsStore from "../../store/settingsStore";
 
 import {
@@ -153,6 +154,12 @@ const SettingModalItem = ({
     addAdditionalAssignedIssues,
     resetAdditionalAssignedIssues,
   } = useJiraStore();
+  const {
+    addUser: addClickUpUser,
+    addTeams: addClickUpTeams,
+    addAssignedTasks: addClickUpAssignedTasks,
+    setSelectedTeamId,
+  } = useClickUpStore();
   const { deleteSetting, updateSettings, addCurrentSettings } =
     useSettingsStore();
 
@@ -192,6 +199,10 @@ const SettingModalItem = ({
       addProjects,
       addLatestActivity,
       saveOrganizationUrls,
+      addClickUpUser,
+      addClickUpTeams,
+      addClickUpAssignedTasks,
+      setSelectedTeamId,
     });
   };
 

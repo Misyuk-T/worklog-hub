@@ -5,7 +5,7 @@ import { Box } from "@chakra-ui/react";
 const ClickUpTeamSelect = ({ control, options, onChange, value }) => {
   return (
     <Controller
-      name="teamId"
+      name="clickupTeamId"
       control={control}
       render={({ field }) => (
         <Box width="100%">

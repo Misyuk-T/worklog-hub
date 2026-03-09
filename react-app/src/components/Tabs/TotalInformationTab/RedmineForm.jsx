@@ -20,6 +20,7 @@ import Select from "react-select";
 import useWorkLogsStore from "../../../store/worklogsStore";
 import useRedmineStore from "../../../store/redmineStore";
 import useJiraStore from "../../../store/jiraStore";
+import useClickUpStore from "../../../store/clickupStore";
 
 import {
   getLatestRedmineWorkLogs,
@@ -29,9 +30,14 @@ import {
   createJiraWorklogs,
   getLatestJiraWorkLogs,
 } from "../../../actions/jira";
+import {
+  createClickUpTimeEntries,
+  getLatestClickUpTimeEntries,
+} from "../../../actions/clickup";
 import { transformToProjectData } from "../../../helpers/transformToSelectData";
 import { getTotalHoursFromObject } from "../../../helpers/getHours";
 import { filterWorklogsByTask } from "../../../helpers/filterWorklogsForJira";
+import { filterWorklogsForClickUp } from "../../../helpers/filterWorklogsForClickUp";
 
 import ModalDialog from "../../ModalDialog";
 import { QuestionIcon } from "@chakra-ui/icons";
@@ -84,6 +90,7 @@ const RedmineForm = () => {
     workLogs,
     addWorkLogs,
     bulkUpdateWorkLogsWithJira,
+    bulkUpdateWorkLogsWithClickUp,
     resetWorkLogs,
   } = useWorkLogsStore();
   const { projects, resetLatestActivity, addLatestActivity, user } =
@@ -93,6 +100,11 @@ const RedmineForm = () => {
     assignedIssues,
     additionalAssignedIssues,
   } = useJiraStore();
+  const {
+    user: clickUpUser,
+    assignedTasks: clickUpTasks,
+    additionalAssignedTasks: additionalClickUpTasks,
+  } = useClickUpStore();
 
   const [selectedItem, setSelectedItem] = useState(null);
   const [isBlbLog, setIsBlbLog] = useState(false);
@@ -106,10 +118,18 @@ const RedmineForm = () => {
 
   const handleBulkUpdate = () => {
     const allJiraIssues = [
-      ...assignedIssues, // Main Jira issues
+      ...assignedIssues,
       ...Object.values(additionalAssignedIssues).flat(),
     ];
     bulkUpdateWorkLogsWithJira(allJiraIssues);
+  };
+
+  const handleClickUpBulkUpdate = () => {
+    const allClickUpTasks = [
+      ...clickUpTasks,
+      ...Object.values(additionalClickUpTasks).flat(),
+    ];
+    bulkUpdateWorkLogsWithClickUp(allClickUpTasks);
   };
 
   const handleAddProject = () => {
@@ -141,6 +161,12 @@ const RedmineForm = () => {
   const handleJiraSubmit = async () => {
     await createJiraWorklogs(jiraWoklogs);
     await getLatestJiraWorkLogs();
+  };
+
+  const handleClickUpSubmit = async () => {
+    const clickUpWorklogs = filterWorklogsForClickUp(workLogs);
+    await createClickUpTimeEntries(clickUpWorklogs);
+    await getLatestClickUpTimeEntries();
   };
 
   return (
@@ -213,6 +239,19 @@ const RedmineForm = () => {
 
             <Flex alignItems={"center"}>
               <Button
+                color={"purple"}
+                border={"1px solid purple"}
+                bg={"white"}
+                size={"sm"}
+                onClick={handleClickUpBulkUpdate}
+                isDisabled={!isWorkLogsExist}
+              >
+                Match ClickUp tasks
+              </Button>
+            </Flex>
+
+            <Flex alignItems={"center"}>
+              <Button
                 colorScheme={"red"}
                 onClick={resetWorkLogs}
                 size={"sm"}
@@ -243,6 +282,26 @@ const RedmineForm = () => {
             Do you really want to submit{" "}
             <strong> {getTotalHoursFromObject(jiraWoklogs)} </strong>
             hours to <strong>Jira</strong>?
+          </Text>
+        </ModalDialog>
+
+        <ModalDialog
+          headerTitle="Submitting to ClickUp"
+          trigger={
+            <Button
+              isDisabled={!clickUpUser || !isWorkLogsExist}
+              colorScheme="purple"
+              size="md"
+            >
+              Submit cards to ClickUp
+            </Button>
+          }
+          onConfirm={handleClickUpSubmit}
+        >
+          <Text>
+            Do you really want to submit{" "}
+            <strong>{getTotalHoursFromObject(filterWorklogsForClickUp(workLogs))} </strong>
+            hours to <strong>ClickUp</strong>?
           </Text>
         </ModalDialog>
 

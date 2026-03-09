@@ -5,6 +5,12 @@ import {
   getRedmineProjects,
   redmineLogin,
 } from "./redmine";
+import {
+  clickupLogin,
+  getClickUpTeams,
+  getAssignedTasks,
+  getLatestClickUpTimeEntries,
+} from "./clickup";
 
 export const sendWorkLogs = (formData) => {
   return instance
@@ -27,10 +33,14 @@ export const fetchAllData = async ({
   addProjects,
   addLatestActivity,
   saveOrganizationUrls,
+  addClickUpUser,
+  addClickUpTeams,
+  addClickUpAssignedTasks,
+  setSelectedTeamId,
 }) => {
   if (!currentSettings) return;
 
-  const { jiraUrl, redmineUrl, additionalJiraUrls } = currentSettings;
+  const { jiraUrl, redmineUrl, additionalJiraUrls, clickupApiKey } = currentSettings;
 
   // 1) Save org URLs in Zustand stores.
   saveOrganizationUrls(jiraUrl, redmineUrl);
@@ -80,6 +90,23 @@ export const fetchAllData = async ({
 
       const latestActivity = await getLatestRedmineWorkLogs(redmineUser.id);
       addLatestActivity(latestActivity);
+    }
+  }
+
+  // 5) Fetch ClickUp
+  if (clickupApiKey) {
+    const clickupUser = await clickupLogin();
+    if (clickupUser && clickupUser.id) {
+      addClickUpUser(clickupUser);
+      const teams = await getClickUpTeams();
+      if (teams && teams.length > 0) {
+        addClickUpTeams(teams);
+        const firstTeamId = teams[0].id;
+        setSelectedTeamId(firstTeamId);
+        const assignedTasks = await getAssignedTasks(firstTeamId, clickupUser.id);
+        addClickUpAssignedTasks(assignedTasks);
+      }
+      await getLatestClickUpTimeEntries();
     }
   }
 };

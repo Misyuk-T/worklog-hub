@@ -144,8 +144,8 @@ const useWorkLogsStore = create((set, get) => ({
             updatedWorkLogs.push(workLog.description);
             return {
               ...workLog,
-              teamId: matchingTask.teamId,
-              task: matchingTask.id,
+              clickupTeamId: matchingTask.teamId,
+              clickupTask: matchingTask.id,
             };
           }
           return workLog;
