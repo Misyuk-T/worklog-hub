@@ -48,7 +48,7 @@ export const jiraLogin = async (jiraUrl) => {
         closeOnClick: true,
         progress: undefined,
         theme: "light",
-      },
+      }
     );
 
     return response.data;
