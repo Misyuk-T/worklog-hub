@@ -15,6 +15,7 @@ import {
   Spinner,
   Center,
 } from "@chakra-ui/react";
+import { Scrollbars } from "react-custom-scrollbars-2";
 import { parse, isWeekend } from "date-fns";
 import { round } from "../../../helpers/getHours";
 import useJiraStore from "../../../store/jiraStore";
@@ -37,7 +38,7 @@ const JiraActivityTable = ({ panelSize }) => {
         return dateB - dateA;
       })
     : [];
-  const containerMaxHeight = panelSize === "partial" ? "200px" : "auto";
+  const containerMaxHeight = panelSize === "partial" ? "400px" : "auto";
   const isInitialLoading = allJiraWorklogs === null;
 
   console.log(allJiraWorklogs);
@@ -57,7 +58,7 @@ const JiraActivityTable = ({ panelSize }) => {
         transition="max-height 0.3s ease"
         border="1px solid lightgray"
         borderRadius="md"
-        overflow={"auto"}
+        overflow="hidden"
         p={4}
       >
         <Heading as="h2" size="md" mb={4}>
@@ -68,6 +69,14 @@ const JiraActivityTable = ({ panelSize }) => {
             <Spinner size="xl" color="blue.500" thickness="4px" />
           </Center>
         ) : groupedByDateArray.length ? (
+          <Scrollbars
+            autoHeight
+            autoHeightMin={150}
+            autoHeightMax={panelSize === "partial" ? 350 : 600}
+            renderThumbVertical={(props) => (
+              <div {...props} style={{ ...props.style, backgroundColor: "#CBD5E0", borderRadius: "4px" }} />
+            )}
+          >
           groupedByDateArray.map(([date, logs]) => {
             const totalHours = logs.reduce((acc, log) => acc + log.hours, 0);
             const weekend = isDayWeekend(date);
@@ -142,6 +151,7 @@ const JiraActivityTable = ({ panelSize }) => {
               </Box>
             );
           })
+          </Scrollbars>
         ) : (
           <Text>No latest activity</Text>
         )}
