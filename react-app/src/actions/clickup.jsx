@@ -155,6 +155,7 @@ export const getAssignedTasks = async (teamId, userId, page = 0, prevTasks = [])
         page,
         assignees: [userId],
         include_closed: false,
+        subtasks: true,
       },
     });
 

@@ -27,7 +27,7 @@ const isDayWeekend = (dateString) => {
 };
 
 const ClickUpActiveTable = ({ panelSize }) => {
-  const { allClickUpTimeEntries, user } = useClickUpStore();
+  const { allClickUpTimeEntries, user, selectedTeamId } = useClickUpStore();
   const groupedByDateArray = allClickUpTimeEntries
     ? Object.entries(allClickUpTimeEntries).sort((a, b) => {
         const dateA = parseClickUpDate(a[0]);
@@ -62,7 +62,10 @@ const ClickUpActiveTable = ({ panelSize }) => {
         </Heading>
         {groupedByDateArray.length ? (
           groupedByDateArray.map(([date, entries]) => {
-            const totalHours = entries.reduce((acc, entry) => acc + entry.hours, 0);
+            const totalHours = entries.reduce(
+              (acc, entry) => acc + entry.hours,
+              0,
+            );
             const weekend = isDayWeekend(date);
             return (
               <Box key={date} mb={8} position="relative">
@@ -102,7 +105,12 @@ const ClickUpActiveTable = ({ panelSize }) => {
                   </Thead>
                   <Tbody>
                     {entries.map((item, idx) => {
-                      const taskUrl = item.url || null;
+                      const teamId = item.teamId || selectedTeamId;
+                      const taskUrl =
+                        item.url ||
+                        (teamId && item.task
+                          ? `https://app.clickup.com/t/${teamId}/${item.task}`
+                          : null);
                       return (
                         <Tr key={idx}>
                           <Td
