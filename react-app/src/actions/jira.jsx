@@ -20,11 +20,11 @@ const textToADF = (text) => ({
       content: [
         {
           type: "text",
-          text: text || ""
-        }
-      ]
-    }
-  ]
+          text: text || "",
+        },
+      ],
+    },
+  ],
 });
 
 export const jiraLogin = async (jiraUrl) => {
@@ -48,7 +48,7 @@ export const jiraLogin = async (jiraUrl) => {
         closeOnClick: true,
         progress: undefined,
         theme: "light",
-      }
+      },
     );
 
     return response.data;
@@ -66,7 +66,7 @@ export const jiraLogin = async (jiraUrl) => {
         closeOnClick: true,
         progress: undefined,
         theme: "light",
-      }
+      },
     );
     return null;
   }
@@ -79,26 +79,38 @@ export const getJiraWorklogIssues = async (
   jiraEmail,
   nextPageToken = null,
   prevIssues = [],
-  showToast = true
+  showToast = true,
 ) => {
   try {
     const requestBody = {
       jql: `worklogAuthor = '${jiraEmail}' AND worklogDate >= '${startDate}' AND worklogDate <= '${endDate}'`,
       maxResults: 100,
-      fields: ["summary", "worklog", "issuetype", "parent", "project", "status", "assignee"],
+      fields: [
+        "summary",
+        "worklog",
+        "issuetype",
+        "parent",
+        "project",
+        "status",
+        "assignee",
+      ],
     };
 
-    console.log(nextPageToken, 'console');
+    console.log(nextPageToken, "console");
     if (nextPageToken) {
       // TODO: could be bottleneck with new endpoint
       requestBody.nextPageToken = nextPageToken;
     }
 
-    const response = await instance.post("/jira/rest/api/3/search/jql", requestBody, {
-      params: {
-        jiraUrl,
+    const response = await instance.post(
+      "/jira/rest/api/3/search/jql",
+      requestBody,
+      {
+        params: {
+          jiraUrl,
+        },
       },
-    });
+    );
 
     const issues = response.data.issues;
     const updatedIssues = [...prevIssues, ...issues];
@@ -111,7 +123,7 @@ export const getJiraWorklogIssues = async (
         jiraEmail,
         response.data.nextPageToken,
         updatedIssues,
-        showToast
+        showToast,
       );
     } else {
       const startOfStartDate = startOfDay(new Date(startDate));
@@ -134,7 +146,7 @@ export const getJiraWorklogIssues = async (
               startedAfter: startTimestamp,
               startedBefore: endTimestamp,
             },
-          }
+          },
         );
 
         const workLogData = workLogResponse.data;
@@ -168,7 +180,7 @@ export const getJiraWorklogIssues = async (
             closeOnClick: true,
             progress: undefined,
             theme: "light",
-          }
+          },
         );
       }
 
@@ -189,7 +201,7 @@ export const getJiraWorklogIssues = async (
           closeOnClick: true,
           progress: undefined,
           theme: "light",
-        }
+        },
       );
     }
     console.error("Error while fetching recent worklogs:", error);
@@ -200,7 +212,7 @@ export const getAssignedIssues = async (
   jiraUrl,
   userId,
   nextPageToken = null,
-  prevIssues = []
+  prevIssues = [],
 ) => {
   try {
     const startDate = format(subDays(new Date(), 60), "yyyy-MM-dd");
@@ -216,17 +228,26 @@ export const getAssignedIssues = async (
       requestBody.nextPageToken = nextPageToken;
     }
 
-    const response = await instance.post("/jira/rest/api/3/search/jql", requestBody, {
-      params: {
-        jiraUrl,
+    const response = await instance.post(
+      "/jira/rest/api/3/search/jql",
+      requestBody,
+      {
+        params: {
+          jiraUrl,
+        },
       },
-    });
+    );
 
     const issues = response.data.issues;
     const updatedIssues = [...prevIssues, ...issues];
 
     if (response.data.nextPageToken) {
-      return getAssignedIssues(jiraUrl, userId, response.data.nextPageToken, updatedIssues);
+      return getAssignedIssues(
+        jiraUrl,
+        userId,
+        response.data.nextPageToken,
+        updatedIssues,
+      );
     } else {
       return updatedIssues.map((issue) => ({
         id: issue.id,
@@ -242,7 +263,7 @@ export const getAssignedIssues = async (
   } catch (error) {
     console.error(
       `Error while fetching assigned issues from JIRA at ${jiraUrl}:`,
-      error
+      error,
     );
   }
 };
@@ -268,7 +289,7 @@ export const createJiraWorklogs = async (worklogs) => {
         const request = instance.post(
           `/jira/rest/api/3/issue/${task}/worklog`,
           data,
-          { params: { jiraUrl: worklog.jiraUrl } }
+          { params: { jiraUrl: worklog.jiraUrl } },
         );
         requests.push(request);
       }
@@ -289,7 +310,7 @@ export const createJiraWorklogs = async (worklogs) => {
           closeOnClick: true,
           progress: undefined,
           theme: "light",
-        }
+        },
       );
     });
   } catch (error) {
@@ -304,7 +325,7 @@ export const createJiraWorklogs = async (worklogs) => {
         closeOnClick: true,
         progress: undefined,
         theme: "light",
-      }
+      },
     );
     console.error("Error while creating worklogs:", error);
   }
@@ -339,7 +360,7 @@ export const fetchAllJiraWorklogs = async ({
         userEmail,
         null,
         [],
-        false
+        false,
       );
       mergeWorklogs(allWorkLogs, mainWorklogs);
     }
@@ -353,7 +374,7 @@ export const fetchAllJiraWorklogs = async ({
           userEmail,
           null,
           [],
-          false
+          false,
         );
         mergeWorklogs(allWorkLogs, worklogs);
       }
@@ -377,11 +398,11 @@ export const getLatestJiraWorkLogs = async (place = "undefined") => {
   const today = new Date();
   const startDate = format(
     new Date(today.getFullYear(), today.getMonth(), 1),
-    "yyyy-MM-dd"
+    "yyyy-MM-dd",
   );
   const endDate = format(
     new Date(today.getFullYear(), today.getMonth() + 1, 0),
-    "yyyy-MM-dd"
+    "yyyy-MM-dd",
   );
   const truncatedOrgUrl = organizationURL?.replace(/^https?:\/\//, "");
   const allWorklogs = await fetchAllJiraWorklogs({
@@ -399,7 +420,7 @@ export const getLatestJiraWorkLogs = async (place = "undefined") => {
     "truncatedOrgUrl: ",
     truncatedOrgUrl,
     "additionalAssignedIssues: ",
-    additionalAssignedIssues
+    additionalAssignedIssues,
   );
   useJiraStore.getState().addAllJiraWorklogs(allWorklogs);
 };
