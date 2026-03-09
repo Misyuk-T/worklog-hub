@@ -38,8 +38,6 @@ const ClickUpActiveTable = ({ panelSize }) => {
   const containerMaxHeight = panelSize === "partial" ? "200px" : "auto";
   const isInitialLoading = allClickUpTimeEntries === null;
 
-  console.log(allClickUpTimeEntries);
-
   useEffect(() => {
     if (user && isInitialLoading) {
       getLatestClickUpTimeEntries();
