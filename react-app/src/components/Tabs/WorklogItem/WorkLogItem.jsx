@@ -16,12 +16,14 @@ import {
 import { DeleteIcon } from "@chakra-ui/icons";
 
 import useJiraStore from "../../../store/jiraStore";
+import useClickUpStore from "../../../store/clickupStore";
 import useWorkLogsStore from "../../../store/worklogsStore";
 import {
   getFormattedStringDate,
   getCorrectGMTDateObject,
 } from "../../../helpers/getFormattedDate";
-import { getIssueValue } from "../../../helpers/transformToSelectData";
+import { getIssueValue, getClickUpTaskValue } from "../../../helpers/transformToSelectData";
+import { getAssignedTasks } from "../../../actions/clickup";
 
 import DescriptionInput from "./DescriptionInput";
 import DatePicker from "./DatePicker";
@@ -30,6 +32,8 @@ import StatusSwitch from "./StatusSwitch";
 import ProjectsSelect from "./ProjectsSelect";
 import IssuesSelect from "./IssuesSelect";
 import JiraInstanceSelect from "./JiraInstanceSelect";
+import ClickUpTeamSelect from "./ClickUpTeamSelect";
+import ClickUpTaskSelect from "./ClickUpTaskSelect";
 
 const handleNumbersValidate = (value) => {
   if (isNaN(value) || value > 8 || value <= 0) {
@@ -48,6 +52,14 @@ const handleTextValidate = (value) => {
 const WorkLogItem = ({ data }) => {
   const { assignedIssues, additionalAssignedIssues, organizationURL } =
     useJiraStore();
+  const {
+    assignedTasks: clickUpTasks,
+    additionalAssignedTasks: additionalClickUpTasks,
+    selectedTeamId,
+    teams,
+    user: clickUpUser,
+    addAdditionalAssignedTasks,
+  } = useClickUpStore();
   const { updateWorkLog, deleteWorkLog } = useWorkLogsStore();
 
   const truncatedOrganizationURL = organizationURL?.slice(
@@ -73,6 +85,8 @@ const WorkLogItem = ({ data }) => {
       blb: data.blb,
       task: getIssueValue(data.task, assignedIssues),
       jiraUrl: data.jiraUrl || truncatedOrganizationURL,
+      clickupTeamId: data.clickupTeamId || selectedTeamId,
+      clickupTask: getClickUpTaskValue(data.clickupTask, clickUpTasks),
     },
   });
 
@@ -106,6 +120,17 @@ const WorkLogItem = ({ data }) => {
     ? assignedIssues
     : additionalAssignedIssues[selectedJiraUrl] || [];
 
+  const clickUpTeamOptions = teams.map((team) => ({
+    value: team.id,
+    label: team.name || `Team ${team.id}`,
+  }));
+
+  const selectedClickUpTeamId = getValues().clickupTeamId?.value || watch("clickupTeamId");
+  const isMainClickUpTeamSelected = selectedClickUpTeamId === selectedTeamId;
+  const assignedTasksForSelectedTeam = isMainClickUpTeamSelected
+    ? clickUpTasks
+    : additionalClickUpTasks[selectedClickUpTeamId] || [];
+
   const handleCancel = () => {
     reset({
       description: data.description,
@@ -115,12 +140,14 @@ const WorkLogItem = ({ data }) => {
       blb: data.blb,
       task: getIssueValue(data.task, assignedIssues),
       jiraUrl: data.jiraUrl || truncatedOrganizationURL,
+      clickupTeamId: data.clickupTeamId || selectedTeamId,
+      clickupTask: getClickUpTaskValue(data.clickupTask, clickUpTasks),
     });
     setIsEdited(false);
   };
 
   const handleSave = (formData) => {
-    const { description, date, hours, blb, project, task, jiraUrl } = formData;
+    const { description, date, hours, blb, project, task, jiraUrl, clickupTeamId, clickupTask } = formData;
 
     const updatedData = {
       ...data,
@@ -131,6 +158,8 @@ const WorkLogItem = ({ data }) => {
       project: project?.value || data.project,
       task: task?.value || "",
       jiraUrl: jiraUrl?.value || data.jiraUrl || organizationURL,
+      clickupTeamId: clickupTeamId?.value || data.clickupTeamId,
+      clickupTask: clickupTask?.value || data.clickupTask || "",
     };
 
     updateWorkLog(originDate.current, data.id, updatedData);
@@ -152,6 +181,25 @@ const WorkLogItem = ({ data }) => {
   useEffect(() => {
     setValue("task", getIssueValue(data.task, assignedIssues));
   }, [data.task]);
+
+  useEffect(() => {
+    setValue("clickupTeamId", data.clickupTeamId);
+  }, [data.clickupTeamId]);
+
+  useEffect(() => {
+    setValue("clickupTask", getClickUpTaskValue(data.clickupTask, clickUpTasks));
+  }, [data.clickupTask]);
+
+  useEffect(() => {
+    const teamId = data.clickupTeamId || selectedTeamId;
+    if (teamId && teamId !== selectedTeamId && clickUpUser?.id) {
+      if (!additionalClickUpTasks[teamId]) {
+        getAssignedTasks(teamId, clickUpUser.id).then((tasks) => {
+          addAdditionalAssignedTasks(teamId, tasks);
+        });
+      }
+    }
+  }, [data.clickupTeamId, selectedTeamId, clickUpUser, additionalClickUpTasks]);
 
   return (
     <Card
@@ -277,6 +325,49 @@ const WorkLogItem = ({ data }) => {
                   setIsEdited(true);
                 }}
                 assignedIssues={assignedIssuesForSelectedJira}
+              />
+            </Box>
+          </Flex>
+
+          <Flex alignItems="center" w="100%" gap={"5px"}>
+            <Text m={0} whiteSpace={"nowrap"}>
+              <strong>ClickUp Team:</strong>{" "}
+            </Text>
+            <ClickUpTeamSelect
+              control={control}
+              options={clickUpTeamOptions}
+              onChange={async (teamId) => {
+                setValue("clickupTeamId", teamId);
+                setIsEdited(true);
+                setValue("clickupTask", "");
+                
+                const teamIdValue = teamId?.value;
+                if (teamIdValue && teamIdValue !== selectedTeamId && clickUpUser?.id) {
+                  if (!additionalClickUpTasks[teamIdValue]) {
+                    const tasks = await getAssignedTasks(teamIdValue, clickUpUser.id);
+                    addAdditionalAssignedTasks(teamIdValue, tasks);
+                  }
+                }
+              }}
+              value={clickUpTeamOptions.find(
+                (item) => item.value === selectedClickUpTeamId
+              )}
+            />
+          </Flex>
+
+          <Flex alignItems="center" w="100%" gap={"5px"}>
+            <Text m={0} whiteSpace={"nowrap"}>
+              <strong>ClickUp Task:</strong>{" "}
+            </Text>
+            <Box width="300px">
+              <ClickUpTaskSelect
+                value={watch("clickupTask")}
+                control={control}
+                onChange={(task) => {
+                  setValue("clickupTask", task);
+                  setIsEdited(true);
+                }}
+                assignedTasks={assignedTasksForSelectedTeam}
               />
             </Box>
           </Flex>

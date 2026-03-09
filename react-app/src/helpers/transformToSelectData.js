@@ -47,3 +47,28 @@ export const transformToIssueData = (issues) => {
     label: `${issue.key} - ${issue.summary}`,
   }));
 };
+
+export const getClickUpTaskValue = (taskId, tasks) => {
+  if (!tasks || !taskId) {
+    return {
+      value: 0,
+      label: "undefined",
+    };
+  }
+
+  const task = tasks.find((item) => item.id === taskId);
+  const taskKey = task?.key || taskId;
+  const taskName = task?.summary || "Currently untracked task";
+
+  return {
+    value: taskId,
+    label: `${taskKey} - ${taskName}`,
+  };
+};
+
+export const transformToClickUpTaskData = (tasks) => {
+  return tasks.map((task) => ({
+    value: task.id,
+    label: `${task.key} - ${task.summary}`,
+  }));
+};
