@@ -69,12 +69,17 @@ const ClickUpActiveTable = ({ panelSize }) => {
           </Center>
         ) : groupedByDateArray.length ? (
           <Scrollbars
-            autoHeight
+            autoHeight={panelSize === "partial"}
             autoHeightMin={150}
-            autoHeightMax={panelSize === "partial" ? 350 : 600}
+            autoHeightMax={350}
+            style={{ height: panelSize === "full" ? "600px" : "auto" }}
             renderThumbVertical={(props) => (
-              <div {...props} style={{ ...props.style, backgroundColor: "#A0AEC0", borderRadius: "4px", width: "6px" }} />
+              <div {...props} style={{ ...props.style, backgroundColor: "#A0AEC0", borderRadius: "4px", width: "6px", zIndex: 999 }} />
             )}
+            renderTrackVertical={(props) => (
+              <div {...props} style={{ ...props.style, right: "2px", bottom: "2px", top: "2px", borderRadius: "4px" }} />
+            )}
+            hideTracksWhenNotNeeded
           >
           {groupedByDateArray.map(([date, entries]) => {
             const totalHours = entries.reduce(
@@ -110,12 +115,12 @@ const ClickUpActiveTable = ({ panelSize }) => {
                     {round(totalHours)}h total
                   </Text>
                 </Flex>
-                <Table size="sm" variant="striped">
+                <Table size="sm" variant="striped" sx={{ tableLayout: "fixed", width: "100%" }}>
                   <Thead>
                     <Tr>
-                      <Th fontSize="14px">Task</Th>
-                      <Th fontSize="14px">Hours</Th>
-                      <Th fontSize="14px">Billable</Th>
+                      <Th fontSize="14px" width="120px">Task</Th>
+                      <Th fontSize="14px" width="80px">Hours</Th>
+                      <Th fontSize="14px" width="80px">Billable</Th>
                       <Th fontSize="14px">Description</Th>
                     </Tr>
                   </Thead>
@@ -134,6 +139,8 @@ const ClickUpActiveTable = ({ panelSize }) => {
                             fontSize="14px"
                             color="blue.600"
                             whiteSpace="nowrap"
+                            overflow="hidden"
+                            textOverflow="ellipsis"
                           >
                             {taskUrl ? (
                               <Link href={taskUrl} isExternal>
@@ -143,7 +150,7 @@ const ClickUpActiveTable = ({ panelSize }) => {
                               item.task
                             )}
                           </Td>
-                          <Td fontSize="14px">{round(item.hours)}h</Td>
+                          <Td fontSize="14px" whiteSpace="nowrap">{round(item.hours)}h</Td>
                           <Td
                             fontSize="14px"
                             color={item.billable ? "green.600" : "orange.600"}
@@ -152,7 +159,12 @@ const ClickUpActiveTable = ({ panelSize }) => {
                           >
                             {billableStatus}
                           </Td>
-                          <Td fontSize="14px" w={"100%"}>
+                          <Td 
+                            fontSize="14px"
+                            overflow="hidden"
+                            textOverflow="ellipsis"
+                            whiteSpace="nowrap"
+                          >
                             {item.description || item.taskName || "-"}
                           </Td>
                         </Tr>

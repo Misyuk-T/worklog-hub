@@ -58,12 +58,17 @@ const RedmineActivityTable = ({ panelSize }) => {
         </Heading>
         {groupedByDateArray.length ? (
           <Scrollbars
-            autoHeight
+            autoHeight={panelSize === "partial"}
             autoHeightMin={150}
-            autoHeightMax={panelSize === "partial" ? 350 : 600}
+            autoHeightMax={350}
+            style={{ height: panelSize === "full" ? "600px" : "auto" }}
             renderThumbVertical={(props) => (
-              <div {...props} style={{ ...props.style, backgroundColor: "#A0AEC0", borderRadius: "4px", width: "6px" }} />
+              <div {...props} style={{ ...props.style, backgroundColor: "#A0AEC0", borderRadius: "4px", width: "6px", zIndex: 999 }} />
             )}
+            renderTrackVertical={(props) => (
+              <div {...props} style={{ ...props.style, right: "2px", bottom: "2px", top: "2px", borderRadius: "4px" }} />
+            )}
+            hideTracksWhenNotNeeded
           >
           {
           groupedByDateArray.map(([date, activities]) => {
@@ -100,12 +105,12 @@ const RedmineActivityTable = ({ panelSize }) => {
                     {round(totalHours)}h total
                   </Text>
                 </Flex>
-                <Table size="sm" variant="striped">
+                <Table size="sm" variant="striped" sx={{ tableLayout: "fixed", width: "100%" }}>
                   <Thead>
                     <Tr>
-                      <Th fontSize="14px">Project</Th>
-                      <Th fontSize="14px">Issue</Th>
-                      <Th fontSize="14px">Hours</Th>
+                      <Th fontSize="14px" width="150px">Project</Th>
+                      <Th fontSize="14px" width="150px">Issue</Th>
+                      <Th fontSize="14px" width="100px">Hours</Th>
                       <Th fontSize="14px">Comments</Th>
                     </Tr>
                   </Thead>
@@ -123,12 +128,22 @@ const RedmineActivityTable = ({ panelSize }) => {
                       const redmineEditUrl = `https://redmine.anyforsoft.com/time_entries/${activity?.id}/edit`;
                       return (
                         <Tr key={activity.id}>
-                          <Td fontSize="14px" minWidth="200px">
+                          <Td 
+                            fontSize="14px"
+                            overflow="hidden"
+                            textOverflow="ellipsis"
+                            whiteSpace="nowrap"
+                          >
                             {projectInfo
                               ? projectInfo.projectName
                               : "Untracked project"}
                           </Td>
-                          <Td fontSize="14px" minWidth="200px">
+                          <Td 
+                            fontSize="14px"
+                            overflow="hidden"
+                            textOverflow="ellipsis"
+                            whiteSpace="nowrap"
+                          >
                             {projectInfo?.subject ? (
                               <Link href={redmineIssueUrl} isExternal>
                                 {projectInfo.subject}
@@ -144,7 +159,12 @@ const RedmineActivityTable = ({ panelSize }) => {
                           >
                             {round(activity?.hours)}h ({blb})
                           </Td>
-                          <Td fontSize="14px" w="100%">
+                          <Td 
+                            fontSize="14px"
+                            overflow="hidden"
+                            textOverflow="ellipsis"
+                            whiteSpace="nowrap"
+                          >
                             <Link
                               color="blue.500"
                               href={redmineEditUrl}
