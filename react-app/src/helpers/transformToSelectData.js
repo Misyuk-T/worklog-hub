@@ -8,6 +8,13 @@ export const getProjectValue = (projectId, projects) => {
 
   const project = projects.find((item) => item.id === projectId);
 
+  if (!project) {
+    return {
+      value: 0,
+      label: "undefined",
+    };
+  }
+
   return {
     value: project.id,
     label: `${project.projectName}  #${project.id} ${project.subject}`,
@@ -15,7 +22,11 @@ export const getProjectValue = (projectId, projects) => {
 };
 
 export const transformToProjectData = (projects) => {
-  return [...projects].map((item) => {
+  if (!projects || !Array.isArray(projects)) {
+    return [];
+  }
+  
+  return projects.map((item) => {
     return {
       value: item.id,
       label: `${item.projectName}  #${item.id} ${item.subject}`,
@@ -42,6 +53,10 @@ export const getIssueValue = (issueKey, issues) => {
 };
 
 export const transformToIssueData = (issues) => {
+  if (!issues || !Array.isArray(issues)) {
+    return [];
+  }
+  
   return issues.map((issue) => ({
     value: issue.key,
     label: `${issue.key} - ${issue.summary}`,
@@ -67,6 +82,10 @@ export const getClickUpTaskValue = (taskId, tasks) => {
 };
 
 export const transformToClickUpTaskData = (tasks) => {
+  if (!tasks || !Array.isArray(tasks)) {
+    return [];
+  }
+  
   return tasks.map((task) => ({
     value: task.id,
     label: `${task.key} - ${task.summary}`,

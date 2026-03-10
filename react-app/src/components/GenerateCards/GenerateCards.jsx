@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -16,19 +16,40 @@ import {
   ModalBody,
 } from "@chakra-ui/react";
 
+import useJiraStore from "../../store/jiraStore";
+import useClickUpStore from "../../store/clickupStore";
 import JiraModal from "./Jira/JiraModal";
 import ClickUpModal from "./ClickUp/ClickUpModal";
 import Form from "./Form/Form";
 
-const SOURCES = [
-  { key: "jira", label: "Jira" },
-  { key: "clickup", label: "ClickUp" },
-  { key: "file", label: "File" },
-  { key: "redmine", label: "Redmine", disabled: true },
-];
-
 const GenerateCards = () => {
+  const { user: jiraUser } = useJiraStore();
+  const { user: clickUpUser } = useClickUpStore();
+  
+  const SOURCES = [
+    { key: "jira", label: "Jira", disabled: !jiraUser },
+    { key: "clickup", label: "ClickUp", disabled: !clickUpUser },
+    { key: "file", label: "File" },
+    { key: "redmine", label: "Redmine", disabled: true },
+  ];
+  
   const [selectedSource, setSelectedSource] = useState("jira");
+
+  useEffect(() => {
+    const isCurrentSourceDisabled = 
+      (selectedSource === "jira" && !jiraUser) ||
+      (selectedSource === "clickup" && !clickUpUser);
+    
+    if (isCurrentSourceDisabled) {
+      if (jiraUser) {
+        setSelectedSource("jira");
+      } else if (clickUpUser) {
+        setSelectedSource("clickup");
+      } else {
+        setSelectedSource("file");
+      }
+    }
+  }, [jiraUser, clickUpUser, selectedSource]);
 
   const {
     isOpen: isFileOpen,
@@ -67,7 +88,7 @@ const GenerateCards = () => {
     return (
       <Button
         size="sm"
-        onClick={() => setSelectedSource(value)}
+        onClick={() => !disabled && setSelectedSource(value)}
         isDisabled={disabled}
         flex={1}
         minW={0}
@@ -79,10 +100,11 @@ const GenerateCards = () => {
         color={isActive ? "white" : "inherit"}
         borderWidth="1px"
         borderColor={border}
-        _hover={{ bg: isActive ? "gray.800" : hoverBg }}
+        _hover={{ bg: isActive ? "gray.800" : disabled ? "transparent" : hoverBg }}
         opacity={disabled ? 0.5 : 1}
         ml={isFirst ? 0 : "-1px"}
         _focusVisible={{ boxShadow: "outline" }}
+        cursor={disabled ? "not-allowed" : "pointer"}
       >
         {label}
       </Button>
@@ -135,6 +157,11 @@ const GenerateCards = () => {
             _hover={{ bg: "gray.800" }}
             px={4}
             flex="0 0 auto"
+            isDisabled={
+              (selectedSource === "jira" && !jiraUser) ||
+              (selectedSource === "clickup" && !clickUpUser) ||
+              selectedSource === "redmine"
+            }
           >
             Generate
           </Button>

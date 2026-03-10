@@ -13,9 +13,7 @@ export const clickupLogin = async () => {
 
     toast.success(
       <Stack>
-        <Text fontWeight={600}>
-          Successfully connected to ClickUp
-        </Text>
+        <Text fontWeight={600}>Successfully connected to ClickUp</Text>
       </Stack>,
       {
         position: "bottom-center",
@@ -24,7 +22,7 @@ export const clickupLogin = async () => {
         closeOnClick: true,
         progress: undefined,
         theme: "light",
-      }
+      },
     );
 
     return response.data.user;
@@ -42,7 +40,7 @@ export const clickupLogin = async () => {
         closeOnClick: true,
         progress: undefined,
         theme: "light",
-      }
+      },
     );
     return null;
   }
@@ -66,7 +64,7 @@ export const getClickUpTeams = async () => {
         closeOnClick: true,
         progress: undefined,
         theme: "light",
-      }
+      },
     );
     return [];
   }
@@ -77,40 +75,55 @@ export const getClickUpTimeEntries = async (
   startDate,
   endDate,
   userId,
-  showToast = true
+  showToast = true,
 ) => {
   try {
     const startTimestamp = new Date(startDate).getTime();
     const endTimestamp = new Date(endDate).getTime();
 
-    const response = await instance.get(`/clickup/team/${teamId}/time_entries`, {
-      params: {
-        start_date: startTimestamp,
-        end_date: endTimestamp,
-        assignee: userId,
+    const response = await instance.get(
+      `/clickup/team/${teamId}/time_entries`,
+      {
+        params: {
+          start_date: startTimestamp,
+          end_date: endTimestamp,
+          assignee: userId,
+        },
       },
-    });
+    );
 
     const timeEntries = response.data.data || [];
-    
-    const parsedData = timeEntries.map((entry) => ({
-      id: entry.id,
-      task: entry.task?.custom_id || entry.task?.id || "No task",
-      taskName: entry.task?.name || "No task",
-      description: entry.description || "",
-      hours: parseInt(entry.duration) / 3600000,
-      date: format(new Date(parseInt(entry.start)), "yyyy-MM-dd"),
-      teamId: teamId,
-      billable: entry.billable,
-      url: entry.task_url || entry.task?.url || null,
-    }));
+
+    const parsedData = timeEntries.map((entry) => {
+      const startTimestamp =
+        typeof entry.start === "string"
+          ? parseInt(entry.start, 10)
+          : entry.start;
+      const dateObj = new Date(startTimestamp);
+      const formattedDate = format(dateObj, "dd-MM-yyyy");
+
+      return {
+        id: entry.id,
+        clickupTask: entry.task?.id || "No task",
+        taskKey: entry.task?.custom_id || entry.task?.id || "No task",
+        taskName: entry.task?.name || "No task",
+        description: entry.description || "",
+        hours: parseInt(entry.duration, 10) / 3600000,
+        date: formattedDate,
+        clickupTeamId: teamId,
+        teamId: teamId,
+        blb: entry.billable ? "blb" : "nblb",
+        billable: entry.billable,
+        url: entry.task_url || entry.task?.url || null,
+      };
+    });
 
     if (showToast) {
       toast.success(
         <Stack>
           <Text fontWeight={600}>
-            ClickUp time entries were successfully fetched. Got ({parsedData.length})
-            items for team {teamId}
+            ClickUp time entries were successfully fetched. Got (
+            {parsedData.length}) items for team {teamId}
           </Text>
         </Stack>,
         {
@@ -120,7 +133,7 @@ export const getClickUpTimeEntries = async (
           closeOnClick: true,
           progress: undefined,
           theme: "light",
-        }
+        },
       );
     }
 
@@ -140,7 +153,7 @@ export const getClickUpTimeEntries = async (
           closeOnClick: true,
           progress: undefined,
           theme: "light",
-        }
+        },
       );
     }
     console.error("Error while fetching ClickUp time entries:", error);
@@ -148,13 +161,18 @@ export const getClickUpTimeEntries = async (
   }
 };
 
-export const getAssignedTasks = async (teamId, userId, page = 0, prevTasks = []) => {
+export const getAssignedTasks = async (
+  teamId,
+  userId,
+  page = 0,
+  prevTasks = [],
+) => {
   try {
     const response = await instance.get(`/clickup/team/${teamId}/task`, {
       params: {
         page,
         assignees: [userId],
-        include_closed: false,
+        include_closed: true,
         subtasks: true,
       },
     });
@@ -177,7 +195,7 @@ export const getAssignedTasks = async (teamId, userId, page = 0, prevTasks = [])
   } catch (error) {
     console.error(
       `Error while fetching assigned tasks from ClickUp for team ${teamId}:`,
-      error
+      error,
     );
     return [];
   }
@@ -206,7 +224,7 @@ export const createClickUpTimeEntries = async (worklogs) => {
 
         const request = instance.post(
           `/clickup/team/${teamId}/time_entries`,
-          data
+          data,
         );
         requests.push(request);
       }
@@ -226,7 +244,7 @@ export const createClickUpTimeEntries = async (worklogs) => {
           closeOnClick: true,
           progress: undefined,
           theme: "light",
-        }
+        },
       );
     });
   } catch (error) {
@@ -241,7 +259,7 @@ export const createClickUpTimeEntries = async (worklogs) => {
         closeOnClick: true,
         progress: undefined,
         theme: "light",
-      }
+      },
     );
     console.error("Error while creating ClickUp time entries:", error);
   }
@@ -275,7 +293,7 @@ export const fetchAllClickUpTimeEntries = async ({
         startDate,
         endDate,
         userId,
-        false
+        false,
       );
       mergeTimeEntries(allTimeEntries, mainTimeEntries);
     }
@@ -287,7 +305,7 @@ export const fetchAllClickUpTimeEntries = async ({
           startDate,
           endDate,
           userId,
-          false
+          false,
         );
         mergeTimeEntries(allTimeEntries, timeEntries);
       }
@@ -304,17 +322,17 @@ export const fetchAllClickUpTimeEntries = async ({
 export const getLatestClickUpTimeEntries = async () => {
   const { user, selectedTeamId, additionalAssignedTasks } =
     useClickUpStore.getState();
-  
+
   if (!user?.id) return;
-  
+
   const today = new Date();
   const startDate = format(
     new Date(today.getFullYear(), today.getMonth(), 1),
-    "yyyy-MM-dd"
+    "yyyy-MM-dd",
   );
   const endDate = format(
     new Date(today.getFullYear(), today.getMonth() + 1, 0),
-    "yyyy-MM-dd"
+    "yyyy-MM-dd",
   );
 
   const allTimeEntries = await fetchAllClickUpTimeEntries({

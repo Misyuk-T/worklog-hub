@@ -129,10 +129,11 @@ const ClickUpActiveTable = ({ panelSize }) => {
                   <Tbody>
                     {entries.map((item, idx) => {
                       const teamId = item.teamId || selectedTeamId;
+                      const taskKey = item.taskKey || item.task || "No task";
                       const taskUrl =
                         item.url ||
-                        (teamId && item.task
-                          ? `https://app.clickup.com/t/${teamId}/${item.task}`
+                        (teamId && taskKey
+                          ? `https://app.clickup.com/t/${teamId}/${taskKey}`
                           : null);
                       const billableStatus = item.billable ? "blb" : "nblb";
                       return (
@@ -144,10 +145,10 @@ const ClickUpActiveTable = ({ panelSize }) => {
                           >
                             {taskUrl ? (
                               <Link href={taskUrl} isExternal>
-                                {item.task}
+                                {taskKey}
                               </Link>
                             ) : (
-                              item.task
+                              taskKey
                             )}
                           </Td>
                           <Td fontSize="14px" whiteSpace="nowrap">{round(item.hours)}h</Td>

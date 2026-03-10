@@ -12,7 +12,7 @@ const ProjectsSelect = ({ onChange, control, value }) => {
 
   const formattedProjectData = transformToProjectData(projects);
   const listValue = isNaN(value) ? value : getProjectValue(value, projects);
-  const isUndefinedValue = !listValue.value;
+  const isUndefinedValue = !listValue || !listValue.value;
 
   return (
     <Controller

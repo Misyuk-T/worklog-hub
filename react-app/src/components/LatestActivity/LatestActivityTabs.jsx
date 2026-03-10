@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Button,
   Flex,
@@ -10,6 +10,9 @@ import {
   Stack,
 } from "@chakra-ui/react";
 import useLatestActivityStore from "../../store/latestActivity";
+import useJiraStore from "../../store/jiraStore";
+import useClickUpStore from "../../store/clickupStore";
+import useRedmineStore from "../../store/redmineStore";
 
 const CollapsedIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -51,6 +54,9 @@ const FullIcon = () => (
 const LatestActivityTabs = () => {
   const { activeTab, setActiveTab, panelSize, setPanelSize } =
     useLatestActivityStore();
+  const { user: jiraUser } = useJiraStore();
+  const { user: clickUpUser } = useClickUpStore();
+  const { user: redmineUser } = useRedmineStore();
 
   const bg = useColorModeValue("white", "gray.900");
   const border = useColorModeValue("gray.200", "gray.700");
@@ -58,17 +64,36 @@ const LatestActivityTabs = () => {
   const hoverBg = useColorModeValue("gray.100", "gray.700");
   const shadow = useColorModeValue("sm", "sm");
 
-  const handleTabClick = (tab) => {
+  useEffect(() => {
+    const isCurrentTabDisabled = 
+      (activeTab === "jira" && !jiraUser) ||
+      (activeTab === "clickup" && !clickUpUser) ||
+      (activeTab === "redmine" && !redmineUser);
+    
+    if (isCurrentTabDisabled) {
+      if (jiraUser) {
+        setActiveTab("jira");
+      } else if (clickUpUser) {
+        setActiveTab("clickup");
+      } else if (redmineUser) {
+        setActiveTab("redmine");
+      }
+    }
+  }, [jiraUser, clickUpUser, redmineUser, activeTab, setActiveTab]);
+
+  const handleTabClick = (tab, disabled) => {
+    if (disabled) return;
     setActiveTab(tab);
     if (panelSize === "collapsed") setPanelSize("partial");
   };
 
-  const SquareTab = ({ tabKey, label, isFirst, isLast }) => {
+  const SquareTab = ({ tabKey, label, isFirst, isLast, disabled }) => {
     const isActive = activeTab === tabKey;
     return (
       <Button
         size="sm"
-        onClick={() => handleTabClick(tabKey)}
+        onClick={() => handleTabClick(tabKey, disabled)}
+        isDisabled={disabled}
         borderRadius="0"
         h="34px"
         px={4}
@@ -77,9 +102,11 @@ const LatestActivityTabs = () => {
         color={isActive ? "white" : "inherit"}
         borderWidth="1px"
         borderColor={border}
-        _hover={{ bg: isActive ? "gray.800" : hoverBg }}
+        _hover={{ bg: isActive ? "gray.800" : disabled ? "transparent" : hoverBg }}
         ml={isFirst ? 0 : "-1px"}
         _focusVisible={{ boxShadow: "outline" }}
+        opacity={disabled ? 0.5 : 1}
+        cursor={disabled ? "not-allowed" : "pointer"}
       >
         {label}
       </Button>
@@ -203,9 +230,9 @@ const LatestActivityTabs = () => {
           sx={{ "&::-webkit-scrollbar": { display: "none" } }}
         >
           <HStack spacing={0} minW="max-content">
-            <SquareTab tabKey="jira" label="Jira" isFirst />
-            <SquareTab tabKey="clickup" label="ClickUp" />
-            <SquareTab tabKey="redmine" label="Redmine" isLast />
+            <SquareTab tabKey="jira" label="Jira" isFirst disabled={!jiraUser} />
+            <SquareTab tabKey="clickup" label="ClickUp" disabled={!clickUpUser} />
+            <SquareTab tabKey="redmine" label="Redmine" isLast disabled={!redmineUser} />
           </HStack>
         </Flex>
 
