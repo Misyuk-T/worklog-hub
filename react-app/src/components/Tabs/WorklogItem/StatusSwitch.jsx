@@ -1,10 +1,10 @@
-import { Flex, FormLabel, Switch, Text } from "@chakra-ui/react";
+import { Flex, Switch, Text } from "@chakra-ui/react";
 
 const StatusSwitch = ({ value, onChange }) => {
   const isChecked = value === "blb";
 
   return (
-    <Flex alignItems="center" gap={2}>
+    <Flex alignItems="center" gap={2} py={2}>
       <Text fontSize="sm" fontWeight="600">
         Billability:
       </Text>

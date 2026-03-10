@@ -22,7 +22,10 @@ import {
   getFormattedStringDate,
   getCorrectGMTDateObject,
 } from "../../../helpers/getFormattedDate";
-import { getIssueValue, getClickUpTaskValue } from "../../../helpers/transformToSelectData";
+import {
+  getIssueValue,
+  getClickUpTaskValue,
+} from "../../../helpers/transformToSelectData";
 import { getAssignedTasks } from "../../../actions/clickup";
 
 import DescriptionInput from "./DescriptionInput";
@@ -64,7 +67,7 @@ const WorkLogItem = ({ data }) => {
 
   const truncatedOrganizationURL = organizationURL?.slice(
     8,
-    organizationURL?.length
+    organizationURL?.length,
   );
 
   const {
@@ -98,8 +101,8 @@ const WorkLogItem = ({ data }) => {
   const borderCardColor = isNotValidCard
     ? "tomato"
     : isNewTask
-    ? "blue.600"
-    : "transparent";
+      ? "blue.600"
+      : "transparent";
 
   const mainJiraOptionItem = {
     value: truncatedOrganizationURL,
@@ -125,7 +128,8 @@ const WorkLogItem = ({ data }) => {
     label: team.name || `Team ${team.id}`,
   }));
 
-  const selectedClickUpTeamId = getValues().clickupTeamId?.value || watch("clickupTeamId");
+  const selectedClickUpTeamId =
+    getValues().clickupTeamId?.value || watch("clickupTeamId");
   const isMainClickUpTeamSelected = selectedClickUpTeamId === selectedTeamId;
   const assignedTasksForSelectedTeam = isMainClickUpTeamSelected
     ? clickUpTasks
@@ -147,7 +151,17 @@ const WorkLogItem = ({ data }) => {
   };
 
   const handleSave = (formData) => {
-    const { description, date, hours, blb, project, task, jiraUrl, clickupTeamId, clickupTask } = formData;
+    const {
+      description,
+      date,
+      hours,
+      blb,
+      project,
+      task,
+      jiraUrl,
+      clickupTeamId,
+      clickupTask,
+    } = formData;
 
     const updatedData = {
       ...data,
@@ -187,7 +201,10 @@ const WorkLogItem = ({ data }) => {
   }, [data.clickupTeamId]);
 
   useEffect(() => {
-    setValue("clickupTask", getClickUpTaskValue(data.clickupTask, clickUpTasks));
+    setValue(
+      "clickupTask",
+      getClickUpTaskValue(data.clickupTask, clickUpTasks),
+    );
   }, [data.clickupTask]);
 
   useEffect(() => {
@@ -207,8 +224,8 @@ const WorkLogItem = ({ data }) => {
       borderRadius="md"
       position="relative"
       p={3}
-      pt={4}
-      px={4}
+      pt={6}
+      px={6}
       boxShadow="sm"
       bg="white"
       border="2px solid transparent"
@@ -220,8 +237,8 @@ const WorkLogItem = ({ data }) => {
           position="absolute"
           size="xs"
           aria-label="delete"
-          right={-2}
-          top={-2}
+          right={-5}
+          top={-5}
           opacity={0.3}
           onClick={handleDelete}
           icon={<Icon as={DeleteIcon} />}
@@ -285,7 +302,14 @@ const WorkLogItem = ({ data }) => {
             borderColor="red.200"
             bg="red.50"
           >
-            <Text fontSize="xs" fontWeight="700" color="red.700" mb={1} textTransform="uppercase" letterSpacing="wide">
+            <Text
+              fontSize="xs"
+              fontWeight="700"
+              color="red.700"
+              mb={1}
+              textTransform="uppercase"
+              letterSpacing="wide"
+            >
               Redmine
             </Text>
             <Flex alignItems="center" w="100%" gap={2}>
@@ -305,6 +329,91 @@ const WorkLogItem = ({ data }) => {
             </Flex>
           </Box>
 
+          {/* ClickUp Block */}
+          <Box
+            p={2}
+            borderRadius="md"
+            borderWidth="1px"
+            borderColor="purple.200"
+            bg="purple.50"
+          >
+            <Text
+              fontSize="xs"
+              fontWeight="700"
+              color="purple.700"
+              mb={1}
+              textTransform="uppercase"
+              letterSpacing="wide"
+            >
+              ClickUp
+            </Text>
+            <Stack spacing={1}>
+              <Flex alignItems="center" w="100%" gap={2}>
+                <Text
+                  m={0}
+                  fontSize="xs"
+                  minW="50px"
+                  whiteSpace="nowrap"
+                  fontWeight="600"
+                >
+                  Team:
+                </Text>
+                <Box flex={1}>
+                  <ClickUpTeamSelect
+                    control={control}
+                    options={clickUpTeamOptions}
+                    onChange={async (teamId) => {
+                      setValue("clickupTeamId", teamId);
+                      setIsEdited(true);
+                      setValue("clickupTask", "");
+
+                      const teamIdValue = teamId?.value;
+                      if (
+                        teamIdValue &&
+                        teamIdValue !== selectedTeamId &&
+                        clickUpUser?.id
+                      ) {
+                        if (!additionalClickUpTasks[teamIdValue]) {
+                          const tasks = await getAssignedTasks(
+                            teamIdValue,
+                            clickUpUser.id,
+                          );
+                          addAdditionalAssignedTasks(teamIdValue, tasks);
+                        }
+                      }
+                    }}
+                    value={clickUpTeamOptions.find(
+                      (item) => item.value === selectedClickUpTeamId,
+                    )}
+                  />
+                </Box>
+              </Flex>
+
+              <Flex alignItems="center" w="100%" gap={2}>
+                <Text
+                  m={0}
+                  fontSize="xs"
+                  minW="50px"
+                  whiteSpace="nowrap"
+                  fontWeight="600"
+                >
+                  Task:
+                </Text>
+                <Box flex={1}>
+                  <ClickUpTaskSelect
+                    value={watch("clickupTask")}
+                    control={control}
+                    onChange={(task) => {
+                      setValue("clickupTask", task);
+                      setIsEdited(true);
+                    }}
+                    assignedTasks={assignedTasksForSelectedTeam}
+                  />
+                </Box>
+              </Flex>
+            </Stack>
+          </Box>
+
           {/* Jira Block */}
           <Box
             p={2}
@@ -313,12 +422,25 @@ const WorkLogItem = ({ data }) => {
             borderColor="blue.200"
             bg="blue.50"
           >
-            <Text fontSize="xs" fontWeight="700" color="blue.700" mb={1} textTransform="uppercase" letterSpacing="wide">
+            <Text
+              fontSize="xs"
+              fontWeight="700"
+              color="blue.700"
+              mb={1}
+              textTransform="uppercase"
+              letterSpacing="wide"
+            >
               Jira
             </Text>
             <Stack spacing={1}>
               <Flex alignItems="center" w="100%" gap={2}>
-                <Text m={0} fontSize="xs" minW="50px" whiteSpace="nowrap" fontWeight="600">
+                <Text
+                  m={0}
+                  fontSize="xs"
+                  minW="50px"
+                  whiteSpace="nowrap"
+                  fontWeight="600"
+                >
                   URL:
                 </Text>
                 <Box flex={1}>
@@ -331,14 +453,20 @@ const WorkLogItem = ({ data }) => {
                       setValue("task", "");
                     }}
                     value={jiraInstanceOptions.find(
-                      (item) => item.value === selectedJiraUrl
+                      (item) => item.value === selectedJiraUrl,
                     )}
                   />
                 </Box>
               </Flex>
 
               <Flex alignItems="center" w="100%" gap={2}>
-                <Text m={0} fontSize="xs" minW="50px" whiteSpace="nowrap" fontWeight="600">
+                <Text
+                  m={0}
+                  fontSize="xs"
+                  minW="50px"
+                  whiteSpace="nowrap"
+                  fontWeight="600"
+                >
                   Issue:
                 </Text>
                 <Box flex={1}>
@@ -351,65 +479,6 @@ const WorkLogItem = ({ data }) => {
                       setIsEdited(true);
                     }}
                     assignedIssues={assignedIssuesForSelectedJira}
-                  />
-                </Box>
-              </Flex>
-            </Stack>
-          </Box>
-
-          {/* ClickUp Block */}
-          <Box
-            p={2}
-            borderRadius="md"
-            borderWidth="1px"
-            borderColor="purple.200"
-            bg="purple.50"
-          >
-            <Text fontSize="xs" fontWeight="700" color="purple.700" mb={1} textTransform="uppercase" letterSpacing="wide">
-              ClickUp
-            </Text>
-            <Stack spacing={1}>
-              <Flex alignItems="center" w="100%" gap={2}>
-                <Text m={0} fontSize="xs" minW="50px" whiteSpace="nowrap" fontWeight="600">
-                  Team:
-                </Text>
-                <Box flex={1}>
-                  <ClickUpTeamSelect
-                    control={control}
-                    options={clickUpTeamOptions}
-                    onChange={async (teamId) => {
-                      setValue("clickupTeamId", teamId);
-                      setIsEdited(true);
-                      setValue("clickupTask", "");
-                      
-                      const teamIdValue = teamId?.value;
-                      if (teamIdValue && teamIdValue !== selectedTeamId && clickUpUser?.id) {
-                        if (!additionalClickUpTasks[teamIdValue]) {
-                          const tasks = await getAssignedTasks(teamIdValue, clickUpUser.id);
-                          addAdditionalAssignedTasks(teamIdValue, tasks);
-                        }
-                      }
-                    }}
-                    value={clickUpTeamOptions.find(
-                      (item) => item.value === selectedClickUpTeamId
-                    )}
-                  />
-                </Box>
-              </Flex>
-
-              <Flex alignItems="center" w="100%" gap={2}>
-                <Text m={0} fontSize="xs" minW="50px" whiteSpace="nowrap" fontWeight="600">
-                  Task:
-                </Text>
-                <Box flex={1}>
-                  <ClickUpTaskSelect
-                    value={watch("clickupTask")}
-                    control={control}
-                    onChange={(task) => {
-                      setValue("clickupTask", task);
-                      setIsEdited(true);
-                    }}
-                    assignedTasks={assignedTasksForSelectedTeam}
                   />
                 </Box>
               </Flex>
