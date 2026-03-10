@@ -20,7 +20,6 @@
     "framer-motion": "^10.12.16",
     "prettier-eslint": "^15.0.1",
     "react": "^18.2.0",
-    "react-custom-scrollbars-2": "^4.5.0",
     "react-day-picker": "^8.7.1",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.44.3",

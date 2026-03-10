@@ -13,7 +13,6 @@ import {
   Flex,
   Collapse,
 } from "@chakra-ui/react";
-import { Scrollbars } from "react-custom-scrollbars-2";
 import { parse, isWeekend } from "date-fns";
 import useRedmineStore from "../../../store/redmineStore";
 import groupByField from "../../../helpers/groupByField";
@@ -40,7 +39,7 @@ const RedmineActivityTable = ({ panelSize }) => {
       return dateB - dateA;
     });
   }, [groupedByDate]);
-  const containerMaxHeight = panelSize === "partial" ? "400px" : "auto";
+  const containerMaxHeight = panelSize === "partial" ? "400px" : panelSize === "full" ? "calc(100vh - 200px)" : "auto";
 
   return (
     <Collapse in={panelSize !== "collapsed"}>
@@ -50,27 +49,29 @@ const RedmineActivityTable = ({ panelSize }) => {
         transition="max-height 0.3s ease"
         border="1px solid lightgray"
         borderRadius="md"
-        overflow="hidden"
+        overflow="auto"
         p={4}
+        sx={{
+          "&::-webkit-scrollbar": {
+            width: "8px",
+          },
+          "&::-webkit-scrollbar-track": {
+            background: "#f1f1f1",
+            borderRadius: "4px",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            background: "#A0AEC0",
+            borderRadius: "4px",
+          },
+          "&::-webkit-scrollbar-thumb:hover": {
+            background: "#718096",
+          },
+        }}
       >
         <Heading as="h2" size="md" mb={4}>
           Latest Redmine Activity
         </Heading>
         {groupedByDateArray.length ? (
-          <Scrollbars
-            autoHeight={panelSize === "partial"}
-            autoHeightMin={150}
-            autoHeightMax={350}
-            style={{ height: panelSize === "full" ? "600px" : "auto" }}
-            renderThumbVertical={(props) => (
-              <div {...props} style={{ ...props.style, backgroundColor: "#A0AEC0", borderRadius: "4px", width: "6px", zIndex: 999 }} />
-            )}
-            renderTrackVertical={(props) => (
-              <div {...props} style={{ ...props.style, right: "2px", bottom: "2px", top: "2px", borderRadius: "4px" }} />
-            )}
-            hideTracksWhenNotNeeded
-          >
-          {
           groupedByDateArray.map(([date, activities]) => {
             const totalHours = activities.reduce(
               (acc, item) => acc + item.hours,
@@ -105,12 +106,12 @@ const RedmineActivityTable = ({ panelSize }) => {
                     {round(totalHours)}h total
                   </Text>
                 </Flex>
-                <Table size="sm" variant="striped" sx={{ tableLayout: "fixed", width: "100%" }}>
+                <Table size="sm" variant="striped">
                   <Thead>
                     <Tr>
-                      <Th fontSize="14px" width="150px">Project</Th>
-                      <Th fontSize="14px" width="150px">Issue</Th>
-                      <Th fontSize="14px" width="100px">Hours</Th>
+                      <Th fontSize="14px">Project</Th>
+                      <Th fontSize="14px">Issue</Th>
+                      <Th fontSize="14px">Hours</Th>
                       <Th fontSize="14px">Comments</Th>
                     </Tr>
                   </Thead>
@@ -128,22 +129,12 @@ const RedmineActivityTable = ({ panelSize }) => {
                       const redmineEditUrl = `https://redmine.anyforsoft.com/time_entries/${activity?.id}/edit`;
                       return (
                         <Tr key={activity.id}>
-                          <Td 
-                            fontSize="14px"
-                            overflow="hidden"
-                            textOverflow="ellipsis"
-                            whiteSpace="nowrap"
-                          >
+                          <Td fontSize="14px" minWidth="200px">
                             {projectInfo
                               ? projectInfo.projectName
                               : "Untracked project"}
                           </Td>
-                          <Td 
-                            fontSize="14px"
-                            overflow="hidden"
-                            textOverflow="ellipsis"
-                            whiteSpace="nowrap"
-                          >
+                          <Td fontSize="14px" minWidth="200px">
                             {projectInfo?.subject ? (
                               <Link href={redmineIssueUrl} isExternal>
                                 {projectInfo.subject}
@@ -159,12 +150,7 @@ const RedmineActivityTable = ({ panelSize }) => {
                           >
                             {round(activity?.hours)}h ({blb})
                           </Td>
-                          <Td 
-                            fontSize="14px"
-                            overflow="hidden"
-                            textOverflow="ellipsis"
-                            whiteSpace="nowrap"
-                          >
+                          <Td fontSize="14px" w="100%">
                             <Link
                               color="blue.500"
                               href={redmineEditUrl}
@@ -180,8 +166,7 @@ const RedmineActivityTable = ({ panelSize }) => {
                 </Table>
               </Box>
             );
-          })}
-          </Scrollbars>
+          })
         ) : (
           <Text>No latest activity</Text>
         )}

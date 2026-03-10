@@ -109,7 +109,7 @@ const App = () => {
             </Box>
 
             <Box flex="1 1 35%" minW={0} maxW="35%">
-              <GenerateCards isDisabled={!jiraUser || !user} />
+              <GenerateCards isDisabled={!user} />
             </Box>
 
             <Stack

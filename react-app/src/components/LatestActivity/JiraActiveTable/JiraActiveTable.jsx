@@ -15,7 +15,6 @@ import {
   Spinner,
   Center,
 } from "@chakra-ui/react";
-import { Scrollbars } from "react-custom-scrollbars-2";
 import { parse, isWeekend } from "date-fns";
 import { round } from "../../../helpers/getHours";
 import useJiraStore from "../../../store/jiraStore";
@@ -38,7 +37,7 @@ const JiraActivityTable = ({ panelSize }) => {
         return dateB - dateA;
       })
     : [];
-  const containerMaxHeight = panelSize === "partial" ? "400px" : "auto";
+  const containerMaxHeight = panelSize === "partial" ? "400px" : panelSize === "full" ? "calc(100vh - 200px)" : "auto";
   const isInitialLoading = allJiraWorklogs === null;
 
   console.log(allJiraWorklogs);
@@ -58,8 +57,24 @@ const JiraActivityTable = ({ panelSize }) => {
         transition="max-height 0.3s ease"
         border="1px solid lightgray"
         borderRadius="md"
-        overflow="hidden"
+        overflow="auto"
         p={4}
+        sx={{
+          "&::-webkit-scrollbar": {
+            width: "8px",
+          },
+          "&::-webkit-scrollbar-track": {
+            background: "#f1f1f1",
+            borderRadius: "4px",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            background: "#A0AEC0",
+            borderRadius: "4px",
+          },
+          "&::-webkit-scrollbar-thumb:hover": {
+            background: "#718096",
+          },
+        }}
       >
         <Heading as="h2" size="md" mb={4}>
           Latest Jira Activity
@@ -69,20 +84,6 @@ const JiraActivityTable = ({ panelSize }) => {
             <Spinner size="xl" color="blue.500" thickness="4px" />
           </Center>
         ) : groupedByDateArray.length ? (
-          <Scrollbars
-            autoHeight={panelSize === "partial"}
-            autoHeightMin={150}
-            autoHeightMax={350}
-            style={{ height: panelSize === "full" ? "600px" : "auto" }}
-            renderThumbVertical={(props) => (
-              <div {...props} style={{ ...props.style, backgroundColor: "#A0AEC0", borderRadius: "4px", width: "6px", zIndex: 999 }} />
-            )}
-            renderTrackVertical={(props) => (
-              <div {...props} style={{ ...props.style, right: "2px", bottom: "2px", top: "2px", borderRadius: "4px" }} />
-            )}
-            hideTracksWhenNotNeeded
-          >
-          {
           groupedByDateArray.map(([date, logs]) => {
             const totalHours = logs.reduce((acc, log) => acc + log.hours, 0);
             const weekend = isDayWeekend(date);
@@ -114,11 +115,11 @@ const JiraActivityTable = ({ panelSize }) => {
                     {round(totalHours)}h total
                   </Text>
                 </Flex>
-                <Table size="sm" variant="striped" sx={{ tableLayout: "fixed", width: "100%" }}>
+                <Table size="sm" variant="striped">
                   <Thead>
                     <Tr>
-                      <Th fontSize="14px" width="120px">Task</Th>
-                      <Th fontSize="14px" width="80px">Hours</Th>
+                      <Th fontSize="14px">Task</Th>
+                      <Th fontSize="14px">Hours</Th>
                       <Th fontSize="14px">Description</Th>
                     </Tr>
                   </Thead>
@@ -134,8 +135,6 @@ const JiraActivityTable = ({ panelSize }) => {
                             fontSize="14px"
                             color={isBlb ? "green.600" : "orange.600"}
                             whiteSpace="nowrap"
-                            overflow="hidden"
-                            textOverflow="ellipsis"
                           >
                             {jiraLink ? (
                               <Link href={jiraLink} isExternal>
@@ -146,12 +145,7 @@ const JiraActivityTable = ({ panelSize }) => {
                             )}
                           </Td>
                           <Td fontSize="14px" whiteSpace="nowrap">{round(item.hours)}h</Td>
-                          <Td 
-                            fontSize="14px"
-                            overflow="hidden"
-                            textOverflow="ellipsis"
-                            whiteSpace="nowrap"
-                          >
+                          <Td fontSize="14px" w="100%">
                             <Link href={jiraLink} isExternal>
                               {item.description}
                             </Link>
@@ -163,8 +157,7 @@ const JiraActivityTable = ({ panelSize }) => {
                 </Table>
               </Box>
             );
-          })}
-          </Scrollbars>
+          })
         ) : (
           <Text>No latest activity</Text>
         )}

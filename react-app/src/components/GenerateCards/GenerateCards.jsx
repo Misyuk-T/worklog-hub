@@ -27,7 +27,7 @@ const SOURCES = [
   { key: "redmine", label: "Redmine", disabled: true },
 ];
 
-const GenerateCards = ({ isDisabled }) => {
+const GenerateCards = () => {
   const [selectedSource, setSelectedSource] = useState("jira");
 
   const {
@@ -127,7 +127,6 @@ const GenerateCards = ({ isDisabled }) => {
 
           <Button
             onClick={handleGenerate}
-            isDisabled={isDisabled}
             size="sm"
             borderRadius="0"
             h="34px"

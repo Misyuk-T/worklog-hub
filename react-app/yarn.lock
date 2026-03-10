@@ -3289,11 +3289,6 @@ acorn@^7.1.1:
   resolved "https://registry.npmjs.org/acorn/-/acorn-7.4.1.tgz"
   integrity sha512-nQyp0o1/mNdbTO1PO6kHkwSrmgZ0MT/jCCpNiwbUjGoRN4dlBhqJtoQuCnEOKzgTVwg0ZWiCoQy6SxMebQVh8A==
 
-add-px-to-style@1.0.0:
-  version "1.0.0"
-  resolved "https://registry.npmjs.org/add-px-to-style/-/add-px-to-style-1.0.0.tgz"
-  integrity sha512-YMyxSlXpPjD8uWekCQGuN40lV4bnZagUwqa2m/uFv1z/tNImSk9fnXVMUI5qwME/zzI3MMQRvjZ+69zyfSSyew==
-
 address@^1.0.1, address@^1.1.2:
   version "1.2.2"
   resolved "https://registry.npmjs.org/address/-/address-1.2.2.tgz"
@@ -4822,15 +4817,6 @@ dom-converter@^0.2.0:
   integrity sha512-gd3ypIPfOMr9h5jIKq8E3sHOTCjeirnl0WK5ZdS1AW0Odt0b1PaWaHdJ4Qk4klv+YB9aJBS7mESXjFoDQPu6DA==
   dependencies:
     utila "~0.4"
-
-dom-css@^2.0.0:
-  version "2.1.0"
-  resolved "https://registry.npmjs.org/dom-css/-/dom-css-2.1.0.tgz"
-  integrity sha512-w9kU7FAbaSh3QKijL6n59ofAhkkmMJ31GclJIz/vyQdjogfyxcB6Zf8CZyibOERI5o0Hxz30VmJS7+7r5fEj2Q==
-  dependencies:
-    add-px-to-style "1.0.0"
-    prefix-style "2.0.1"
-    to-camel-case "1.0.0"
 
 dom-helpers@^5.0.1:
   version "5.2.1"
@@ -8920,11 +8906,6 @@ postcss@^7.0.35:
     picocolors "^0.2.1"
     source-map "^0.6.1"
 
-prefix-style@2.0.1:
-  version "2.0.1"
-  resolved "https://registry.npmjs.org/prefix-style/-/prefix-style-2.0.1.tgz"
-  integrity sha512-gdr1MBNVT0drzTq95CbSNdsrBDoHGlb2aDJP/FoY+1e+jSDPOb1Cv554gH2MGiSr2WTcXi/zu+NaFzfcHQkfBQ==
-
 prelude-ls@^1.2.1:
   version "1.2.1"
   resolved "https://registry.npmjs.org/prelude-ls/-/prelude-ls-1.2.1.tgz"
@@ -9029,7 +9010,7 @@ prompts@^2.0.1, prompts@^2.4.2:
     kleur "^3.0.3"
     sisteransi "^1.0.5"
 
-prop-types@^15.5.10, prop-types@^15.6.0, prop-types@^15.6.2, prop-types@^15.8.1:
+prop-types@^15.6.0, prop-types@^15.6.2, prop-types@^15.8.1:
   version "15.8.1"
   resolved "https://registry.npmjs.org/prop-types/-/prop-types-15.8.1.tgz"
   integrity sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg==
@@ -9103,7 +9084,7 @@ queue-microtask@^1.2.2:
   resolved "https://registry.npmjs.org/queue-microtask/-/queue-microtask-1.2.3.tgz"
   integrity sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==
 
-raf@^3.1.0, raf@^3.4.1:
+raf@^3.4.1:
   version "3.4.1"
   resolved "https://registry.npmjs.org/raf/-/raf-3.4.1.tgz"
   integrity sha512-Sq4CW4QhwOHE8ucn6J34MqtZCeWFP2aQSmrlroYgqAV1PjStIhJXxYuTgUIfkEk7zTLjmIjLmU5q+fbD1NnOJA==
@@ -9151,15 +9132,6 @@ react-clientside-effect@^1.2.7:
   dependencies:
     "@babel/runtime" "^7.12.13"
 
-react-custom-scrollbars-2@^4.5.0:
-  version "4.5.0"
-  resolved "https://registry.npmjs.org/react-custom-scrollbars-2/-/react-custom-scrollbars-2-4.5.0.tgz"
-  integrity sha512-/z0nWAeXfMDr4+OXReTpYd1Atq9kkn4oI3qxq3iMXGQx1EEfwETSqB8HTAvg1X7dEqcCachbny1DRNGlqX5bDQ==
-  dependencies:
-    dom-css "^2.0.0"
-    prop-types "^15.5.10"
-    raf "^3.1.0"
-
 react-day-picker@^8.7.1:
   version "8.10.1"
   resolved "https://registry.npmjs.org/react-day-picker/-/react-day-picker-8.10.1.tgz"
@@ -9195,7 +9167,7 @@ react-dev-utils@^12.0.1:
     strip-ansi "^6.0.1"
     text-table "^0.2.0"
 
-"react-dom@^0.14.0 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0", "react-dom@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", react-dom@^18.0.0, react-dom@^18.2.0, react-dom@>=16, react-dom@>=16.6.0, react-dom@>=18:
+"react-dom@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", react-dom@^18.0.0, react-dom@^18.2.0, react-dom@>=16, react-dom@>=16.6.0, react-dom@>=18:
   version "18.3.1"
   resolved "https://registry.npmjs.org/react-dom/-/react-dom-18.3.1.tgz"
   integrity sha512-5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw==
@@ -9374,7 +9346,7 @@ react-transition-group@^4.3.0:
     loose-envify "^1.4.0"
     prop-types "^15.6.2"
 
-"react@^0.14.0 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.8.0 || ^17 || ^18 || ^19", "react@^16.8.0 || ^17.0.0 || ^18.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", react@^18.0.0, react@^18.2.0, react@^18.3.1, "react@>= 16", react@>=16, react@>=16.6.0, react@>=16.8, react@>=16.8.0, react@>=18:
+"react@^16.8.0 || ^17 || ^18 || ^19", "react@^16.8.0 || ^17.0.0 || ^18.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", react@^18.0.0, react@^18.2.0, react@^18.3.1, "react@>= 16", react@>=16, react@>=16.6.0, react@>=16.8, react@>=16.8.0, react@>=18:
   version "18.3.1"
   resolved "https://registry.npmjs.org/react/-/react-18.3.1.tgz"
   integrity sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==
@@ -10580,31 +10552,12 @@ tmpl@1.0.5:
   resolved "https://registry.npmjs.org/tmpl/-/tmpl-1.0.5.tgz"
   integrity sha512-3f0uOEAQwIqGuWW2MVzYg8fV/QNnc/IpuJNG837rLuczAaLVHslWHZQj4IGiEl5Hs3kkbhwL9Ab7Hrsmuj+Smw==
 
-to-camel-case@1.0.0:
-  version "1.0.0"
-  resolved "https://registry.npmjs.org/to-camel-case/-/to-camel-case-1.0.0.tgz"
-  integrity sha512-nD8pQi5H34kyu1QDMFjzEIYqk0xa9Alt6ZfrdEMuHCFOfTLhDG5pgTu/aAM9Wt9lXILwlXmWP43b8sav0GNE8Q==
-  dependencies:
-    to-space-case "^1.0.0"
-
-to-no-case@^1.0.0:
-  version "1.0.2"
-  resolved "https://registry.npmjs.org/to-no-case/-/to-no-case-1.0.2.tgz"
-  integrity sha512-Z3g735FxuZY8rodxV4gH7LxClE4H0hTIyHNIHdk+vpQxjLm0cwnKXq/OFVZ76SOQmto7txVcwSCwkU5kqp+FKg==
-
 to-regex-range@^5.0.1:
   version "5.0.1"
   resolved "https://registry.npmjs.org/to-regex-range/-/to-regex-range-5.0.1.tgz"
   integrity sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==
   dependencies:
     is-number "^7.0.0"
-
-to-space-case@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.npmjs.org/to-space-case/-/to-space-case-1.0.0.tgz"
-  integrity sha512-rLdvwXZ39VOn1IxGL3V6ZstoTbwLRckQmn/U8ZDLuWwIXNpuZDhQ3AiRUlhTbOXFVE9C+dR51wM0CBDhk31VcA==
-  dependencies:
-    to-no-case "^1.0.0"
 
 toggle-selection@^1.0.6:
   version "1.0.6"
