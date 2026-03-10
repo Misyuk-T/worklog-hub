@@ -74,9 +74,10 @@ const JiraActivityTable = ({ panelSize }) => {
             autoHeightMin={150}
             autoHeightMax={panelSize === "partial" ? 350 : 600}
             renderThumbVertical={(props) => (
-              <div {...props} style={{ ...props.style, backgroundColor: "#CBD5E0", borderRadius: "4px" }} />
+              <div {...props} style={{ ...props.style, backgroundColor: "#A0AEC0", borderRadius: "4px", width: "6px" }} />
             )}
           >
+          {
           groupedByDateArray.map(([date, logs]) => {
             const totalHours = logs.reduce((acc, log) => acc + log.hours, 0);
             const weekend = isDayWeekend(date);
@@ -150,7 +151,7 @@ const JiraActivityTable = ({ panelSize }) => {
                 </Table>
               </Box>
             );
-          })
+          })}
           </Scrollbars>
         ) : (
           <Text>No latest activity</Text>

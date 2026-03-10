@@ -62,9 +62,10 @@ const RedmineActivityTable = ({ panelSize }) => {
             autoHeightMin={150}
             autoHeightMax={panelSize === "partial" ? 350 : 600}
             renderThumbVertical={(props) => (
-              <div {...props} style={{ ...props.style, backgroundColor: "#CBD5E0", borderRadius: "4px" }} />
+              <div {...props} style={{ ...props.style, backgroundColor: "#A0AEC0", borderRadius: "4px", width: "6px" }} />
             )}
           >
+          {
           groupedByDateArray.map(([date, activities]) => {
             const totalHours = activities.reduce(
               (acc, item) => acc + item.hours,
@@ -159,7 +160,7 @@ const RedmineActivityTable = ({ panelSize }) => {
                 </Table>
               </Box>
             );
-          })
+          })}
           </Scrollbars>
         ) : (
           <Text>No latest activity</Text>
