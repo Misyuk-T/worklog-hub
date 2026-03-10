@@ -19,6 +19,9 @@ import {
   PopoverCloseButton,
   Link,
   Collapse,
+  Checkbox,
+  Stack,
+  Divider,
 } from "@chakra-ui/react";
 import { CalendarIcon } from "@chakra-ui/icons";
 import { DayPicker } from "react-day-picker";
@@ -27,8 +30,10 @@ import { round } from "../../../helpers/getHours";
 import groupByField from "../../../helpers/groupByField";
 import { getLatestRedmineWorkLogs } from "../../../actions/redmine";
 import { fetchAllJiraWorklogs } from "../../../actions/jira";
+import { fetchAllClickUpTimeEntries } from "../../../actions/clickup";
 import useRedmineStore from "../../../store/redmineStore";
 import useJiraStore from "../../../store/jiraStore";
+import useClickUpStore from "../../../store/clickupStore";
 
 const isCommentSimilar = (c1 = "", c2 = "") => {
   if (!c1 || !c2) return false;
@@ -45,77 +50,266 @@ const isCommentSimilar = (c1 = "", c2 = "") => {
   return lower1.includes(lower2) || lower2.includes(lower1);
 };
 
-const pairLogsBySimilarity = (redmineEntries, jiraEntries) => {
+const pairLogsBySimilarity = (source1Entries, source2Entries) => {
   const matchedRows = [];
-  const usedJiraIndexes = new Set();
-  redmineEntries.forEach((redmineLog) => {
-    const matchIndex = jiraEntries.findIndex((jiraLog, idx) => {
-      if (usedJiraIndexes.has(idx)) return false;
-
-      return isCommentSimilar(redmineLog.comments, jiraLog?.description);
+  const usedSource2Indexes = new Set();
+  
+  source1Entries.forEach((log1) => {
+    const matchIndex = source2Entries.findIndex((log2, idx) => {
+      if (usedSource2Indexes.has(idx)) return false;
+      return isCommentSimilar(log1.description, log2.description);
     });
+    
     if (matchIndex > -1) {
-      const jiraLog = jiraEntries[matchIndex];
-      usedJiraIndexes.add(matchIndex);
+      const log2 = source2Entries[matchIndex];
+      usedSource2Indexes.add(matchIndex);
       matchedRows.push({
-        redmineLog,
-        jiraLog,
+        log1,
+        log2,
         difference: "Match",
       });
     } else {
       matchedRows.push({
-        redmineLog,
-        jiraLog: undefined,
+        log1,
+        log2: undefined,
         difference: "Not match",
       });
     }
   });
-  jiraEntries.forEach((jiraLog, idx) => {
-    if (!usedJiraIndexes.has(idx)) {
+  
+  source2Entries.forEach((log2, idx) => {
+    if (!usedSource2Indexes.has(idx)) {
       matchedRows.push({
-        redmineLog: undefined,
-        jiraLog,
+        log1: undefined,
+        log2,
         difference: "Not match",
       });
     }
   });
+  
   return matchedRows;
+};
+
+const renderLogContent = (log) => {
+  if (!log) return null;
+  
+  const source = log.source;
+  const hours = round(log.hours);
+  const description = log.description || log.comments || log.taskName || "No description";
+  
+  if (source === "redmine") {
+    return (
+      <>
+        <Flex alignItems="center" gap="10px" mb="5px">
+          <Text fontSize="14px" color="blue.600" fontWeight={500}>
+            Issue: {log.issue?.id ?? "?"}
+          </Text>
+          <Text fontSize="12px" fontWeight={500}>
+            Hours: {hours}h
+          </Text>
+        </Flex>
+        <Link
+          href={`https://redmine.anyforsoft.com/time_entries/${log.id}/edit`}
+          isExternal
+          fontSize="12px"
+        >
+          {description}
+        </Link>
+      </>
+    );
+  }
+  
+  if (source === "jira") {
+    return (
+      <>
+        <Flex alignItems="center" gap="10px" mb="5px">
+          {log.jiraUrl ? (
+            <Link
+              href={`https://${log.jiraUrl}/browse/${log.task}`}
+              isExternal
+              fontSize="12px"
+              fontWeight={500}
+              color="green"
+            >
+              Task: {log.task}
+            </Link>
+          ) : (
+            <Text fontSize="14px" color="blue.600" fontWeight={500}>
+              Task: {log.task}
+            </Text>
+          )}
+          <Text fontSize="12px" fontWeight={500}>
+            Hours: {hours}h
+          </Text>
+        </Flex>
+        <Text fontSize="12px">{description}</Text>
+      </>
+    );
+  }
+  
+  if (source === "clickup") {
+    return (
+      <>
+        <Flex alignItems="center" gap="10px" mb="5px">
+          {log.url ? (
+            <Link
+              href={log.url}
+              isExternal
+              fontSize="12px"
+              fontWeight={500}
+              color="purple.600"
+            >
+              Task: {log.taskKey || log.task}
+            </Link>
+          ) : (
+            <Text fontSize="14px" color="purple.600" fontWeight={500}>
+              Task: {log.taskKey || log.task}
+            </Text>
+          )}
+          <Text fontSize="12px" fontWeight={500}>
+            Hours: {hours}h
+          </Text>
+        </Flex>
+        <Text fontSize="12px">{description}</Text>
+      </>
+    );
+  }
+  
+  return null;
 };
 
 const CompareActivityTable = ({ panelSize }) => {
   const { user: redmineUser } = useRedmineStore();
-  const { user, organizationURL, additionalAssignedIssues } = useJiraStore();
+  const { user: jiraUser, organizationURL, additionalAssignedIssues } = useJiraStore();
+  const { user: clickUpUser, selectedTeamId, additionalAssignedTasks } = useClickUpStore();
+  
   const [range, setRange] = useState({ from: new Date(), to: new Date() });
-  const [redmineLogs, setRedmineLogs] = useState({});
-  const [jiraLogs, setJiraLogs] = useState({});
+  const [source1Services, setSource1Services] = useState(["jira", "clickup"]);
+  const [source2Services, setSource2Services] = useState(["redmine"]);
+  const [source1Logs, setSource1Logs] = useState({});
+  const [source2Logs, setSource2Logs] = useState({});
   const [loading, setLoading] = useState(false);
   const truncatedOrgUrl = organizationURL?.replace(/^https?:\/\//, "");
+
+  const availableServices = [
+    { key: "jira", label: "Jira", available: !!jiraUser },
+    { key: "clickup", label: "ClickUp", available: !!clickUpUser },
+    { key: "redmine", label: "Redmine", available: !!redmineUser },
+  ];
+
+  const handleSource1Toggle = (serviceKey) => {
+    setSource1Services((prev) => {
+      const newServices = prev.includes(serviceKey)
+        ? prev.filter((s) => s !== serviceKey)
+        : [...prev, serviceKey];
+      
+      // Remove from source2 if added to source1
+      if (newServices.includes(serviceKey)) {
+        setSource2Services((s2) => s2.filter((s) => s !== serviceKey));
+      }
+      
+      return newServices;
+    });
+  };
+
+  const handleSource2Toggle = (serviceKey) => {
+    setSource2Services((prev) => {
+      const newServices = prev.includes(serviceKey)
+        ? prev.filter((s) => s !== serviceKey)
+        : [...prev, serviceKey];
+      
+      // Remove from source1 if added to source2
+      if (newServices.includes(serviceKey)) {
+        setSource1Services((s1) => s1.filter((s) => s !== serviceKey));
+      }
+      
+      return newServices;
+    });
+  };
+
+  const fetchServiceLogs = async (services, startDateStr, endDateStr) => {
+    const allLogs = {};
+
+    for (const serviceKey of services) {
+      try {
+        if (serviceKey === "redmine" && redmineUser) {
+          const redmineWorkLogs = await getLatestRedmineWorkLogs(
+            redmineUser.id,
+            startDateStr,
+            endDateStr
+          );
+          const normalizedRedmineLogs = redmineWorkLogs.map((log) => ({
+            ...log,
+            source: "redmine",
+            date: format(new Date(log.spent_on), "dd-MM-yyyy"),
+            hours: log.hours,
+            description: log.comments,
+          }));
+          const redmineGrouped = groupByField(normalizedRedmineLogs, "date");
+          Object.keys(redmineGrouped).forEach((date) => {
+            if (!allLogs[date]) allLogs[date] = [];
+            allLogs[date].push(...redmineGrouped[date]);
+          });
+        }
+
+        if (serviceKey === "jira" && jiraUser) {
+          const jiraWorklogs = await fetchAllJiraWorklogs({
+            userEmail: jiraUser?.emailAddress,
+            organizationURL: truncatedOrgUrl,
+            additionalUrls: additionalAssignedIssues,
+            startDate: startDateStr,
+            endDate: endDateStr,
+          });
+          Object.keys(jiraWorklogs).forEach((date) => {
+            if (!allLogs[date]) allLogs[date] = [];
+            const logsWithSource = jiraWorklogs[date].map((log) => ({
+              ...log,
+              source: "jira",
+              date,
+            }));
+            allLogs[date].push(...logsWithSource);
+          });
+        }
+
+        if (serviceKey === "clickup" && clickUpUser) {
+          const clickUpLogs = await fetchAllClickUpTimeEntries({
+            userId: clickUpUser.id,
+            selectedTeamId,
+            additionalTeams: additionalAssignedTasks,
+            startDate: startDateStr,
+            endDate: endDateStr,
+          });
+          Object.keys(clickUpLogs).forEach((date) => {
+            if (!allLogs[date]) allLogs[date] = [];
+            const logsWithSource = clickUpLogs[date].map((log) => ({
+              ...log,
+              source: "clickup",
+              date,
+            }));
+            allLogs[date].push(...logsWithSource);
+          });
+        }
+      } catch (error) {
+        console.error(`Error fetching ${serviceKey} logs:`, error);
+      }
+    }
+
+    return allLogs;
+  };
 
   const fetchLogs = async () => {
     if (!range.from || !range.to) return;
     const startDateStr = format(range.from, "yyyy-MM-dd");
     const endDateStr = format(range.to, "yyyy-MM-dd");
+    
     try {
       setLoading(true);
-      const redmineWorkLogs = await getLatestRedmineWorkLogs(
-        redmineUser.id,
-        startDateStr,
-        endDateStr
-      );
-      const normalizedRedmineLogs = redmineWorkLogs.map((log) => ({
-        ...log,
-        spent_on: format(new Date(log.spent_on), "dd-MM-yyyy"),
-      }));
-      const redmineGrouped = groupByField(normalizedRedmineLogs, "spent_on");
-      setRedmineLogs(redmineGrouped);
-      const allWorklogs = await fetchAllJiraWorklogs({
-        userEmail: user?.emailAddress,
-        organizationURL: truncatedOrgUrl,
-        additionalUrls: additionalAssignedIssues,
-        startDate: startDateStr,
-        endDate: endDateStr,
-      });
-      setJiraLogs(allWorklogs);
+      const [logs1, logs2] = await Promise.all([
+        fetchServiceLogs(source1Services, startDateStr, endDateStr),
+        fetchServiceLogs(source2Services, startDateStr, endDateStr),
+      ]);
+      setSource1Logs(logs1);
+      setSource2Logs(logs2);
     } catch (error) {
       console.error("Error fetching logs:", error);
     } finally {
@@ -123,28 +317,79 @@ const CompareActivityTable = ({ panelSize }) => {
     }
   };
   const allDates = useMemo(() => {
-    const redmineDates = Object.keys(redmineLogs);
-    const jiraDates = Object.keys(jiraLogs);
-    const uniqueDates = Array.from(new Set([...redmineDates, ...jiraDates]));
+    const dates1 = Object.keys(source1Logs);
+    const dates2 = Object.keys(source2Logs);
+    const uniqueDates = Array.from(new Set([...dates1, ...dates2]));
     uniqueDates.sort((a, b) => new Date(b) - new Date(a));
     return uniqueDates;
-  }, [redmineLogs, jiraLogs]);
+  }, [source1Logs, source2Logs]);
 
   return (
     <Collapse in={panelSize !== "collapsed"}>
       <Box
         p={4}
-        height={panelSize === "partial" ? "200px" : "auto"}
+        height={panelSize === "partial" ? "400px" : panelSize === "full" ? "calc(100vh - 200px)" : "auto"}
         minH={"200px"}
         overflow={"auto"}
+        sx={{
+          "&::-webkit-scrollbar": {
+            width: "8px",
+          },
+          "&::-webkit-scrollbar-track": {
+            background: "#f1f1f1",
+            borderRadius: "4px",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            background: "#A0AEC0",
+            borderRadius: "4px",
+          },
+          "&::-webkit-scrollbar-thumb:hover": {
+            background: "#718096",
+          },
+        }}
       >
         <Heading as="h2" size="md" mb={4}>
-          Compare Redmine & Jira Worklogs
+          Compare Worklogs
         </Heading>
-        <Flex mb={4} gap={4} alignItems="center">
+        
+        <Flex mb={4} gap={6} alignItems="flex-start" flexWrap="wrap">
+          <Stack spacing={2}>
+            <Text fontSize="sm" fontWeight="600">Source 1:</Text>
+            {availableServices.map((service) => (
+              <Checkbox
+                key={service.key}
+                isChecked={source1Services.includes(service.key)}
+                onChange={() => handleSource1Toggle(service.key)}
+                isDisabled={!service.available}
+                size="sm"
+              >
+                {service.label}
+              </Checkbox>
+            ))}
+          </Stack>
+
+          <Divider orientation="vertical" h="80px" />
+
+          <Stack spacing={2}>
+            <Text fontSize="sm" fontWeight="600">Source 2:</Text>
+            {availableServices.map((service) => (
+              <Checkbox
+                key={service.key}
+                isChecked={source2Services.includes(service.key)}
+                onChange={() => handleSource2Toggle(service.key)}
+                isDisabled={!service.available}
+                size="sm"
+              >
+                {service.label}
+              </Checkbox>
+            ))}
+          </Stack>
+
+          <Divider orientation="vertical" h="80px" />
+
           <Popover>
             <PopoverTrigger>
-              <Button leftIcon={<CalendarIcon />} variant="outline">
+              <Button leftIcon={<CalendarIcon />} variant="outline" size="sm">
                 Select Dates
               </Button>
             </PopoverTrigger>
@@ -156,7 +401,12 @@ const CompareActivityTable = ({ panelSize }) => {
               </PopoverBody>
             </PopoverContent>
           </Popover>
-          <Button onClick={fetchLogs} isLoading={loading} isDisabled={!range}>
+          <Button 
+            onClick={fetchLogs} 
+            isLoading={loading} 
+            isDisabled={!range || (source1Services.length === 0 && source2Services.length === 0)}
+            size="sm"
+          >
             Compare
           </Button>
         </Flex>
@@ -164,17 +414,26 @@ const CompareActivityTable = ({ panelSize }) => {
           <Text>No data available for the selected period.</Text>
         ) : (
           allDates.map((date) => {
-            const redmineEntries = redmineLogs[date] || [];
-            const jiraEntries = jiraLogs[date] || [];
-            const paired = pairLogsBySimilarity(redmineEntries, jiraEntries);
-            const totalRedmineHours = redmineEntries.reduce(
+            const source1Entries = source1Logs[date] || [];
+            const source2Entries = source2Logs[date] || [];
+            const paired = pairLogsBySimilarity(source1Entries, source2Entries);
+            const totalSource1Hours = source1Entries.reduce(
               (sum, log) => sum + (parseFloat(log.hours) || 0),
               0
             );
-            const totalJiraHours = jiraEntries.reduce(
+            const totalSource2Hours = source2Entries.reduce(
               (sum, log) => sum + (parseFloat(log.hours) || 0),
               0
             );
+            
+            const source1Label = source1Services.map(s => 
+              availableServices.find(srv => srv.key === s)?.label
+            ).filter(Boolean).join(" + ");
+            
+            const source2Label = source2Services.map(s => 
+              availableServices.find(srv => srv.key === s)?.label
+            ).filter(Boolean).join(" + ");
+            
             return (
               <Box key={date} mb={8}>
                 <Heading as="h3" size="sm" mb={2}>
@@ -184,118 +443,46 @@ const CompareActivityTable = ({ panelSize }) => {
                   <Thead>
                     <Tr w="100%">
                       <Th fontSize="14px" width="33.33%">
-                        Redmine
+                        {source1Label || "Source 1"}
                       </Th>
                       <Th fontSize="14px" width="33.33%" textAlign="center">
                         Difference
                       </Th>
                       <Th fontSize="14px" width="33.33%" textAlign="right">
-                        Jira
+                        {source2Label || "Source 2"}
                       </Th>
                     </Tr>
                   </Thead>
                   <Tbody>
                     <Tr bg="gray.100">
                       <Td fontWeight="bold">
-                        Total: {round(totalRedmineHours)}h
+                        Total: {round(totalSource1Hours)}h
                       </Td>
                       <Td></Td>
                       <Td fontWeight="bold" textAlign="right">
-                        Total: {round(totalJiraHours)}h
+                        Total: {round(totalSource2Hours)}h
                       </Td>
                     </Tr>
                     {paired.map((row, idx) => {
-                      const { redmineLog, jiraLog, difference } = row;
-                      let redmineContent = null;
-                      if (redmineLog) {
-                        redmineContent = (
-                          <>
-                            <Flex
-                              alignItems="center"
-                              gap="10px"
-                              justifyContent="start"
-                              mb="5px"
-                            >
-                              <Text
-                                fontSize="14px"
-                                color="blue.600"
-                                fontWeight={500}
-                              >
-                                Issue: {redmineLog.issue?.id ?? "?"}
-                              </Text>
-                              <Text fontSize="12px" fontWeight={500}>
-                                Hours: {round(redmineLog.hours)}h
-                              </Text>
-                            </Flex>
-                            <Link
-                              href={`https://redmine.anyforsoft.com/time_entries/${redmineLog.id}/edit`}
-                              isExternal
-                              fontSize="12px"
-                            >
-                              {redmineLog.comments || "No comment"}
-                            </Link>
-                          </>
-                        );
-                      }
-                      let jiraContent = null;
-                      if (jiraLog) {
-                        jiraContent = (
-                          <>
-                            <Flex
-                              alignItems="center"
-                              gap="10px"
-                              justifyContent="end"
-                              mb="5px"
-                            >
-                              {jiraLog.jiraUrl ? (
-                                <Link
-                                  href={`https://${jiraLog.jiraUrl}/browse/${jiraLog.task}`}
-                                  isExternal
-                                  fontSize="12px"
-                                  fontWeight={500}
-                                  color={"green"}
-                                >
-                                  Task: {jiraLog.task}
-                                </Link>
-                              ) : (
-                                <Text
-                                  fontSize="14px"
-                                  color="green.600"
-                                  fontWeight={500}
-                                >
-                                  Task: {jiraLog.task}
-                                </Text>
-                              )}
-                              <Text fontSize="12px" fontWeight={500}>
-                                Hours: {round(jiraLog.hours)}h
-                              </Text>
-                            </Flex>
-                            {jiraLog.jiraUrl ? (
-                              <Link
-                                href={`https://${jiraLog.jiraUrl}/browse/${jiraLog.task}`}
-                                isExternal
-                                fontSize="12px"
-                              >
-                                {jiraLog.description}
-                              </Link>
-                            ) : (
-                              <Text fontSize="12px">{jiraLog.description}</Text>
-                            )}
-                          </>
-                        );
-                      }
+                      const { log1, log2, difference } = row;
+                      let source1Content = renderLogContent(log1);
+                      let source2Content = renderLogContent(log2);
+                      
                       return (
                         <Tr key={idx} _hover={{ bg: "rgba(0, 0, 0, 0.05)" }}>
-                          <Td>{redmineContent}</Td>
-                          <Td
-                            textAlign="center"
-                            color={
-                              difference === "Not match" ? "red.500" : "black"
-                            }
-                          >
-                            {difference}
+                          <Td>{source1Content}</Td>
+                          <Td textAlign="center">
+                            <Text
+                              fontSize="12px"
+                              fontWeight={600}
+                              color={
+                                difference === "Match" ? "green.600" : "red.600"
+                              }
+                            >
+                              {difference}
+                            </Text>
                           </Td>
-                          <Td textAlign="right">{jiraContent}</Td>
+                          <Td textAlign="right">{source2Content}</Td>
                         </Tr>
                       );
                     })}
