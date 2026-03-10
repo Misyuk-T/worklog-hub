@@ -218,8 +218,8 @@ const WorkLogItem = ({ data }) => {
           position="absolute"
           size="xs"
           aria-label="delete"
-          right={-8}
-          top={-8}
+          right={-2}
+          top={-2}
           opacity={0.3}
           onClick={handleDelete}
           icon={<Icon as={DeleteIcon} />}
