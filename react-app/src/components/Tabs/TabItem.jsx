@@ -44,7 +44,7 @@ const TabItem = forwardRef(({ dayLogs, date }, ref) => {
   };
 
   return (
-    <TabPanel px={0} position="relative" pb="50px" overflowX="hidden">
+    <TabPanel px={0} position="relative" overflowX="hidden">
       <Box left={0} w="100%" ref={ref}>
         <Flex gap={5}>
           <Text color={totalTextColor}>
@@ -71,7 +71,7 @@ const TabItem = forwardRef(({ dayLogs, date }, ref) => {
             return <WorkLogItem data={item} key={item.description + index} />;
           })}
 
-          <Flex alignItems="center" justifyContent="center" minH="200px">
+          <Flex alignItems="center" justifyContent="center" minH="100px">
             <IconButton
               onClick={handleCreate}
               bg="teal.600"

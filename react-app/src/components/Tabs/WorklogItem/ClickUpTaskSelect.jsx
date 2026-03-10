@@ -24,7 +24,7 @@ const ClickUpTaskSelect = ({ onChange, control, value, assignedTasks }) => {
     return (
       <Popover boundary="scrollParent">
         <PopoverTrigger>
-          <Box position="absolute" top="5px" left="60px">
+          <Box position="absolute" top="5px" left="80px">
             <IconButton
               opacity={0.5}
               p={0}

@@ -207,6 +207,8 @@ const WorkLogItem = ({ data }) => {
       borderRadius="md"
       position="relative"
       p={3}
+      pt={4}
+      px={4}
       boxShadow="sm"
       bg="white"
       border="2px solid transparent"
