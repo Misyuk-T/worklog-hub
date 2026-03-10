@@ -71,7 +71,7 @@ const TabItem = forwardRef(({ dayLogs, date }, ref) => {
             return <WorkLogItem data={item} key={item.description + index} />;
           })}
 
-          <Flex alignItems="center" justifyContent="center" minH="100px">
+          <Flex alignItems="center" justifyContent="center">
             <IconButton
               onClick={handleCreate}
               bg="teal.600"
