@@ -5,7 +5,7 @@ const StatusSwitch = ({ value, onChange }) => {
 
   return (
     <Flex alignItems="center">
-      <FormLabel htmlFor="email-alerts" mb="0" w="120px" m={0} fontWeight={400}>
+      <FormLabel htmlFor="billability-switch" mb="0" m={0} fontWeight={400} fontSize="sm">
         <Text as="strong" display="inline-block" mr="2px">
           Billability:
         </Text>{" "}
@@ -13,6 +13,8 @@ const StatusSwitch = ({ value, onChange }) => {
       </FormLabel>
 
       <Switch
+        id="billability-switch"
+        size="sm"
         isChecked={isChecked}
         onChange={(e) => {
           const isChecked = e.target.checked ? "blb" : "nblb";

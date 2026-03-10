@@ -44,8 +44,8 @@ const TabItem = forwardRef(({ dayLogs, date }, ref) => {
   };
 
   return (
-    <TabPanel px={0} position="relative" pb="50px" overflowY="hidden">
-      <Box left={0} w="100%" maxW="1155px" ref={ref}>
+    <TabPanel px={0} position="relative" pb="50px" overflowX="hidden">
+      <Box left={0} w="100%" ref={ref}>
         <Flex gap={5}>
           <Text color={totalTextColor}>
             <Text as="span" fontWeight={700} color="black">
@@ -63,10 +63,9 @@ const TabItem = forwardRef(({ dayLogs, date }, ref) => {
           </Text>
         </Flex>
         <SimpleGrid
-          minChildWidth={300}
-          gap={"20px"}
-          mt={15}
-          templateColumns="repeat(auto-fit, minmax(300px, 354px))"
+          columns={{ base: 1, md: 2, lg: 3 }}
+          gap={4}
+          mt={4}
         >
           {dayLogs.map((item, index) => {
             return <WorkLogItem data={item} key={item.description + index} />;

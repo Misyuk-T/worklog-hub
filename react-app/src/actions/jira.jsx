@@ -29,29 +29,29 @@ const textToADF = (text) => ({
 
 export const jiraLogin = async (jiraUrl) => {
   try {
-    const response = await instance.get("/jira/rest/api/3/myself", {
-      params: {
-        jiraUrl,
-      },
-    });
-
-    toast.success(
-      <Stack>
-        <Text fontWeight={600}>
-          Successfully connected to JIRA at {jiraUrl}
-        </Text>
-      </Stack>,
-      {
-        position: "bottom-center",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        progress: undefined,
-        theme: "light",
-      }
-    );
-
-    return response.data;
+    // const response = await instance.get("/jira/rest/api/3/myself", {
+    //   params: {
+    //     jiraUrl,
+    //   },
+    // });
+    //
+    // toast.success(
+    //   <Stack>
+    //     <Text fontWeight={600}>
+    //       Successfully connected to JIRA at {jiraUrl}
+    //     </Text>
+    //   </Stack>,
+    //   {
+    //     position: "bottom-center",
+    //     autoClose: 5000,
+    //     hideProgressBar: false,
+    //     closeOnClick: true,
+    //     progress: undefined,
+    //     theme: "light",
+    //   },
+    // );
+    //
+    // return response.data;
   } catch (error) {
     console.error(`Login failed for JIRA at ${jiraUrl}:`, error);
     toast.error(

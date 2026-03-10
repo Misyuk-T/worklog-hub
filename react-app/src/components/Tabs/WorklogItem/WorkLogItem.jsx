@@ -204,24 +204,22 @@ const WorkLogItem = ({ data }) => {
   return (
     <Card
       borderWidth="2px"
-      borderRadius="lg"
+      borderRadius="md"
       position="relative"
-      p={4}
-      mb={4}
-      boxShadow="md"
+      p={3}
+      boxShadow="sm"
       bg="white"
-      pr={6}
       border="2px solid transparent"
       borderColor={borderCardColor}
     >
-      <CardHeader position="relative" p={0}>
+      <CardHeader position="relative" p={0} mb={2}>
         <IconButton
           colorScheme="red"
           position="absolute"
           size="xs"
           aria-label="delete"
-          right={-5}
-          top={-3}
+          right={-8}
+          top={-8}
           opacity={0.3}
           onClick={handleDelete}
           icon={<Icon as={DeleteIcon} />}
@@ -230,7 +228,7 @@ const WorkLogItem = ({ data }) => {
           }}
         />
 
-        <Flex alignItems="flex-start" position="relative" minH="50px" mr={2}>
+        <Flex alignItems="flex-start" position="relative" minH="40px">
           <DescriptionInput
             register={register("description", {
               validate: handleTextValidate,
@@ -247,7 +245,7 @@ const WorkLogItem = ({ data }) => {
       </CardHeader>
 
       <CardBody as={Stack} gap={0} justifyContent="flex-end" p={0}>
-        <Flex alignItems="center" mb="6px">
+        <Flex alignItems="center" mb={2}>
           <DatePicker
             defaultValue={data.date}
             value={watch("date")}
@@ -276,104 +274,148 @@ const WorkLogItem = ({ data }) => {
           </Flex>
         </Flex>
 
-        <Stack gap={0}>
-          <Flex alignItems="center" w="100%" gap={"5px"}>
-            <Text m={0}>
-              <strong>Redmine:</strong>{" "}
+        <Stack gap={2}>
+          {/* Redmine Block */}
+          <Box
+            p={2}
+            borderRadius="md"
+            borderWidth="1px"
+            borderColor="red.200"
+            bg="red.50"
+          >
+            <Text fontSize="xs" fontWeight="700" color="red.700" mb={1} textTransform="uppercase" letterSpacing="wide">
+              Redmine
             </Text>
-            <Box width="300px">
-              <ProjectsSelect
-                value={watch("project") || data.project}
-                control={control}
-                onChange={(project) => {
-                  setValue("project", project);
-                  setIsEdited(true);
-                }}
-              />
-            </Box>
-          </Flex>
+            <Flex alignItems="center" w="100%" gap={2}>
+              <Text m={0} fontSize="xs" minW="50px" fontWeight="600">
+                Project:
+              </Text>
+              <Box flex={1}>
+                <ProjectsSelect
+                  value={watch("project") || data.project}
+                  control={control}
+                  onChange={(project) => {
+                    setValue("project", project);
+                    setIsEdited(true);
+                  }}
+                />
+              </Box>
+            </Flex>
+          </Box>
 
-          <Flex alignItems="center" w="100%" gap={"5px"}>
-            <Text m={0} whiteSpace={"nowrap"}>
-              <strong>Jira URL:</strong>{" "}
+          {/* Jira Block */}
+          <Box
+            p={2}
+            borderRadius="md"
+            borderWidth="1px"
+            borderColor="blue.200"
+            bg="blue.50"
+          >
+            <Text fontSize="xs" fontWeight="700" color="blue.700" mb={1} textTransform="uppercase" letterSpacing="wide">
+              Jira
             </Text>
-            <JiraInstanceSelect
-              control={control}
-              options={jiraInstanceOptions}
-              onChange={(jiraUrl) => {
-                setValue("jiraUrl", jiraUrl);
-                setIsEdited(true);
-                setValue("task", "");
-              }}
-              value={jiraInstanceOptions.find(
-                (item) => item.value === selectedJiraUrl
-              )}
-            />
-          </Flex>
+            <Stack spacing={1}>
+              <Flex alignItems="center" w="100%" gap={2}>
+                <Text m={0} fontSize="xs" minW="50px" whiteSpace="nowrap" fontWeight="600">
+                  URL:
+                </Text>
+                <Box flex={1}>
+                  <JiraInstanceSelect
+                    control={control}
+                    options={jiraInstanceOptions}
+                    onChange={(jiraUrl) => {
+                      setValue("jiraUrl", jiraUrl);
+                      setIsEdited(true);
+                      setValue("task", "");
+                    }}
+                    value={jiraInstanceOptions.find(
+                      (item) => item.value === selectedJiraUrl
+                    )}
+                  />
+                </Box>
+              </Flex>
 
-          <Flex alignItems="center" w="100%" gap={"5px"}>
-            <Text m={0} whiteSpace={"nowrap"}>
-              <strong>Jira Issue:</strong>{" "}
-            </Text>
-            <Box width="300px">
-              <IssuesSelect
-                jiraUrl={selectedJiraUrl}
-                value={watch("task")}
-                control={control}
-                onChange={(task) => {
-                  setValue("task", task);
-                  setIsEdited(true);
-                }}
-                assignedIssues={assignedIssuesForSelectedJira}
-              />
-            </Box>
-          </Flex>
+              <Flex alignItems="center" w="100%" gap={2}>
+                <Text m={0} fontSize="xs" minW="50px" whiteSpace="nowrap" fontWeight="600">
+                  Issue:
+                </Text>
+                <Box flex={1}>
+                  <IssuesSelect
+                    jiraUrl={selectedJiraUrl}
+                    value={watch("task")}
+                    control={control}
+                    onChange={(task) => {
+                      setValue("task", task);
+                      setIsEdited(true);
+                    }}
+                    assignedIssues={assignedIssuesForSelectedJira}
+                  />
+                </Box>
+              </Flex>
+            </Stack>
+          </Box>
 
-          <Flex alignItems="center" w="100%" gap={"5px"}>
-            <Text m={0} whiteSpace={"nowrap"}>
-              <strong>ClickUp Team:</strong>{" "}
+          {/* ClickUp Block */}
+          <Box
+            p={2}
+            borderRadius="md"
+            borderWidth="1px"
+            borderColor="purple.200"
+            bg="purple.50"
+          >
+            <Text fontSize="xs" fontWeight="700" color="purple.700" mb={1} textTransform="uppercase" letterSpacing="wide">
+              ClickUp
             </Text>
-            <ClickUpTeamSelect
-              control={control}
-              options={clickUpTeamOptions}
-              onChange={async (teamId) => {
-                setValue("clickupTeamId", teamId);
-                setIsEdited(true);
-                setValue("clickupTask", "");
-                
-                const teamIdValue = teamId?.value;
-                if (teamIdValue && teamIdValue !== selectedTeamId && clickUpUser?.id) {
-                  if (!additionalClickUpTasks[teamIdValue]) {
-                    const tasks = await getAssignedTasks(teamIdValue, clickUpUser.id);
-                    addAdditionalAssignedTasks(teamIdValue, tasks);
-                  }
-                }
-              }}
-              value={clickUpTeamOptions.find(
-                (item) => item.value === selectedClickUpTeamId
-              )}
-            />
-          </Flex>
+            <Stack spacing={1}>
+              <Flex alignItems="center" w="100%" gap={2}>
+                <Text m={0} fontSize="xs" minW="50px" whiteSpace="nowrap" fontWeight="600">
+                  Team:
+                </Text>
+                <Box flex={1}>
+                  <ClickUpTeamSelect
+                    control={control}
+                    options={clickUpTeamOptions}
+                    onChange={async (teamId) => {
+                      setValue("clickupTeamId", teamId);
+                      setIsEdited(true);
+                      setValue("clickupTask", "");
+                      
+                      const teamIdValue = teamId?.value;
+                      if (teamIdValue && teamIdValue !== selectedTeamId && clickUpUser?.id) {
+                        if (!additionalClickUpTasks[teamIdValue]) {
+                          const tasks = await getAssignedTasks(teamIdValue, clickUpUser.id);
+                          addAdditionalAssignedTasks(teamIdValue, tasks);
+                        }
+                      }
+                    }}
+                    value={clickUpTeamOptions.find(
+                      (item) => item.value === selectedClickUpTeamId
+                    )}
+                  />
+                </Box>
+              </Flex>
 
-          <Flex alignItems="center" w="100%" gap={"5px"}>
-            <Text m={0} whiteSpace={"nowrap"}>
-              <strong>ClickUp Task:</strong>{" "}
-            </Text>
-            <Box width="300px">
-              <ClickUpTaskSelect
-                value={watch("clickupTask")}
-                control={control}
-                onChange={(task) => {
-                  setValue("clickupTask", task);
-                  setIsEdited(true);
-                }}
-                assignedTasks={assignedTasksForSelectedTeam}
-              />
-            </Box>
-          </Flex>
+              <Flex alignItems="center" w="100%" gap={2}>
+                <Text m={0} fontSize="xs" minW="50px" whiteSpace="nowrap" fontWeight="600">
+                  Task:
+                </Text>
+                <Box flex={1}>
+                  <ClickUpTaskSelect
+                    value={watch("clickupTask")}
+                    control={control}
+                    onChange={(task) => {
+                      setValue("clickupTask", task);
+                      setIsEdited(true);
+                    }}
+                    assignedTasks={assignedTasksForSelectedTeam}
+                  />
+                </Box>
+              </Flex>
+            </Stack>
+          </Box>
         </Stack>
 
-        <Flex alignItems="center" justifyContent="space-between" h={8}>
+        <Flex alignItems="center" justifyContent="space-between" mt={2}>
           <Controller
             name="blb"
             control={control}
