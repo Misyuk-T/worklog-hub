@@ -9,7 +9,6 @@ import { getCorrectGMTDateObject } from "../../helpers/getFormattedDate";
 import TotalInformationTab from "./TotalInformationTab/TotalnformationTab";
 import TabItem from "./TabItem";
 import BoxOverlay from "../BoxOverlay";
-import Footer from "../Footer";
 
 import styles from "./InformationTabs.module.scss";
 import useJiraStore from "../../store/jiraStore";
@@ -41,14 +40,14 @@ const InformationTabs = () => {
   const lastDate = workLogsArray.length
     ? addDays(
         getCorrectGMTDateObject(workLogsArray[workLogsArray.length - 1][0]),
-        1
+        1,
       )
     : new Date();
   const formattedLastDate = format(lastDate, "dd-MM-yyyy");
 
   const truncatedOrganizationURL = organizationURL?.slice(
     8,
-    organizationURL?.length
+    organizationURL?.length,
   );
 
   const handleAddWorkLog = () => {
@@ -161,8 +160,6 @@ const InformationTabs = () => {
           })}
         </TabPanels>
       </Tabs>
-
-      <Footer />
       <BoxOverlay
         bgColor="blackAlpha.50"
         height="calc(100% - 41px)"

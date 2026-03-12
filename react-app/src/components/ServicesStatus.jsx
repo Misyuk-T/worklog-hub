@@ -3,21 +3,30 @@ import { Text, Flex, LinkOverlay, LinkBox, Box } from "@chakra-ui/react";
 import useRedmineStore from "../store/redmineStore";
 import useJiraStore from "../store/jiraStore";
 
+const CLICKUP_APP_URL = "https://app.clickup.com";
+
 const ServicesStatus = ({ title, user }) => {
   const { organizationURL } = useRedmineStore();
   const { organizationURL: jiraUrl } = useJiraStore();
 
   const isJiraUser = title === "jira";
+  const isClickUpUser = title === "clickup";
   const userName = isJiraUser
     ? user?.displayName
-    : `${user?.firstname} ${user?.lastname}`;
-  const avatarUrl = isJiraUser ? jiraUrl : organizationURL;
+    : isClickUpUser
+      ? user?.username ?? user?.email
+      : `${user?.firstname} ${user?.lastname}`;
+  const avatarUrl = isJiraUser
+    ? jiraUrl
+    : isClickUpUser
+      ? CLICKUP_APP_URL
+      : organizationURL;
 
   return (
     <Flex
       as={LinkBox}
       gap={1}
-      p={"2px 8px"}
+      p={"0px 8px"}
       w="100%"
       alignItems="center"
       justifyContent="center"
@@ -39,7 +48,7 @@ const ServicesStatus = ({ title, user }) => {
           _hover={{ textDecoration: "underline" }}
           fontWeight="500"
         >
-          {title}:
+          {title === "clickup" ? "ClickUp" : title}:
         </LinkOverlay>
       </Flex>
       <Text

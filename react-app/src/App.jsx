@@ -13,6 +13,7 @@ import { ToastContainer } from "react-toastify";
 
 import useRedmineStore from "./store/redmineStore";
 import useJiraStore from "./store/jiraStore";
+import useClickUpStore from "./store/clickupStore";
 
 import GenerateCards from "./components/GenerateCards/GenerateCards";
 import InformationTabs from "./components/Tabs/InformationTabs";
@@ -43,6 +44,13 @@ const App = () => {
   } = useJiraStore();
   const { addProjects, addLatestActivity, addUser, addOrganizationURL, user } =
     useRedmineStore();
+  const {
+    addUser: addClickUpUser,
+    addTeams: addClickUpTeams,
+    addAssignedTasks: addClickUpAssignedTasks,
+    setSelectedTeamId,
+    user: clickUpUser,
+  } = useClickUpStore();
   const { isAuthObserve, user: googleUser, isLoading } = useAuthStore();
 
   const saveOrganizationUrls = (jiraOrganization, redmineOrganization) => {
@@ -66,6 +74,10 @@ const App = () => {
       addProjects,
       addLatestActivity,
       saveOrganizationUrls,
+      addClickUpUser,
+      addClickUpTeams,
+      addClickUpAssignedTasks,
+      setSelectedTeamId,
     });
   };
 
@@ -127,7 +139,7 @@ const App = () => {
                   flex={1}
                   minW={0}
                   boxShadow="sm"
-                  py={2}
+                  py={1}
                   px={2}
                   bg="white"
                   gap={0}
@@ -137,6 +149,7 @@ const App = () => {
                 >
                   <ServicesStatus title="redmine" user={user} />
                   <ServicesStatus title="jira" user={jiraUser} />
+                  <ServicesStatus title="clickup" user={clickUpUser} />
                 </Stack>
 
                 <Flex
@@ -151,7 +164,7 @@ const App = () => {
                   minH="52px"
                 >
                   <IconButton
-                    aria-label="Refresh Redmine & Jira"
+                    aria-label="Refresh Redmine, Jira & ClickUp"
                     icon={<RepeatIcon />}
                     size="sm"
                     variant="ghost"
@@ -160,7 +173,7 @@ const App = () => {
                     h="100%"
                     minH="52px"
                     onClick={handleRefresh}
-                    isDisabled={!user || !jiraUser}
+                    isDisabled={!user}
                     borderRightWidth="1px"
                     borderRightColor={border}
                     _hover={{ bg: hoverBg }}

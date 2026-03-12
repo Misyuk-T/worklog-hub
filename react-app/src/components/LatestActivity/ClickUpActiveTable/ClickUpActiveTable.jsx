@@ -38,7 +38,8 @@ const ClickUpActiveTable = ({ panelSize }) => {
         return dateB - dateA;
       })
     : [];
-  const containerMaxHeight = panelSize === "partial" ? "400px" : panelSize === "full" ? "calc(100vh - 400px)" : "auto";
+  const containerMaxHeight =
+    panelSize === "partial" ? "400px" : panelSize === "full" ? "100vh" : "auto";
   const isInitialLoading = allClickUpTimeEntries === null;
 
   useEffect(() => {
@@ -151,7 +152,9 @@ const ClickUpActiveTable = ({ panelSize }) => {
                               taskKey
                             )}
                           </Td>
-                          <Td fontSize="14px" whiteSpace="nowrap">{round(item.hours)}h</Td>
+                          <Td fontSize="14px" whiteSpace="nowrap">
+                            {round(item.hours)}h
+                          </Td>
                           <Td
                             fontSize="14px"
                             color={item.billable ? "green.600" : "orange.600"}

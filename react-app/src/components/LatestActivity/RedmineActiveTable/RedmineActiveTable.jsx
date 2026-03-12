@@ -30,7 +30,7 @@ const RedmineActivityTable = ({ panelSize }) => {
   const { latestActivity, projects } = useRedmineStore();
   const groupedByDate = useMemo(
     () => groupByField(latestActivity, "spent_on"),
-    [latestActivity]
+    [latestActivity],
   );
   const groupedByDateArray = useMemo(() => {
     return Object.entries(groupedByDate).sort((a, b) => {
@@ -39,7 +39,8 @@ const RedmineActivityTable = ({ panelSize }) => {
       return dateB - dateA;
     });
   }, [groupedByDate]);
-  const containerMaxHeight = panelSize === "partial" ? "400px" : panelSize === "full" ? "calc(100vh - 400px)" : "auto";
+  const containerMaxHeight =
+    panelSize === "partial" ? "400px" : panelSize === "full" ? "100vh" : "auto";
 
   return (
     <Collapse in={panelSize !== "collapsed"}>
@@ -75,7 +76,7 @@ const RedmineActivityTable = ({ panelSize }) => {
           groupedByDateArray.map(([date, activities]) => {
             const totalHours = activities.reduce(
               (acc, item) => acc + item.hours,
-              0
+              0,
             );
             const weekend = isDayWeekend(date);
             return (
@@ -117,9 +118,9 @@ const RedmineActivityTable = ({ panelSize }) => {
                   </Thead>
                   <Tbody>
                     {activities.map((activity) => {
-                      const projectId = activity?.issue?.id || {}
+                      const projectId = activity?.issue?.id || {};
                       const projectInfo = projects.find(
-                        (p) => p.id === projectId
+                        (p) => p.id === projectId,
                       );
                       const blb =
                         activity?.custom_fields?.[0]?.value === "3"

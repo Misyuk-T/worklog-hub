@@ -39,8 +39,8 @@ const isCommentSimilar = (c1 = "", c2 = "") => {
   if (!c1 || !c2) return false;
 
   // Convert both to strings safely
-  const str1 = typeof c1 === 'string' ? c1 : String(c1);
-  const str2 = typeof c2 === 'string' ? c2 : String(c2);
+  const str1 = typeof c1 === "string" ? c1 : String(c1);
+  const str2 = typeof c2 === "string" ? c2 : String(c2);
 
   if (!str1 || !str2) return false;
 
@@ -53,13 +53,13 @@ const isCommentSimilar = (c1 = "", c2 = "") => {
 const pairLogsBySimilarity = (source1Entries, source2Entries) => {
   const matchedRows = [];
   const usedSource2Indexes = new Set();
-  
+
   source1Entries.forEach((log1) => {
     const matchIndex = source2Entries.findIndex((log2, idx) => {
       if (usedSource2Indexes.has(idx)) return false;
       return isCommentSimilar(log1.description, log2.description);
     });
-    
+
     if (matchIndex > -1) {
       const log2 = source2Entries[matchIndex];
       usedSource2Indexes.add(matchIndex);
@@ -76,7 +76,7 @@ const pairLogsBySimilarity = (source1Entries, source2Entries) => {
       });
     }
   });
-  
+
   source2Entries.forEach((log2, idx) => {
     if (!usedSource2Indexes.has(idx)) {
       matchedRows.push({
@@ -86,17 +86,18 @@ const pairLogsBySimilarity = (source1Entries, source2Entries) => {
       });
     }
   });
-  
+
   return matchedRows;
 };
 
 const renderLogContent = (log) => {
   if (!log) return null;
-  
+
   const source = log.source;
   const hours = round(log.hours);
-  const description = log.description || log.comments || log.taskName || "No description";
-  
+  const description =
+    log.description || log.comments || log.taskName || "No description";
+
   if (source === "redmine") {
     return (
       <>
@@ -118,7 +119,7 @@ const renderLogContent = (log) => {
       </>
     );
   }
-  
+
   if (source === "jira") {
     return (
       <>
@@ -146,7 +147,7 @@ const renderLogContent = (log) => {
       </>
     );
   }
-  
+
   if (source === "clickup") {
     return (
       <>
@@ -174,15 +175,23 @@ const renderLogContent = (log) => {
       </>
     );
   }
-  
+
   return null;
 };
 
 const CompareActivityTable = ({ panelSize }) => {
   const { user: redmineUser } = useRedmineStore();
-  const { user: jiraUser, organizationURL, additionalAssignedIssues } = useJiraStore();
-  const { user: clickUpUser, selectedTeamId, additionalAssignedTasks } = useClickUpStore();
-  
+  const {
+    user: jiraUser,
+    organizationURL,
+    additionalAssignedIssues,
+  } = useJiraStore();
+  const {
+    user: clickUpUser,
+    selectedTeamId,
+    additionalAssignedTasks,
+  } = useClickUpStore();
+
   const [range, setRange] = useState({ from: new Date(), to: new Date() });
   const [source1Services, setSource1Services] = useState(["jira", "clickup"]);
   const [source2Services, setSource2Services] = useState(["redmine"]);
@@ -202,12 +211,12 @@ const CompareActivityTable = ({ panelSize }) => {
       const newServices = prev.includes(serviceKey)
         ? prev.filter((s) => s !== serviceKey)
         : [...prev, serviceKey];
-      
+
       // Remove from source2 if added to source1
       if (newServices.includes(serviceKey)) {
         setSource2Services((s2) => s2.filter((s) => s !== serviceKey));
       }
-      
+
       return newServices;
     });
   };
@@ -217,12 +226,12 @@ const CompareActivityTable = ({ panelSize }) => {
       const newServices = prev.includes(serviceKey)
         ? prev.filter((s) => s !== serviceKey)
         : [...prev, serviceKey];
-      
+
       // Remove from source1 if added to source2
       if (newServices.includes(serviceKey)) {
         setSource1Services((s1) => s1.filter((s) => s !== serviceKey));
       }
-      
+
       return newServices;
     });
   };
@@ -236,7 +245,7 @@ const CompareActivityTable = ({ panelSize }) => {
           const redmineWorkLogs = await getLatestRedmineWorkLogs(
             redmineUser.id,
             startDateStr,
-            endDateStr
+            endDateStr,
           );
           const normalizedRedmineLogs = redmineWorkLogs.map((log) => ({
             ...log,
@@ -301,7 +310,7 @@ const CompareActivityTable = ({ panelSize }) => {
     if (!range.from || !range.to) return;
     const startDateStr = format(range.from, "yyyy-MM-dd");
     const endDateStr = format(range.to, "yyyy-MM-dd");
-    
+
     try {
       setLoading(true);
       const [logs1, logs2] = await Promise.all([
@@ -328,7 +337,13 @@ const CompareActivityTable = ({ panelSize }) => {
     <Collapse in={panelSize !== "collapsed"}>
       <Box
         p={4}
-        height={panelSize === "partial" ? "400px" : panelSize === "full" ? "calc(100vh - 400px)" : "auto"}
+        height={
+          panelSize === "partial"
+            ? "400px"
+            : panelSize === "full"
+              ? "100vh"
+              : "auto"
+        }
         minH={"200px"}
         overflow={"auto"}
         sx={{
@@ -351,10 +366,12 @@ const CompareActivityTable = ({ panelSize }) => {
         <Heading as="h2" size="md" mb={4}>
           Compare Worklogs
         </Heading>
-        
+
         <Flex mb={4} gap={6} alignItems="flex-start" flexWrap="wrap">
           <Stack spacing={2}>
-            <Text fontSize="sm" fontWeight="600">Source 1:</Text>
+            <Text fontSize="sm" fontWeight="600">
+              Source 1:
+            </Text>
             {availableServices.map((service) => (
               <Checkbox
                 key={service.key}
@@ -371,7 +388,9 @@ const CompareActivityTable = ({ panelSize }) => {
           <Divider orientation="vertical" h="80px" />
 
           <Stack spacing={2}>
-            <Text fontSize="sm" fontWeight="600">Source 2:</Text>
+            <Text fontSize="sm" fontWeight="600">
+              Source 2:
+            </Text>
             {availableServices.map((service) => (
               <Checkbox
                 key={service.key}
@@ -401,10 +420,13 @@ const CompareActivityTable = ({ panelSize }) => {
               </PopoverBody>
             </PopoverContent>
           </Popover>
-          <Button 
-            onClick={fetchLogs} 
-            isLoading={loading} 
-            isDisabled={!range || (source1Services.length === 0 && source2Services.length === 0)}
+          <Button
+            onClick={fetchLogs}
+            isLoading={loading}
+            isDisabled={
+              !range ||
+              (source1Services.length === 0 && source2Services.length === 0)
+            }
             size="sm"
           >
             Compare
@@ -419,21 +441,23 @@ const CompareActivityTable = ({ panelSize }) => {
             const paired = pairLogsBySimilarity(source1Entries, source2Entries);
             const totalSource1Hours = source1Entries.reduce(
               (sum, log) => sum + (parseFloat(log.hours) || 0),
-              0
+              0,
             );
             const totalSource2Hours = source2Entries.reduce(
               (sum, log) => sum + (parseFloat(log.hours) || 0),
-              0
+              0,
             );
-            
-            const source1Label = source1Services.map(s => 
-              availableServices.find(srv => srv.key === s)?.label
-            ).filter(Boolean).join(" + ");
-            
-            const source2Label = source2Services.map(s => 
-              availableServices.find(srv => srv.key === s)?.label
-            ).filter(Boolean).join(" + ");
-            
+
+            const source1Label = source1Services
+              .map((s) => availableServices.find((srv) => srv.key === s)?.label)
+              .filter(Boolean)
+              .join(" + ");
+
+            const source2Label = source2Services
+              .map((s) => availableServices.find((srv) => srv.key === s)?.label)
+              .filter(Boolean)
+              .join(" + ");
+
             return (
               <Box key={date} mb={8}>
                 <Heading as="h3" size="sm" mb={2}>
@@ -467,7 +491,7 @@ const CompareActivityTable = ({ panelSize }) => {
                       const { log1, log2, difference } = row;
                       let source1Content = renderLogContent(log1);
                       let source2Content = renderLogContent(log2);
-                      
+
                       return (
                         <Tr key={idx} _hover={{ bg: "rgba(0, 0, 0, 0.05)" }}>
                           <Td>{source1Content}</Td>

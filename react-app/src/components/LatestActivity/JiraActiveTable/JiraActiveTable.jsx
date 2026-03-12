@@ -37,7 +37,8 @@ const JiraActivityTable = ({ panelSize }) => {
         return dateB - dateA;
       })
     : [];
-  const containerMaxHeight = panelSize === "partial" ? "400px" : panelSize === "full" ? "calc(100vh - 400px)" : "auto";
+  const containerMaxHeight =
+    panelSize === "partial" ? "400px" : panelSize === "full" ? "100vh" : "auto";
   const isInitialLoading = allJiraWorklogs === null;
 
   console.log(allJiraWorklogs);
@@ -144,7 +145,9 @@ const JiraActivityTable = ({ panelSize }) => {
                               item.task
                             )}
                           </Td>
-                          <Td fontSize="14px" whiteSpace="nowrap">{round(item.hours)}h</Td>
+                          <Td fontSize="14px" whiteSpace="nowrap">
+                            {round(item.hours)}h
+                          </Td>
                           <Td fontSize="14px" w="100%">
                             <Link href={jiraLink} isExternal>
                               {item.description}
