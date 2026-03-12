@@ -208,7 +208,7 @@ const RedmineForm = () => {
                   onChange={setSelectedItem}
                   options={formattedProjectData}
                   placeholder="Select redmine project ..."
-                  menuPlacement="auto"
+                  menuPlacement="top"
                   styles={{
                     control: (baseStyles) => ({
                       ...baseStyles,
@@ -231,6 +231,10 @@ const RedmineForm = () => {
                     singleValue: (baseStyles) => ({
                       ...baseStyles,
                       fontSize: "14px",
+                    }),
+                    menuList: (baseStyles) => ({
+                      ...baseStyles,
+                      maxHeight: "250px",
                     }),
                   }}
                 />
