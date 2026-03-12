@@ -5,6 +5,7 @@ import {
   Container,
   Flex,
   IconButton,
+  Link,
   Stack,
   useColorModeValue,
 } from "@chakra-ui/react";
@@ -31,6 +32,8 @@ import { getOrganizationUrls } from "./helpers/getOrganizationUrl";
 import useSettingsStore from "./store/settingsStore";
 import LatestActivityPanels from "./components/LatestActivity/LatestActivityPanels";
 import LatestActivityTabs from "./components/LatestActivity/LatestActivityTabs";
+
+import GitHubIcon from "./assets/GitHubIcon.svg";
 
 const App = () => {
   const { currentSettings } = useSettingsStore();
@@ -191,6 +194,31 @@ const App = () => {
         </Stack>
 
         <InformationTabs />
+
+        <Flex as="footer" justify="center" w="100%" mt={"-15px"} py={"5px"}>
+          <Link
+            href="https://github.com/Misyuk-T/redmine-logger"
+            isExternal
+            display="inline-flex"
+            alignItems="center"
+            gap={1.5}
+            fontSize="xs"
+            color="blue.600"
+            _hover={{ color: "blue.700", textDecoration: "underline" }}
+          >
+            <Box
+              as="img"
+              src={GitHubIcon}
+              alt=""
+              w={4}
+              h={4}
+              display="block"
+              aria-hidden
+            />
+            If useful, click here to star on GitHub
+          </Link>
+        </Flex>
+
         <Loader isVisible={isLoading} isFixed />
       </Container>
       <ToastContainer
