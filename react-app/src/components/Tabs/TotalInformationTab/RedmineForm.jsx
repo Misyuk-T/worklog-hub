@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   Flex,
-  FormLabel,
   IconButton,
   Popover,
   PopoverArrow,
@@ -14,6 +13,9 @@ import {
   Stack,
   Switch,
   Text,
+  Card,
+  CardBody,
+  Divider,
 } from "@chakra-ui/react";
 import Select from "react-select";
 
@@ -44,7 +46,7 @@ import { QuestionIcon } from "@chakra-ui/icons";
 
 const renderPopover = () => {
   return (
-    <Popover boundary="scrollParent" size={"xl"}>
+    <Popover boundary="scrollParent" size={"xl"} placement={"top"}>
       <PopoverTrigger>
         <Box>
           <IconButton
@@ -70,13 +72,15 @@ const renderPopover = () => {
         <PopoverCloseButton />
         <PopoverBody>
           <Text>
-            This button will attempt to match Jira issues to card descriptions,
-            but only if the description starts with a valid task ID (e.g.,
-            <strong>CE-580:</strong> some text here).
+            These buttons will attempt to match Jira issues or ClickUp tasks to
+            card descriptions, but only if the description starts with a valid
+            task ID (e.g.,
+            <strong> CE-580:</strong> some text here for Jira or{" "}
+            <strong> CP-47:</strong> for ClickUp).
           </Text>
           <Text mt={2}>
             If a match is found, the card will be linked to the corresponding
-            Jira issue. If no match exists, nothing will happen.
+            issue/task. If no match exists, nothing will happen.
           </Text>
         </PopoverBody>
       </PopoverContent>
@@ -170,110 +174,136 @@ const RedmineForm = () => {
   };
 
   return (
-    <Stack mt={5} gap={"10px"} justifyContent="space-between">
-      <Stack p={"10px"} bg={"gray.50"} borderRadius={"5px"} gap={"20px"}>
-        <Text textTransform={"uppercase"} fontSize={13} fontWeight={500}>
-          Bulk edit block: functionality here will edit all existing cards
-        </Text>
+    <Stack spacing={4}>
+      <Card boxShadow="sm" sx={{ borderRadius: "0" }}>
+        <CardBody>
+          <Text
+            fontWeight={700}
+            fontSize={"xs"}
+            textTransform={"uppercase"}
+            color="gray.600"
+            mb={4}
+            letterSpacing="wide"
+          >
+            Bulk Edit Block: Functionality here will edit all existing cards
+          </Text>
 
-        <Flex gap={8} alignItems="center">
-          <Flex alignItems="center" gap={3}>
-            <FormLabel
-              htmlFor="blb"
-              fontSize={"15px"}
-              mb={"2px"}
-              fontWeight={400}
-            >
-              Billability toggle:
-            </FormLabel>
-            <Switch
-              id="blb"
-              isDisabled={!user?.id || !isWorkLogsExist}
-              onChange={handleBlbStatus}
-              size="md"
-            />
-          </Flex>
-
-          <Flex gap={3} alignItems={"center"}>
-            <Box w="300px">
-              <Select
-                value={selectedItem}
-                onChange={setSelectedItem}
-                options={formattedProjectData}
-                placeholder="Select redmine project ..."
-                menuPlacement="auto"
-                styles={{
-                  control: (baseStyles) => ({
-                    ...baseStyles,
-                    minHeight: "37px !important",
-                    height: "37px !important",
-                  }),
-                }}
+          <Flex gap={4} alignItems="center" flexWrap="wrap">
+            <Flex alignItems="center" gap={2}>
+              <Text fontSize={"sm"} fontWeight={600}>
+                Billability toggle:
+              </Text>
+              <Switch
+                id="blb"
+                size="sm"
+                isDisabled={!user?.id || !isWorkLogsExist}
+                onChange={handleBlbStatus}
               />
-            </Box>
-            <Button
-              onClick={handleAddProject}
-              variant="outline"
-              colorScheme="orange"
-              size={"sm"}
-              isDisabled={!selectedItem || !isWorkLogsExist}
-            >
-              Set project
-            </Button>
+            </Flex>
+
+            <Flex gap={2} alignItems={"center"} flex={1} minW="0">
+              <Box flex={1} maxW="300px" minW="200px">
+                <Select
+                  value={selectedItem}
+                  onChange={setSelectedItem}
+                  options={formattedProjectData}
+                  placeholder="Select redmine project ..."
+                  menuPlacement="auto"
+                  styles={{
+                    control: (baseStyles) => ({
+                      ...baseStyles,
+                      minHeight: "32px",
+                      height: "32px",
+                      fontSize: "14px",
+                    }),
+                    valueContainer: (baseStyles) => ({
+                      ...baseStyles,
+                      padding: "0 8px",
+                      height: "32px",
+                      display: "flex",
+                      alignItems: "center",
+                    }),
+                    placeholder: (baseStyles) => ({
+                      ...baseStyles,
+                      padding: "0 0 5px 0",
+                      fontSize: "14px",
+                    }),
+                    singleValue: (baseStyles) => ({
+                      ...baseStyles,
+                      fontSize: "14px",
+                    }),
+                  }}
+                />
+              </Box>
+              <Button
+                onClick={handleAddProject}
+                variant="outline"
+                colorScheme="orange"
+                size={"sm"}
+                isDisabled={!selectedItem || !isWorkLogsExist}
+                flexShrink={0}
+              >
+                Set project
+              </Button>
+            </Flex>
           </Flex>
 
-          <Flex ml={"auto"} gap={"30px"}>
-            <Flex alignItems={"center"}>
+          <Divider my={4} />
+
+          <Flex
+            gap={3}
+            flexWrap="wrap"
+            justifyContent="space-between"
+            alignItems="center"
+          >
+            <Flex gap={2} alignItems={"center"}>
               <Button
-                color={"blue"}
-                border={"1px solid blue"}
-                bg={"white"}
+                variant="outline"
+                colorScheme="blue"
                 size={"sm"}
                 onClick={handleBulkUpdate}
                 isDisabled={!isWorkLogsExist}
               >
                 Match jira issues
               </Button>
-              {renderPopover()}
-            </Flex>
 
-            <Flex alignItems={"center"}>
               <Button
-                color={"purple"}
-                border={"1px solid purple"}
-                bg={"white"}
+                variant="outline"
+                colorScheme="purple"
                 size={"sm"}
                 onClick={handleClickUpBulkUpdate}
                 isDisabled={!isWorkLogsExist}
               >
                 Match ClickUp tasks
               </Button>
+
+              {renderPopover()}
             </Flex>
 
-            <Flex alignItems={"center"}>
-              <Button
-                colorScheme={"red"}
-                onClick={resetWorkLogs}
-                size={"sm"}
-                isDisabled={!isWorkLogsExist}
-              >
-                Clear Cards
-              </Button>
-            </Flex>
+            <Button
+              variant="outline"
+              colorScheme="red"
+              size={"sm"}
+              onClick={resetWorkLogs}
+              isDisabled={!isWorkLogsExist}
+            >
+              Clear Cards
+            </Button>
           </Flex>
-        </Flex>
-      </Stack>
+        </CardBody>
+      </Card>
 
-      <Flex gap={5} mt={"20px"} justifyContent={"end"}>
+      <Flex gap={3} justifyContent={"flex-end"} flexWrap="wrap">
         <ModalDialog
           headerTitle="Submitting to Jira"
           trigger={
             <Button
               isDisabled={!jiraUser || !isWorkLogsExist}
               colorScheme="blue"
-              size="md"
+              size="sm"
+              minW="160px"
             >
-              Submit cards to jira
+              Submit cards to Jira
             </Button>
           }
           onConfirm={handleJiraSubmit}
@@ -291,7 +321,8 @@ const RedmineForm = () => {
             <Button
               isDisabled={!clickUpUser || !isWorkLogsExist}
               colorScheme="purple"
-              size="md"
+              size="sm"
+              minW="160px"
             >
               Submit cards to ClickUp
             </Button>
@@ -300,7 +331,9 @@ const RedmineForm = () => {
         >
           <Text>
             Do you really want to submit{" "}
-            <strong>{getTotalHoursFromObject(filterWorklogsForClickUp(workLogs))} </strong>
+            <strong>
+              {getTotalHoursFromObject(filterWorklogsForClickUp(workLogs))}{" "}
+            </strong>
             hours to <strong>ClickUp</strong>?
           </Text>
         </ModalDialog>
@@ -312,10 +345,11 @@ const RedmineForm = () => {
               isDisabled={
                 !isWorklogHaveProject || !user?.id || !isWorkLogsExist
               }
-              colorScheme="teal"
-              size="md"
+              colorScheme="red"
+              size="sm"
+              minW="160px"
             >
-              Submit cards to redmine
+              Submit cards to Redmine
             </Button>
           }
           onConfirm={handleRedmineSubmit}

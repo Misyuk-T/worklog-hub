@@ -328,7 +328,7 @@ const CompareActivityTable = ({ panelSize }) => {
     <Collapse in={panelSize !== "collapsed"}>
       <Box
         p={4}
-        height={panelSize === "partial" ? "400px" : panelSize === "full" ? "calc(100vh - 200px)" : "auto"}
+        height={panelSize === "partial" ? "400px" : panelSize === "full" ? "calc(100vh - 400px)" : "auto"}
         minH={"200px"}
         overflow={"auto"}
         sx={{

@@ -39,7 +39,7 @@ const RedmineActivityTable = ({ panelSize }) => {
       return dateB - dateA;
     });
   }, [groupedByDate]);
-  const containerMaxHeight = panelSize === "partial" ? "400px" : panelSize === "full" ? "calc(100vh - 200px)" : "auto";
+  const containerMaxHeight = panelSize === "partial" ? "400px" : panelSize === "full" ? "calc(100vh - 400px)" : "auto";
 
   return (
     <Collapse in={panelSize !== "collapsed"}>

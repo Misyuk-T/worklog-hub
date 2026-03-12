@@ -37,7 +37,7 @@ const JiraActivityTable = ({ panelSize }) => {
         return dateB - dateA;
       })
     : [];
-  const containerMaxHeight = panelSize === "partial" ? "400px" : panelSize === "full" ? "calc(100vh - 200px)" : "auto";
+  const containerMaxHeight = panelSize === "partial" ? "400px" : panelSize === "full" ? "calc(100vh - 400px)" : "auto";
   const isInitialLoading = allJiraWorklogs === null;
 
   console.log(allJiraWorklogs);
