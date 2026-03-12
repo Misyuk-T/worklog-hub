@@ -6,3 +6,4 @@ machinet.conf
 react-app/.env
 dist
 builds
+.DS_Store

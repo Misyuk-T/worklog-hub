@@ -88,7 +88,6 @@ const InformationTabs = () => {
         className={styles.informationTabs}
         variant="enclosed"
         isFitted
-        h="calc(100% - 21px)"
         overflowX="auto"
         overflowY="visible"
         ref={parentContainerRef}
