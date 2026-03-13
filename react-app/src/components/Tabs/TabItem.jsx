@@ -23,12 +23,12 @@ const TabItem = forwardRef(({ dayLogs, date }, ref) => {
     totalHours === 8
       ? "green"
       : totalHours > 8 || totalHours < 0
-      ? "red"
-      : "orange";
+        ? "red"
+        : "orange";
 
   const truncatedOrganizationURL = organizationURL?.slice(
     8,
-    organizationURL?.length
+    organizationURL?.length,
   );
 
   const handleCreate = () => {
@@ -44,7 +44,7 @@ const TabItem = forwardRef(({ dayLogs, date }, ref) => {
   };
 
   return (
-    <TabPanel px={0} position="relative" overflow="hidden">
+    <TabPanel px={0} position="relative" overflowX={"clip"}>
       <Box left={0} w="100%" ref={ref}>
         <Flex gap={5}>
           <Text color={totalTextColor}>
@@ -62,11 +62,7 @@ const TabItem = forwardRef(({ dayLogs, date }, ref) => {
             {round(nblbHours)}h
           </Text>
         </Flex>
-        <SimpleGrid
-          columns={{ base: 1, md: 2, lg: 3 }}
-          gap={4}
-          mt={4}
-        >
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={4} mt={4}>
           {dayLogs.map((item, index) => {
             return <WorkLogItem data={item} key={item.description + index} />;
           })}
