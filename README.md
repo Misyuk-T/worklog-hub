@@ -1,4 +1,4 @@
-# Redmine Logger
+# Worklog Hub (Redmine Logger)
 
 Web app for logging time and managing work across **Redmine**, **Jira**, and **ClickUp**. One login (Firebase) gives you access to all integrations; the frontend talks to a Node backend that proxies requests to Redmine/Jira/ClickUp APIs.
 
@@ -63,6 +63,11 @@ Firebase and integration credentials (Redmine, Jira, ClickUp) are configured in 
 ---
 
 ## DEMO
+
+<p align="center">
+  <img src="public/settings.png" width="50%" alt="Settings" />
+</p>
+<p align="center"><em>Settings — first step after Google login: add API keys and instance URLs for Redmine, Jira, ClickUp</em></p>
 
 <p align="center">
   <img src="public/dashboard.png" width="50%" alt="Dashboard" />
