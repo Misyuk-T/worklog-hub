@@ -12,6 +12,24 @@ const getFormattedDate = (date) => {
   return `${day}-${month}-${currentYear}`;
 };
 
+const normalizeBillability = (value) => {
+  const normalizedValue = value?.trim().toLowerCase();
+
+  if (normalizedValue === "blb") {
+    return "blb";
+  }
+
+  if (
+    normalizedValue === "nblb" ||
+    normalizedValue === "nonblb" ||
+    normalizedValue === "non-blb"
+  ) {
+    return "nblb";
+  }
+
+  return "nblb";
+};
+
 const parseText = (data) => {
   let currentDay = "";
 
@@ -33,10 +51,7 @@ const parseText = (data) => {
 
       const lastPart = parts[parts.length - 1].trim();
       const preLastPart = parts[parts.length - 2].trim();
-      const blb =
-        lastPart.includes("nblb") || lastPart.includes("blb")
-          ? lastPart
-          : "nblb";
+      const blb = normalizeBillability(lastPart);
 
       let hours;
 

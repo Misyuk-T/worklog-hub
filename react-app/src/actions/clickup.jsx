@@ -209,7 +209,7 @@ export const createClickUpTimeEntries = async (worklogs) => {
     for (const date in worklogs) {
       const worklogsForDate = worklogs[date];
       for (const worklog of worklogsForDate) {
-        const { description, hours, date, task, teamId } = worklog;
+        const { description, hours, date, task, teamId, blb } = worklog;
 
         const dateObj = parse(date, "dd-MM-yyyy", new Date());
         const startTimestamp = dateObj.getTime();
@@ -220,6 +220,7 @@ export const createClickUpTimeEntries = async (worklogs) => {
           start: startTimestamp,
           duration: durationMs,
           tid: task,
+          billable: blb === "blb",
         };
 
         const request = instance.post(

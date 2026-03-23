@@ -41,12 +41,17 @@ export const fetchAllData = async ({
   if (!currentSettings) return;
 
   const { jiraUrl, redmineUrl, additionalJiraUrls, clickupApiKey } = currentSettings;
+  const hasJiraCredentials = Boolean(
+    currentSettings.jiraUrl &&
+      currentSettings.jiraEmail &&
+      currentSettings.jiraApiKey,
+  );
 
   // 1) Save org URLs in Zustand stores.
   saveOrganizationUrls(jiraUrl, redmineUrl);
 
   // 2) Fetch main JIRA
-  if (jiraUrl) {
+  if (hasJiraCredentials) {
     const jiraUser = await jiraLogin(jiraUrl);
     if (jiraUser && jiraUser.accountId) {
       addJiraUser(jiraUser);
@@ -62,7 +67,7 @@ export const fetchAllData = async ({
 
   // 3) Fetch additional JIRA URLs
   resetAdditionalAssignedIssues();
-  if (additionalJiraUrls && Array.isArray(additionalJiraUrls)) {
+  if (hasJiraCredentials && additionalJiraUrls && Array.isArray(additionalJiraUrls)) {
     for (const { url } of additionalJiraUrls) {
       if (url?.length) {
         const userForAdditional = await jiraLogin(url);
@@ -78,7 +83,9 @@ export const fetchAllData = async ({
       }
     }
   }
-  await getLatestJiraWorkLogs("all data");
+  if (hasJiraCredentials) {
+    await getLatestJiraWorkLogs("all data");
+  }
 
   // 4) Fetch Redmine
   if (redmineUrl) {

@@ -57,6 +57,7 @@ const fieldSections = [
       {
         name: "JIRA API Key",
         id: "jiraApiKey",
+        isRequired: false,
         content: (
           <OrderedList>
             <ListItem>
@@ -116,6 +117,7 @@ const fieldSections = [
       {
         name: "ClickUp API Key",
         id: "clickupApiKey",
+        isRequired: false,
         content: (
           <OrderedList>
             <ListItem>
@@ -267,7 +269,15 @@ const SettingModalItem = ({
             </Heading>
           )}
           <SimpleGrid templateColumns="repeat(2, 1fr)" gap={4}>
-            {section.fields.map(({ id, name, content, leftAddon, rightAddon }) => (
+            {section.fields.map(
+              ({
+                id,
+                name,
+                content,
+                leftAddon,
+                rightAddon,
+                isRequired,
+              }) => (
               <React.Fragment key={id}>
                 <SettingModalFieldItem
                   id={id}
@@ -276,6 +286,7 @@ const SettingModalItem = ({
                   leftAddon={leftAddon}
                   rightAddon={rightAddon}
                   errors={errors}
+                  isRequired={isRequired}
                 >
                   {content}
                 </SettingModalFieldItem>

@@ -27,6 +27,7 @@ const SettingModalFieldItem = ({
   leftAddon,
   rightAddon,
   errors,
+  isRequired = true,
   remove,
   isDynamic,
   append,
@@ -79,7 +80,7 @@ const SettingModalFieldItem = ({
         <Input
           type="text"
           id={id}
-          {...register(id, { required: !isDynamic })}
+          {...register(id, { required: isDynamic ? false : isRequired })}
           isInvalid={errors[id]}
         />
         {rightAddon && <InputRightAddon>{rightAddon}</InputRightAddon>}

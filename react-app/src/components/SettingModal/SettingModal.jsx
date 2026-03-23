@@ -163,6 +163,9 @@ const SettingModal = ({ border, hoverBg, buttonMinH }) => {
     return { currentData, settingsData };
   };
 
+  const hasJiraCredentials = (settings) =>
+    Boolean(settings?.jiraUrl && settings?.jiraEmail && settings?.jiraApiKey);
+
   const handleChangeTab = () => {
     setActiveTab((prevState) => {
       if (prevState !== 0) {
@@ -181,7 +184,7 @@ const SettingModal = ({ border, hoverBg, buttonMinH }) => {
           const isDataExist = Object.entries(settingsData).length > 0;
           if (isDataExist) {
             const currentJiraUrl = currentData?.jiraUrl;
-            if (currentJiraUrl) {
+            if (currentJiraUrl && hasJiraCredentials(currentData)) {
               const jiraUser = await fetchJiraUser(currentJiraUrl);
               if (jiraUser) {
                 const assignedIssues = await getAssignedIssues(
@@ -196,7 +199,11 @@ const SettingModal = ({ border, hoverBg, buttonMinH }) => {
 
             resetAdditionalAssignedIssues();
             const additionalJiraUrls = currentData?.additionalJiraUrls;
-            if (additionalJiraUrls && additionalJiraUrls.length > 0) {
+            if (
+              hasJiraCredentials(currentData) &&
+              additionalJiraUrls &&
+              additionalJiraUrls.length > 0
+            ) {
               const additionalFetches = additionalJiraUrls.map(
                 async (jiraUrlObj) => {
                   const jiraUrl = jiraUrlObj.url;
