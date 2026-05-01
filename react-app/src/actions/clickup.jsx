@@ -110,6 +110,7 @@ export const getClickUpTimeEntries = async (
         description: entry.description || "",
         hours: parseInt(entry.duration, 10) / 3600000,
         date: formattedDate,
+        sortTimestamp: startTimestamp,
         clickupTeamId: teamId,
         teamId: teamId,
         blb: entry.billable ? "blb" : "nblb",

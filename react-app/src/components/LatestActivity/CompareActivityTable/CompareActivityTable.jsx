@@ -25,7 +25,7 @@ import {
 } from "@chakra-ui/react";
 import { CalendarIcon } from "@chakra-ui/icons";
 import { DayPicker } from "react-day-picker";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import { round } from "../../../helpers/getHours";
 import groupByField from "../../../helpers/groupByField";
 import { getLatestRedmineWorkLogs } from "../../../actions/redmine";
@@ -89,6 +89,63 @@ const pairLogsBySimilarity = (source1Entries, source2Entries) => {
 
   return matchedRows;
 };
+
+const getServiceOrder = (source) => {
+  const serviceOrder = {
+    redmine: 0,
+    jira: 1,
+    clickup: 2,
+  };
+
+  return serviceOrder[source] ?? Number.MAX_SAFE_INTEGER;
+};
+
+const getLogSortValue = (log) => {
+  if (typeof log?.sortTimestamp === "number") {
+    return log.sortTimestamp;
+  }
+
+  if (log?.sortTimestamp) {
+    const parsedSortTimestamp = new Date(log.sortTimestamp).getTime();
+
+    if (!Number.isNaN(parsedSortTimestamp)) {
+      return parsedSortTimestamp;
+    }
+  }
+
+  if (log?.date) {
+    return parse(log.date, "dd-MM-yyyy", new Date()).getTime();
+  }
+
+  return 0;
+};
+
+const sortLogs = (logs) =>
+  [...logs].sort((a, b) => {
+    const sortDiff = getLogSortValue(a) - getLogSortValue(b);
+
+    if (sortDiff !== 0) {
+      return sortDiff;
+    }
+
+    const serviceDiff = getServiceOrder(a?.source) - getServiceOrder(b?.source);
+
+    if (serviceDiff !== 0) {
+      return serviceDiff;
+    }
+
+    const taskDiff = `${a?.taskKey || a?.task || a?.issue?.id || ""}`.localeCompare(
+      `${b?.taskKey || b?.task || b?.issue?.id || ""}`,
+    );
+
+    if (taskDiff !== 0) {
+      return taskDiff;
+    }
+
+    return `${a?.description || a?.comments || a?.taskName || ""}`.localeCompare(
+      `${b?.description || b?.comments || b?.taskName || ""}`,
+    );
+  });
 
 const renderLogContent = (log) => {
   if (!log) return null;
@@ -253,6 +310,7 @@ const CompareActivityTable = ({ panelSize }) => {
             date: format(new Date(log.spent_on), "dd-MM-yyyy"),
             hours: log.hours,
             description: log.comments,
+            sortTimestamp: log.created_on || log.updated_on || log.spent_on,
           }));
           const redmineGrouped = groupByField(normalizedRedmineLogs, "date");
           Object.keys(redmineGrouped).forEach((date) => {
@@ -275,6 +333,7 @@ const CompareActivityTable = ({ panelSize }) => {
               ...log,
               source: "jira",
               date,
+              sortTimestamp: log.started,
             }));
             allLogs[date].push(...logsWithSource);
           });
@@ -303,6 +362,10 @@ const CompareActivityTable = ({ panelSize }) => {
       }
     }
 
+    Object.keys(allLogs).forEach((date) => {
+      allLogs[date] = sortLogs(allLogs[date]);
+    });
+
     return allLogs;
   };
 
@@ -329,7 +392,11 @@ const CompareActivityTable = ({ panelSize }) => {
     const dates1 = Object.keys(source1Logs);
     const dates2 = Object.keys(source2Logs);
     const uniqueDates = Array.from(new Set([...dates1, ...dates2]));
-    uniqueDates.sort((a, b) => new Date(b) - new Date(a));
+    uniqueDates.sort(
+      (a, b) =>
+        parse(b, "dd-MM-yyyy", new Date()).getTime() -
+        parse(a, "dd-MM-yyyy", new Date()).getTime(),
+    );
     return uniqueDates;
   }, [source1Logs, source2Logs]);
 
@@ -436,8 +503,8 @@ const CompareActivityTable = ({ panelSize }) => {
           <Text>No data available for the selected period.</Text>
         ) : (
           allDates.map((date) => {
-            const source1Entries = source1Logs[date] || [];
-            const source2Entries = source2Logs[date] || [];
+            const source1Entries = sortLogs(source1Logs[date] || []);
+            const source2Entries = sortLogs(source2Logs[date] || []);
             const paired = pairLogsBySimilarity(source1Entries, source2Entries);
             const totalSource1Hours = source1Entries.reduce(
               (sum, log) => sum + (parseFloat(log.hours) || 0),

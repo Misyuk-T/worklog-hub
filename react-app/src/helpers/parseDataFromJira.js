@@ -70,6 +70,7 @@ export const parseDataFromJira = (data) => {
       description: `${description || ""}`.trim(),
       hours: parseTimeSpent(log.timeSpent),
       date: format(new Date(formattedCurrentDate), "dd-MM-yyyy"),
+      sortTimestamp: formattedCurrentDate,
       task: log.task,
       project: "",
       blb: "nblb",
