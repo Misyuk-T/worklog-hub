@@ -1,11 +1,34 @@
 import { Stack, Text } from "@chakra-ui/react";
 import { toast } from "react-toastify";
-import { format, parse } from "date-fns";
+import { endOfDay, format, parse, startOfDay, subDays } from "date-fns";
 
 import { instance } from "./axios";
 import groupByField from "../helpers/groupByField";
 import { validateWorkLogsData } from "../helpers/validateWorklogsData";
 import useClickUpStore from "../store/clickupStore";
+
+const parseClickUpDate = (date) => parse(date, "yyyy-MM-dd", new Date());
+
+const normalizeClickUpTask = (task, teamId, url) => ({
+  id: task.id,
+  key: task.custom_id || task.id,
+  summary: task.name,
+  status: task.status?.status || "No status",
+  teamId: teamId,
+  url: url || task.url,
+});
+
+const mergeClickUpTasks = (...taskLists) => {
+  const tasksById = new Map();
+
+  taskLists.flat().forEach((task) => {
+    if (task?.id && !tasksById.has(task.id)) {
+      tasksById.set(task.id, task);
+    }
+  });
+
+  return Array.from(tasksById.values());
+};
 
 export const clickupLogin = async () => {
   try {
@@ -78,8 +101,12 @@ export const getClickUpTimeEntries = async (
   showToast = true,
 ) => {
   try {
-    const startTimestamp = new Date(startDate).getTime();
-    const endTimestamp = new Date(endDate).getTime();
+    const startTimestamp =
+      startOfDay(parseClickUpDate(startDate)).getTime() - 1;
+    const endTimestamp = endOfDay(parseClickUpDate(endDate)).getTime();
+    const currentUserId = useClickUpStore.getState().user?.id;
+    const shouldFilterByAssignee =
+      userId && currentUserId && userId !== currentUserId;
 
     const response = await instance.get(
       `/clickup/team/${teamId}/time_entries`,
@@ -87,7 +114,7 @@ export const getClickUpTimeEntries = async (
         params: {
           start_date: startTimestamp,
           end_date: endTimestamp,
-          assignee: userId,
+          ...(shouldFilterByAssignee ? { assignee: userId } : {}),
         },
       },
     );
@@ -184,18 +211,40 @@ export const getAssignedTasks = async (
     if (!response.data.last_page) {
       return getAssignedTasks(teamId, userId, page + 1, updatedTasks);
     } else {
-      return updatedTasks.map((task) => ({
-        id: task.id,
-        key: task.custom_id || task.id,
-        summary: task.name,
-        status: task.status?.status || "No status",
-        teamId: teamId,
-        url: task.url,
-      }));
+      const assignedTasks = updatedTasks.map((task) =>
+        normalizeClickUpTask(task, teamId),
+      );
+      const recentlyTrackedTasks = await getRecentlyTrackedTasks(teamId);
+
+      return mergeClickUpTasks(assignedTasks, recentlyTrackedTasks);
     }
   } catch (error) {
     console.error(
       `Error while fetching assigned tasks from ClickUp for team ${teamId}:`,
+      error,
+    );
+    return [];
+  }
+};
+
+const getRecentlyTrackedTasks = async (teamId) => {
+  try {
+    const response = await instance.get(`/clickup/team/${teamId}/time_entries`, {
+      params: {
+        start_date: startOfDay(subDays(new Date(), 90)).getTime() - 1,
+        end_date: endOfDay(new Date()).getTime(),
+      },
+    });
+
+    const timeEntries = response.data.data || [];
+    const tasks = timeEntries
+      .filter((entry) => entry.task?.id)
+      .map((entry) => normalizeClickUpTask(entry.task, teamId, entry.task_url));
+
+    return mergeClickUpTasks(tasks);
+  } catch (error) {
+    console.error(
+      `Error while fetching recently tracked ClickUp tasks for team ${teamId}:`,
       error,
     );
     return [];

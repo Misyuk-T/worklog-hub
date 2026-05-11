@@ -87,10 +87,31 @@ router.all("/jira/*", async (req, res) => {
   }
 });
 
+const buildClickUpUrl = (originalUrl) => {
+  const clickUpPath = originalUrl.replace("/clickup", "");
+  const url = new URL(`https://api.clickup.com/api/v2${clickUpPath}`);
+
+  url.searchParams.delete("clickupApiKey");
+
+  if (url.pathname.endsWith("/time_entries")) {
+    const startDate = Number(url.searchParams.get("start_date"));
+
+    if (
+      Number.isFinite(startDate) &&
+      startDate > 0 &&
+      startDate % 1000 === 0
+    ) {
+      url.searchParams.set("start_date", `${startDate - 1}`);
+    }
+  }
+
+  return url.toString();
+};
+
 router.all("/clickup/*", async (req, res) => {
   try {
     const { clickupApiKey } = req.query;
-    const url = `https://api.clickup.com/api/v2${req.originalUrl.replace("/clickup", "")}`;
+    const url = buildClickUpUrl(req.originalUrl);
 
     const axiosConfig = {
       method: req.method,
