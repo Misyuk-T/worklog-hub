@@ -5,7 +5,9 @@ import { instance } from "./axios";
 
 import { transformToRedmineData } from "../helpers/transformToRedmineData";
 import { validateWorkLogsData } from "../helpers/validateWorklogsData";
-import { endOfMonth, format, startOfMonth } from "date-fns";
+import { endOfMonth, format, parse, startOfMonth } from "date-fns";
+import { v4 as uuidv4 } from "uuid";
+import groupByField from "../helpers/groupByField";
 
 export const redmineLogin = async () => {
   try {
@@ -99,6 +101,31 @@ export const getLatestRedmineWorkLogs = async (
   } catch (error) {
     console.error("Error fetching worklogs:", error);
   }
+};
+
+export const transformRedmineWorkLogsToCards = (timeEntries = []) => {
+  const cards = timeEntries.map((entry) => {
+    const date = format(
+      parse(entry.spent_on, "yyyy-MM-dd", new Date()),
+      "dd-MM-yyyy"
+    );
+    const blb = entry?.custom_fields?.[0]?.value === "1" ? "blb" : "nblb";
+
+    return {
+      id: uuidv4(),
+      sourceId: entry.id,
+      date,
+      description: entry.comments || "",
+      hours: entry.hours,
+      blb,
+      project: entry?.issue?.id || "",
+      task: "",
+      clickupTeamId: "",
+      clickupTask: "",
+    };
+  });
+
+  return groupByField(cards, "date");
 };
 
 export const trackTimeToRedmine = async (data) => {

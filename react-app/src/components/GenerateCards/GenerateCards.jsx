@@ -18,19 +18,22 @@ import {
 
 import useJiraStore from "../../store/jiraStore";
 import useClickUpStore from "../../store/clickupStore";
+import useRedmineStore from "../../store/redmineStore";
 import JiraModal from "./Jira/JiraModal";
 import ClickUpModal from "./ClickUp/ClickUpModal";
+import RedmineModal from "./Redmine/RedmineModal";
 import Form from "./Form/Form";
 
 const GenerateCards = () => {
   const { user: jiraUser } = useJiraStore();
   const { user: clickUpUser } = useClickUpStore();
+  const { user: redmineUser } = useRedmineStore();
   
   const SOURCES = [
     { key: "jira", label: "Jira", disabled: !jiraUser },
     { key: "clickup", label: "ClickUp", disabled: !clickUpUser },
     { key: "file", label: "File" },
-    { key: "redmine", label: "Redmine", disabled: true },
+    { key: "redmine", label: "Redmine", disabled: !redmineUser },
   ];
   
   const [selectedSource, setSelectedSource] = useState("jira");
@@ -38,18 +41,21 @@ const GenerateCards = () => {
   useEffect(() => {
     const isCurrentSourceDisabled = 
       (selectedSource === "jira" && !jiraUser) ||
-      (selectedSource === "clickup" && !clickUpUser);
+      (selectedSource === "clickup" && !clickUpUser) ||
+      (selectedSource === "redmine" && !redmineUser);
     
     if (isCurrentSourceDisabled) {
       if (jiraUser) {
         setSelectedSource("jira");
       } else if (clickUpUser) {
         setSelectedSource("clickup");
+      } else if (redmineUser) {
+        setSelectedSource("redmine");
       } else {
         setSelectedSource("file");
       }
     }
-  }, [jiraUser, clickUpUser, selectedSource]);
+  }, [jiraUser, clickUpUser, redmineUser, selectedSource]);
 
   const {
     isOpen: isFileOpen,
@@ -69,12 +75,17 @@ const GenerateCards = () => {
     onClose: onClickUpClose,
   } = useDisclosure();
 
+  const {
+    isOpen: isRedmineOpen,
+    onOpen: onRedmineOpen,
+    onClose: onRedmineClose,
+  } = useDisclosure();
+
   const handleGenerate = () => {
     if (selectedSource === "jira") onJiraOpen();
     else if (selectedSource === "clickup") onClickUpOpen();
     else if (selectedSource === "file") onFileOpen();
-    else if (selectedSource === "redmine")
-      console.log("Redmine not ready yet.");
+    else if (selectedSource === "redmine") onRedmineOpen();
   };
 
   const bg = useColorModeValue("white", "gray.900");
@@ -160,7 +171,7 @@ const GenerateCards = () => {
             isDisabled={
               (selectedSource === "jira" && !jiraUser) ||
               (selectedSource === "clickup" && !clickUpUser) ||
-              selectedSource === "redmine"
+              (selectedSource === "redmine" && !redmineUser)
             }
           >
             Generate
@@ -185,6 +196,7 @@ const GenerateCards = () => {
 
       <JiraModal isOpen={isJiraOpen} onClose={onJiraClose} />
       <ClickUpModal isOpen={isClickUpOpen} onClose={onClickUpClose} />
+      <RedmineModal isOpen={isRedmineOpen} onClose={onRedmineClose} />
 
       <Modal isOpen={isFileOpen} onClose={onFileClose} isCentered size="lg">
         <ModalOverlay />
