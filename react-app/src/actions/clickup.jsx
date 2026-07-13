@@ -1,6 +1,6 @@
 import { Stack, Text } from "@chakra-ui/react";
 import { toast } from "react-toastify";
-import { format, parse } from "date-fns";
+import { endOfDay, format, parse, startOfDay } from "date-fns";
 
 import { instance } from "./axios";
 import groupByField from "../helpers/groupByField";
@@ -78,8 +78,17 @@ export const getClickUpTimeEntries = async (
   showToast = true,
 ) => {
   try {
-    const startTimestamp = new Date(startDate).getTime();
-    const endTimestamp = new Date(endDate).getTime();
+    // Build the query window from LOCAL day boundaries. ClickUp stores entry
+    // starts as absolute timestamps; a "yyyy-MM-dd" parsed as UTC midnight
+    // would drop early-morning local entries (e.g. 00:00 EEST = prev-day 21:00
+    // UTC) and the entire last day. startOfDay/endOfDay keep it in local time,
+    // matching how entries are bucketed below via format().
+    const startTimestamp = startOfDay(
+      parse(startDate, "yyyy-MM-dd", new Date()),
+    ).getTime();
+    const endTimestamp = endOfDay(
+      parse(endDate, "yyyy-MM-dd", new Date()),
+    ).getTime();
 
     const response = await instance.get(
       `/clickup/team/${teamId}/time_entries`,

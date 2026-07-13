@@ -64,10 +64,14 @@ const pairLogsBySimilarity = (source1Entries, source2Entries) => {
     if (matchIndex > -1) {
       const log2 = source2Entries[matchIndex];
       usedSource2Indexes.add(matchIndex);
+      const hoursMatch =
+        round(parseFloat(log1.hours) || 0) ===
+        round(parseFloat(log2.hours) || 0);
       matchedRows.push({
         log1,
         log2,
-        difference: "Match",
+        difference: hoursMatch ? "Match" : "Hours differ",
+        hoursMatch,
       });
     } else {
       matchedRows.push({
@@ -499,12 +503,20 @@ const CompareActivityTable = ({ panelSize }) => {
                       const rowKey = `${log1?.source || "e"}:${
                         log1?.id || "e"
                       }|${log2?.source || "e"}:${log2?.id || "e"}`;
+                      const hoursDiffer = difference === "Hours differ";
+                      const differenceColor =
+                        difference === "Match"
+                          ? "green.600"
+                          : hoursDiffer
+                            ? "orange.500"
+                            : "red.600";
 
                       return (
                         <Tr key={rowKey} _hover={{ bg: "rgba(0, 0, 0, 0.05)" }}>
                           <Td
                             onClick={() => log1 && setEditingLog(log1)}
                             cursor={log1 ? "pointer" : "default"}
+                            bg={hoursDiffer ? "orange.50" : undefined}
                           >
                             {source1Content}
                           </Td>
@@ -512,17 +524,22 @@ const CompareActivityTable = ({ panelSize }) => {
                             <Text
                               fontSize="12px"
                               fontWeight={600}
-                              color={
-                                difference === "Match" ? "green.600" : "red.600"
-                              }
+                              color={differenceColor}
                             >
                               {difference}
                             </Text>
+                            {hoursDiffer && (
+                              <Text fontSize="11px" color="orange.500">
+                                {round(parseFloat(log1?.hours) || 0)}h vs{" "}
+                                {round(parseFloat(log2?.hours) || 0)}h
+                              </Text>
+                            )}
                           </Td>
                           <Td
                             textAlign="right"
                             onClick={() => log2 && setEditingLog(log2)}
                             cursor={log2 ? "pointer" : "default"}
+                            bg={hoursDiffer ? "orange.50" : undefined}
                           >
                             {source2Content}
                           </Td>
