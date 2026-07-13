@@ -331,6 +331,63 @@ export const createJiraWorklogs = async (worklogs) => {
   }
 };
 
+export const updateJiraWorklog = async ({
+  issueKey,
+  worklogId,
+  description,
+  timeSpentSeconds,
+  started,
+  jiraUrl,
+}) => {
+  const data = { comment: textToADF(description) };
+  if (timeSpentSeconds !== undefined && timeSpentSeconds !== null) {
+    data.timeSpentSeconds = timeSpentSeconds;
+  }
+  if (started) data.started = started;
+
+  await instance.put(
+    `/jira/rest/api/3/issue/${issueKey}/worklog/${worklogId}`,
+    data,
+    { params: { jiraUrl } },
+  );
+};
+
+export const deleteJiraWorklog = async ({ issueKey, worklogId, jiraUrl }) => {
+  await instance.delete(
+    `/jira/rest/api/3/issue/${issueKey}/worklog/${worklogId}`,
+    { params: { jiraUrl } },
+  );
+};
+
+// Change the issue a worklog belongs to. We first apply any text/time edits to
+// the existing worklog, then use Jira's bulk-move endpoint so the same worklog
+// (and its id/metadata) is relocated — no duplicate, no data loss if the move
+// fails (the entry simply stays on the source issue, already updated).
+export const replaceJiraWorklogIssue = async ({
+  oldIssueKey,
+  worklogId,
+  newIssueKey,
+  description,
+  timeSpentSeconds,
+  started,
+  jiraUrl,
+}) => {
+  await updateJiraWorklog({
+    issueKey: oldIssueKey,
+    worklogId,
+    description,
+    timeSpentSeconds,
+    started,
+    jiraUrl,
+  });
+
+  await instance.post(
+    `/jira/rest/api/3/issue/${oldIssueKey}/worklog/move`,
+    { ids: [worklogId], issueIdOrKey: newIssueKey },
+    { params: { jiraUrl } },
+  );
+};
+
 const mergeWorklogs = (allWorklogs, newWorklogs) => {
   if (!newWorklogs) return;
 

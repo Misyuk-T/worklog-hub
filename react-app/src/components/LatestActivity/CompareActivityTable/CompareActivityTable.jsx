@@ -34,6 +34,7 @@ import { fetchAllClickUpTimeEntries } from "../../../actions/clickup";
 import useRedmineStore from "../../../store/redmineStore";
 import useJiraStore from "../../../store/jiraStore";
 import useClickUpStore from "../../../store/clickupStore";
+import WorklogEditModal from "./WorklogEditModal";
 
 const isCommentSimilar = (c1 = "", c2 = "") => {
   if (!c1 || !c2) return false;
@@ -113,6 +114,7 @@ const renderLogContent = (log) => {
           href={`https://redmine.anyforsoft.com/time_entries/${log.id}/edit`}
           isExternal
           fontSize="12px"
+          onClick={(e) => e.stopPropagation()}
         >
           {description}
         </Link>
@@ -131,6 +133,7 @@ const renderLogContent = (log) => {
               fontSize="12px"
               fontWeight={500}
               color="green"
+              onClick={(e) => e.stopPropagation()}
             >
               Task: {log.task}
             </Link>
@@ -159,6 +162,7 @@ const renderLogContent = (log) => {
               fontSize="12px"
               fontWeight={500}
               color="purple.600"
+              onClick={(e) => e.stopPropagation()}
             >
               Task: {log.taskKey || log.task}
             </Link>
@@ -198,6 +202,7 @@ const CompareActivityTable = ({ panelSize }) => {
   const [source1Logs, setSource1Logs] = useState({});
   const [source2Logs, setSource2Logs] = useState({});
   const [loading, setLoading] = useState(false);
+  const [editingLog, setEditingLog] = useState(null);
   const truncatedOrgUrl = organizationURL?.replace(/^https?:\/\//, "");
 
   const availableServices = [
@@ -487,14 +492,22 @@ const CompareActivityTable = ({ panelSize }) => {
                         Total: {round(totalSource2Hours)}h
                       </Td>
                     </Tr>
-                    {paired.map((row, idx) => {
+                    {paired.map((row) => {
                       const { log1, log2, difference } = row;
-                      let source1Content = renderLogContent(log1);
-                      let source2Content = renderLogContent(log2);
+                      const source1Content = renderLogContent(log1);
+                      const source2Content = renderLogContent(log2);
+                      const rowKey = `${log1?.source || "e"}:${
+                        log1?.id || "e"
+                      }|${log2?.source || "e"}:${log2?.id || "e"}`;
 
                       return (
-                        <Tr key={idx} _hover={{ bg: "rgba(0, 0, 0, 0.05)" }}>
-                          <Td>{source1Content}</Td>
+                        <Tr key={rowKey} _hover={{ bg: "rgba(0, 0, 0, 0.05)" }}>
+                          <Td
+                            onClick={() => log1 && setEditingLog(log1)}
+                            cursor={log1 ? "pointer" : "default"}
+                          >
+                            {source1Content}
+                          </Td>
                           <Td textAlign="center">
                             <Text
                               fontSize="12px"
@@ -506,7 +519,13 @@ const CompareActivityTable = ({ panelSize }) => {
                               {difference}
                             </Text>
                           </Td>
-                          <Td textAlign="right">{source2Content}</Td>
+                          <Td
+                            textAlign="right"
+                            onClick={() => log2 && setEditingLog(log2)}
+                            cursor={log2 ? "pointer" : "default"}
+                          >
+                            {source2Content}
+                          </Td>
                         </Tr>
                       );
                     })}
@@ -517,6 +536,13 @@ const CompareActivityTable = ({ panelSize }) => {
           })
         )}
       </Box>
+
+      <WorklogEditModal
+        isOpen={!!editingLog}
+        log={editingLog}
+        onClose={() => setEditingLog(null)}
+        onMutated={fetchLogs}
+      />
     </Collapse>
   );
 };

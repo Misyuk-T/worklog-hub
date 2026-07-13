@@ -265,6 +265,28 @@ export const createClickUpTimeEntries = async (worklogs) => {
   }
 };
 
+export const updateClickUpTimeEntry = async ({
+  teamId,
+  id,
+  description,
+  taskId,
+}) => {
+  const data = {};
+  if (description !== undefined) data.description = description;
+  // `tid` reassigns the entry to another task; ClickUp keeps the existing
+  // start/duration, so we intentionally don't touch timing here (its update
+  // endpoint requires start+end together, not start+duration).
+  if (taskId !== undefined && taskId !== null && taskId !== "") {
+    data.tid = taskId;
+  }
+
+  await instance.put(`/clickup/team/${teamId}/time_entries/${id}`, data);
+};
+
+export const deleteClickUpTimeEntry = async ({ teamId, id }) => {
+  await instance.delete(`/clickup/team/${teamId}/time_entries/${id}`);
+};
+
 const mergeTimeEntries = (allTimeEntries, newTimeEntries) => {
   if (!newTimeEntries) return;
 

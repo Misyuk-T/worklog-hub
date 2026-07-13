@@ -128,6 +128,32 @@ export const transformRedmineWorkLogsToCards = (timeEntries = []) => {
   return groupByField(cards, "date");
 };
 
+export const updateRedmineTimeEntry = async ({
+  id,
+  comments,
+  issueId,
+  hours,
+  activityId,
+}) => {
+  const time_entry = {};
+  if (comments !== undefined) time_entry.comments = comments;
+  if (issueId !== undefined && issueId !== null && issueId !== "") {
+    time_entry.issue_id = issueId;
+  }
+  if (hours !== undefined && hours !== null && hours !== "") {
+    time_entry.hours = hours;
+  }
+  // Redmine keeps the existing activity on partial updates, but send it when
+  // known so a required-activity configuration doesn't reject the update.
+  if (activityId) time_entry.activity_id = activityId;
+
+  await instance.put(`/redmine/time_entries/${id}.json`, { time_entry });
+};
+
+export const deleteRedmineTimeEntry = async (id) => {
+  await instance.delete(`/redmine/time_entries/${id}.json`);
+};
+
 export const trackTimeToRedmine = async (data) => {
   try {
     validateWorkLogsData(data, false);

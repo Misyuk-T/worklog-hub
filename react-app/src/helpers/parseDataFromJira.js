@@ -75,6 +75,12 @@ export const parseDataFromJira = (data) => {
       blb: "nblb",
       id: uuidv4(),
       jiraUrl: log.jiraUrl,
+      // Real Jira identifiers preserved for edit/delete (id above is a client-only key)
+      worklogId: log.id,
+      issueId: log.issueId,
+      issueKey: log.task,
+      started: log.started,
+      timeSpentSeconds: log.timeSpentSeconds,
     };
   });
 };
