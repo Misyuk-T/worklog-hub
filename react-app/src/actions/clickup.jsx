@@ -78,30 +78,40 @@ export const getClickUpTimeEntries = async (
   showToast = true,
 ) => {
   try {
-    // Build the query window from LOCAL day boundaries. ClickUp stores entry
-    // starts as absolute timestamps; a "yyyy-MM-dd" parsed as UTC midnight
-    // would drop early-morning local entries (e.g. 00:00 EEST = prev-day 21:00
-    // UTC) and the entire last day. startOfDay/endOfDay keep it in local time,
-    // matching how entries are bucketed below via format().
-    const startTimestamp = startOfDay(
+    // Local day boundaries of the requested range. ClickUp stores entry starts
+    // as absolute timestamps, so we bucket/compare in local time to match how
+    // the user sees them (e.g. 00:00 EEST belongs to that local day even though
+    // its UTC instant is the previous day at 21:00).
+    const windowStart = startOfDay(
       parse(startDate, "yyyy-MM-dd", new Date()),
     ).getTime();
-    const endTimestamp = endOfDay(
+    const windowEnd = endOfDay(
       parse(endDate, "yyyy-MM-dd", new Date()),
     ).getTime();
+
+    // Query with a ±1 day margin: ClickUp's start_date/end_date filtering can
+    // drop entries that sit exactly on the boundary, so we fetch a little wider
+    // and trim precisely below with an inclusive local-time comparison.
+    const DAY_MS = 24 * 60 * 60 * 1000;
 
     const response = await instance.get(
       `/clickup/team/${teamId}/time_entries`,
       {
         params: {
-          start_date: startTimestamp,
-          end_date: endTimestamp,
+          start_date: windowStart - DAY_MS,
+          end_date: windowEnd + DAY_MS,
           assignee: userId,
         },
       },
     );
 
-    const timeEntries = response.data.data || [];
+    const timeEntries = (response.data.data || []).filter((entry) => {
+      const start =
+        typeof entry.start === "string"
+          ? parseInt(entry.start, 10)
+          : entry.start;
+      return start >= windowStart && start <= windowEnd;
+    });
 
     const parsedData = timeEntries.map((entry) => {
       const startTimestamp =
