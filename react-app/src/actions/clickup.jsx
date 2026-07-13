@@ -270,14 +270,19 @@ export const updateClickUpTimeEntry = async ({
   id,
   description,
   taskId,
+  duration,
 }) => {
   const data = {};
   if (description !== undefined) data.description = description;
   // `tid` reassigns the entry to another task; ClickUp keeps the existing
-  // start/duration, so we intentionally don't touch timing here (its update
-  // endpoint requires start+end together, not start+duration).
+  // start, so we don't touch it here (its update endpoint requires start+end
+  // together, not start+duration).
   if (taskId !== undefined && taskId !== null && taskId !== "") {
     data.tid = taskId;
+  }
+  // duration is standalone (milliseconds) for a stopped entry
+  if (duration !== undefined && duration !== null) {
+    data.duration = duration;
   }
 
   await instance.put(`/clickup/team/${teamId}/time_entries/${id}`, data);

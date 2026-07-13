@@ -3,6 +3,7 @@ import {
   Alert,
   AlertIcon,
   Button,
+  Flex,
   FormControl,
   FormLabel,
   Modal,
@@ -12,6 +13,11 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  NumberDecrementStepper,
+  NumberIncrementStepper,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
   Text,
   Textarea,
   useToast,
@@ -57,6 +63,7 @@ const WorklogEditModal = ({ isOpen, onClose, log, onMutated }) => {
   const { assignedTasks, additionalAssignedTasks } = useClickUpStore();
 
   const [description, setDescription] = useState("");
+  const [hours, setHours] = useState("");
   const [taskOption, setTaskOption] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -118,6 +125,7 @@ const WorklogEditModal = ({ isOpen, onClose, log, onMutated }) => {
   useEffect(() => {
     if (!isOpen || !log) return;
     setDescription(log.description ?? "");
+    setHours(String(round(log.hours) ?? ""));
     setTaskOption(currentTaskOptionRef.current);
     setConfirmDelete(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -136,6 +144,19 @@ const WorklogEditModal = ({ isOpen, onClose, log, onMutated }) => {
 
   const handleSave = async () => {
     if (!log) return;
+
+    const hoursNum = parseFloat(hours);
+    if (!Number.isFinite(hoursNum) || hoursNum <= 0) {
+      toast({
+        title: "Enter a valid number of hours",
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+        position: "bottom-center",
+      });
+      return;
+    }
+
     try {
       setSaving(true);
 
@@ -146,6 +167,7 @@ const WorklogEditModal = ({ isOpen, onClose, log, onMutated }) => {
           // value is 0 ("undefined" sentinel) when projects aren't loaded —
           // don't overwrite the entry's issue with an invalid id in that case.
           issueId: taskOption?.value || undefined,
+          hours: hoursNum,
           activityId: log.activity?.id,
         });
       } else if (source === "clickup") {
@@ -154,16 +176,18 @@ const WorklogEditModal = ({ isOpen, onClose, log, onMutated }) => {
           id: log.id,
           description,
           taskId: taskChanged ? taskOption?.value : undefined,
+          duration: Math.round(hoursNum * 3600 * 1000),
         });
       } else if (source === "jira") {
         const oldIssueKey = log.issueKey || log.task;
+        const timeSpentSeconds = Math.round(hoursNum * 3600);
         if (taskChanged) {
           await replaceJiraWorklogIssue({
             oldIssueKey,
             worklogId: log.worklogId,
             newIssueKey: taskOption.value,
             description,
-            timeSpentSeconds: log.timeSpentSeconds,
+            timeSpentSeconds,
             started: log.started,
             jiraUrl: log.jiraUrl,
           });
@@ -172,7 +196,7 @@ const WorklogEditModal = ({ isOpen, onClose, log, onMutated }) => {
             issueKey: oldIssueKey,
             worklogId: log.worklogId,
             description,
-            timeSpentSeconds: log.timeSpentSeconds,
+            timeSpentSeconds,
             started: log.started,
             jiraUrl: log.jiraUrl,
           });
@@ -250,13 +274,13 @@ const WorklogEditModal = ({ isOpen, onClose, log, onMutated }) => {
   if (!log) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} size="3xl">
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>
           Edit {SOURCE_LABELS[source]} worklog
           <Text fontSize="12px" fontWeight={400} color="gray.500">
-            {log.date} · {round(log.hours)}h
+            {log.date}
           </Text>
         </ModalHeader>
         <ModalCloseButton />
@@ -269,33 +293,51 @@ const WorklogEditModal = ({ isOpen, onClose, log, onMutated }) => {
             </Alert>
           )}
 
-          <FormControl mb={4}>
-            <FormLabel fontSize="14px">{taskLabel}</FormLabel>
-            <Select
-              value={taskOption}
-              onChange={setTaskOption}
-              options={taskOptions}
-              menuPortalTarget={document.body}
-              menuPlacement="auto"
-              placeholder="Select task"
-              styles={{
-                menuPortal: (base) => ({ ...base, zIndex: 2000 }),
-              }}
-            />
-            {source === "jira" && taskChanged && (
-              <Text fontSize="12px" color="orange.500" mt={1}>
-                Jira can't move a worklog — it will be recreated on the new issue
-                and the old one deleted.
-              </Text>
-            )}
-          </FormControl>
+          <Flex gap={4} mb={4} align="flex-start">
+            <FormControl flex="1">
+              <FormLabel fontSize="14px">{taskLabel}</FormLabel>
+              <Select
+                value={taskOption}
+                onChange={setTaskOption}
+                options={taskOptions}
+                menuPortalTarget={document.body}
+                menuPlacement="auto"
+                placeholder="Select task"
+                styles={{
+                  menuPortal: (base) => ({ ...base, zIndex: 2000 }),
+                }}
+              />
+              {source === "jira" && taskChanged && (
+                <Text fontSize="12px" color="orange.500" mt={1}>
+                  Jira will move this worklog to the new issue.
+                </Text>
+              )}
+            </FormControl>
+
+            <FormControl w="120px" flexShrink={0}>
+              <FormLabel fontSize="14px">Hours</FormLabel>
+              <NumberInput
+                value={hours}
+                onChange={(valueString) => setHours(valueString)}
+                min={0}
+                step={0.25}
+                precision={2}
+              >
+                <NumberInputField fontSize="14px" />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
+            </FormControl>
+          </Flex>
 
           <FormControl>
             <FormLabel fontSize="14px">Description</FormLabel>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={5}
+              rows={9}
               fontSize="14px"
             />
           </FormControl>
