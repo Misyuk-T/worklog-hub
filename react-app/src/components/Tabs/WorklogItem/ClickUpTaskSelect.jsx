@@ -15,10 +15,22 @@ import {
 import { QuestionIcon } from "@chakra-ui/icons";
 
 import { transformToClickUpTaskData } from "../../../helpers/transformToSelectData";
+import useClickUpTaskSearch from "../../../hooks/useClickUpTaskSearch";
 
-const ClickUpTaskSelect = ({ onChange, control, value, assignedTasks }) => {
+const ClickUpTaskSelect = ({
+  onChange,
+  control,
+  value,
+  assignedTasks,
+  teamId,
+}) => {
   const formattedTaskData = transformToClickUpTaskData(assignedTasks || []);
   const isUndefinedValue = !value?.value;
+  const taskSearch = useClickUpTaskSearch({
+    teamId,
+    options: formattedTaskData,
+    onSelect: onChange,
+  });
 
   const renderPopover = () => {
     return (
@@ -50,11 +62,18 @@ const ClickUpTaskSelect = ({ onChange, control, value, assignedTasks }) => {
             Warning
           </PopoverHeader>
           <PopoverBody>
-            Worklogs with{" "}
-            <Text as="span" color="orange">
-              undefined
-            </Text>{" "}
-            task <strong>will not be logged in ClickUp</strong>
+            <Text mb={2}>
+              Worklogs with{" "}
+              <Text as="span" color="orange">
+                undefined
+              </Text>{" "}
+              task <strong>will not be logged in ClickUp</strong>
+            </Text>
+            <Text fontSize="13px" color="gray.600">
+              Task not listed (e.g. you were unassigned)? Type its id —{" "}
+              <strong>86abc123</strong> or <strong>CP-170</strong> — and press
+              Enter to load it.
+            </Text>
           </PopoverBody>
         </PopoverContent>
       </Popover>
@@ -76,6 +95,11 @@ const ClickUpTaskSelect = ({ onChange, control, value, assignedTasks }) => {
               options={formattedTaskData}
               placeholder="undefined"
               menuPortalTarget={document.body}
+              isLoading={taskSearch.isLoading}
+              onInputChange={taskSearch.onInputChange}
+              onMenuClose={taskSearch.onMenuClose}
+              onKeyDown={taskSearch.onKeyDown}
+              noOptionsMessage={taskSearch.noOptionsMessage}
               styles={{
                 control: (baseStyles, state) => ({
                   ...baseStyles,

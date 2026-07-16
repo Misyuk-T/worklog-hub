@@ -220,6 +220,97 @@ export const getAssignedTasks = async (
   }
 };
 
+// ClickUp accepts two id flavours: the native id (86abc123) and the workspace
+// custom id (CP-170). The custom one only resolves when we ask for it
+// explicitly and scope the lookup to a team.
+const CUSTOM_ID_PATTERN = /^[A-Za-z][A-Za-z0-9]*-\d+$/;
+
+// The task dropdowns are built from tasks assigned to the user, so a task you
+// were unassigned from vanishes even though ClickUp still accepts time for it.
+// This pulls any task the API key can reach back into the list by its id.
+export const getClickUpTaskById = async (rawTaskId, teamId) => {
+  const taskId = (rawTaskId || "").trim();
+  if (!taskId) return null;
+
+  const isCustomId = CUSTOM_ID_PATTERN.test(taskId);
+
+  if (isCustomId && !teamId) {
+    toast.error(
+      <Stack>
+        <Text fontWeight={600}>Select a ClickUp team first</Text>
+        <Text>A custom task id like {taskId} can only be resolved within a team.</Text>
+      </Stack>,
+      {
+        position: "bottom-center",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        progress: undefined,
+        theme: "light",
+      },
+    );
+    return null;
+  }
+
+  try {
+    const response = await instance.get(
+      `/clickup/task/${encodeURIComponent(taskId)}`,
+      {
+        params: isCustomId
+          ? { custom_task_ids: true, team_id: teamId }
+          : undefined,
+      },
+    );
+
+    const task = response.data;
+
+    if (!task?.id) {
+      throw new Error(`Task ${taskId} was not found`);
+    }
+
+    toast.success(
+      <Stack>
+        <Text fontWeight={600}>Loaded task {task.custom_id || task.id}</Text>
+        <Text>{task.name}</Text>
+      </Stack>,
+      {
+        position: "bottom-center",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        progress: undefined,
+        theme: "light",
+      },
+    );
+
+    return {
+      id: task.id,
+      key: task.custom_id || task.id,
+      summary: task.name,
+      status: task.status?.status || "No status",
+      teamId: task.team_id || teamId,
+      url: task.url,
+    };
+  } catch (error) {
+    console.error(`Error while fetching ClickUp task ${taskId}:`, error);
+    toast.error(
+      <Stack>
+        <Text fontWeight={600}>Can't load task {taskId}</Text>
+        <Text>Check the id and that your API key has access to it.</Text>
+      </Stack>,
+      {
+        position: "bottom-center",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        progress: undefined,
+        theme: "light",
+      },
+    );
+    return null;
+  }
+};
+
 export const createClickUpTimeEntries = async (worklogs) => {
   try {
     validateWorkLogsData(worklogs, true);

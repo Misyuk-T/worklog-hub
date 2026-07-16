@@ -90,7 +90,11 @@ const InformationTabs = () => {
         isFitted
         h="calc(100% - 21px)"
         overflowX="auto"
-        overflowY="visible"
+        // Not "visible": CSS computes a visible axis to auto as soon as the
+        // other one isn't visible, which put a vertical scrollbar on the whole
+        // Tabs box and scrolled the TabList away with it. Each TabPanel scrolls
+        // its own cards instead, so the tab headers stay put.
+        overflowY="hidden"
         ref={parentContainerRef}
         onChange={(index) => {
           setSelectedTabIndex(index);

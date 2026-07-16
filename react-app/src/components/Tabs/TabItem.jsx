@@ -44,7 +44,13 @@ const TabItem = forwardRef(({ dayLogs, date }, ref) => {
   };
 
   return (
-    <TabPanel px={0} position="relative" overflow="hidden">
+    <TabPanel
+      px={0}
+      position="relative"
+      h="100%"
+      overflowY="auto"
+      overflowX="hidden"
+    >
       <Box left={0} w="100%" ref={ref}>
         <Flex gap={5}>
           <Text color={totalTextColor}>

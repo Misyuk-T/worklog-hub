@@ -49,6 +49,7 @@ import {
   getClickUpTaskValue,
 } from "../../../helpers/transformToSelectData";
 import { round } from "../../../helpers/getHours";
+import useClickUpTaskSearch from "../../../hooks/useClickUpTaskSearch";
 
 const SOURCE_LABELS = {
   redmine: "Redmine",
@@ -60,7 +61,8 @@ const WorklogEditModal = ({ isOpen, onClose, log, onMutated }) => {
   const toast = useToast();
   const { projects } = useRedmineStore();
   const { assignedIssues, additionalAssignedIssues } = useJiraStore();
-  const { assignedTasks, additionalAssignedTasks } = useClickUpStore();
+  const { assignedTasks, additionalAssignedTasks, manualTasks } =
+    useClickUpStore();
 
   const [description, setDescription] = useState("");
   const [hours, setHours] = useState("");
@@ -96,7 +98,8 @@ const WorklogEditModal = ({ isOpen, onClose, log, onMutated }) => {
     if (source === "clickup") {
       const teamId = log.teamId || log.clickupTeamId;
       const extra = additionalAssignedTasks?.[teamId] || [];
-      const tasks = [...(assignedTasks || []), ...extra];
+      const manual = manualTasks?.[teamId] || [];
+      const tasks = [...(assignedTasks || []), ...extra, ...manual];
       return {
         taskOptions: transformToClickUpTaskData(tasks),
         currentTaskOption: getClickUpTaskValue(log.clickupTask, tasks),
@@ -113,7 +116,16 @@ const WorklogEditModal = ({ isOpen, onClose, log, onMutated }) => {
     additionalAssignedIssues,
     assignedTasks,
     additionalAssignedTasks,
+    manualTasks,
   ]);
+
+  // Only ClickUp supports pulling an unlisted task in by id; for other sources
+  // these props stay inert.
+  const clickUpTaskSearch = useClickUpTaskSearch({
+    teamId: log?.teamId || log?.clickupTeamId,
+    options: taskOptions,
+    onSelect: setTaskOption,
+  });
 
   // Seed the form when the modal opens or the targeted log changes. Keyed on the
   // log's real identity (not object reference) so typing isn't clobbered on
@@ -303,10 +315,17 @@ const WorklogEditModal = ({ isOpen, onClose, log, onMutated }) => {
                 menuPortalTarget={document.body}
                 menuPlacement="auto"
                 placeholder="Select task"
+                {...(source === "clickup" ? clickUpTaskSearch : {})}
                 styles={{
                   menuPortal: (base) => ({ ...base, zIndex: 2000 }),
                 }}
               />
+              {source === "clickup" && (
+                <Text fontSize="12px" color="gray.500" mt={1}>
+                  Task not listed? Type its id (86abc123 or CP-170) and press
+                  Enter to load it.
+                </Text>
+              )}
               {source === "jira" && taskChanged && (
                 <Text fontSize="12px" color="orange.500" mt={1}>
                   Jira will move this worklog to the new issue.

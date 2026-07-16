@@ -58,6 +58,7 @@ const WorkLogItem = ({ data }) => {
   const {
     assignedTasks: clickUpTasks,
     additionalAssignedTasks: additionalClickUpTasks,
+    manualTasks: manualClickUpTasks,
     selectedTeamId,
     teams,
     user: clickUpUser,
@@ -69,6 +70,20 @@ const WorkLogItem = ({ data }) => {
     8,
     organizationURL?.length,
   );
+
+  // Tasks known for a team: the ones assigned to the user plus any pulled in by
+  // id. Needed before the form is created so a manually loaded task still
+  // resolves to a proper label instead of "Currently untracked task".
+  const getTasksForTeam = (teamId) => {
+    const assigned =
+      teamId === selectedTeamId
+        ? clickUpTasks
+        : additionalClickUpTasks[teamId] || [];
+
+    return [...(assigned || []), ...(manualClickUpTasks[teamId] || [])];
+  };
+
+  const tasksForCardTeam = getTasksForTeam(data.clickupTeamId || selectedTeamId);
 
   const {
     handleSubmit,
@@ -89,7 +104,7 @@ const WorkLogItem = ({ data }) => {
       task: getIssueValue(data.task, assignedIssues),
       jiraUrl: data.jiraUrl || truncatedOrganizationURL,
       clickupTeamId: data.clickupTeamId || selectedTeamId,
-      clickupTask: getClickUpTaskValue(data.clickupTask, clickUpTasks),
+      clickupTask: getClickUpTaskValue(data.clickupTask, tasksForCardTeam),
     },
   });
 
@@ -130,10 +145,7 @@ const WorkLogItem = ({ data }) => {
 
   const selectedClickUpTeamId =
     getValues().clickupTeamId?.value || watch("clickupTeamId");
-  const isMainClickUpTeamSelected = selectedClickUpTeamId === selectedTeamId;
-  const assignedTasksForSelectedTeam = isMainClickUpTeamSelected
-    ? clickUpTasks
-    : additionalClickUpTasks[selectedClickUpTeamId] || [];
+  const assignedTasksForSelectedTeam = getTasksForTeam(selectedClickUpTeamId);
 
   const handleCancel = () => {
     reset({
@@ -145,7 +157,7 @@ const WorkLogItem = ({ data }) => {
       task: getIssueValue(data.task, assignedIssues),
       jiraUrl: data.jiraUrl || truncatedOrganizationURL,
       clickupTeamId: data.clickupTeamId || selectedTeamId,
-      clickupTask: getClickUpTaskValue(data.clickupTask, clickUpTasks),
+      clickupTask: getClickUpTaskValue(data.clickupTask, tasksForCardTeam),
     });
     setIsEdited(false);
   };
@@ -203,7 +215,7 @@ const WorkLogItem = ({ data }) => {
   useEffect(() => {
     setValue(
       "clickupTask",
-      getClickUpTaskValue(data.clickupTask, clickUpTasks),
+      getClickUpTaskValue(data.clickupTask, tasksForCardTeam),
     );
   }, [data.clickupTask]);
 
@@ -408,6 +420,7 @@ const WorkLogItem = ({ data }) => {
                       setIsEdited(true);
                     }}
                     assignedTasks={assignedTasksForSelectedTeam}
+                    teamId={selectedClickUpTeamId}
                   />
                 </Box>
               </Flex>

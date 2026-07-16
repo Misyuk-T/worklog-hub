@@ -57,8 +57,8 @@ const TotalInformationTab = forwardRef(({ data }, ref) => {
   const totalPeriodHours = getTotalHours(data);
 
   return (
-    <TabPanel px={0} mr="40px">
-      <Stack spacing={4} style={{ overflowY: "clip" }}>
+    <TabPanel px={0} mr="40px" h="100%" overflowY="auto" overflowX="hidden">
+      <Stack spacing={4}>
         <Card boxShadow="sm" borderRadius="md">
           <CardBody p={0}>
             <Flex>

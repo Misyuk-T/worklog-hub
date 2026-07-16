@@ -7,6 +7,7 @@ const initialState = {
   allClickUpTimeEntries: null,
   assignedTasks: [],
   additionalAssignedTasks: {},
+  manualTasks: {},
 };
 
 const useClickUpStore = create((set) => ({
@@ -16,7 +17,10 @@ const useClickUpStore = create((set) => ({
   allClickUpTimeEntries: null,
   assignedTasks: [],
   additionalAssignedTasks: {},
-  
+  // Tasks pulled in by id because they aren't assigned to the user, keyed by
+  // teamId. Kept next to the assigned ones so every task select can offer them.
+  manualTasks: {},
+
   addUser: (user) => set({ user }),
   resetUser: () => set({ user: null }),
   
@@ -40,6 +44,23 @@ const useClickUpStore = create((set) => ({
     })),
   
   resetAdditionalAssignedTasks: () => set({ additionalAssignedTasks: {} }),
+
+  addManualTask: (teamId, task) =>
+    set((state) => {
+      const existingTasks = state.manualTasks[teamId] || [];
+      if (existingTasks.some((item) => item.id === task.id)) {
+        return state;
+      }
+
+      return {
+        manualTasks: {
+          ...state.manualTasks,
+          [teamId]: [...existingTasks, task],
+        },
+      };
+    }),
+
+  resetManualTasks: () => set({ manualTasks: {} }),
   resetAll: () => set({ ...initialState }),
 }));
 
