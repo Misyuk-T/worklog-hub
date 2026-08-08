@@ -1,85 +1,52 @@
-# Worklog Hub (Redmine Logger)
+# Worklog Hub
 
-Web app for logging time and managing work across **Redmine**, **Jira**, and **ClickUp**. One login (Firebase) gives you access to all integrations; the frontend talks to a Node backend that proxies requests to Redmine/Jira/ClickUp APIs.
+Log time once and move it between **Redmine**, **Jira**, and **ClickUp**.
 
-**What you can do:**
+**[Live app](https://redmine-scheduler-app.web.app/)**
 
-- **Transfer worklogs** from one system to another — generate cards from existing logs and push them to Redmine, Jira, or ClickUp.
-- **Single sign-on** — log in once and work with all connected integrations (including multiple instances, e.g. several Jira presets at once).
-- **Compare worklogs** — view and compare time entries across systems in one place.
+Agencies often run one tracker internally and another for the client, so the same hours get entered twice by hand. This app reads worklogs from one system, turns them into editable cards, and pushes them into another.
 
-## Requirements
+## What it does
 
-- **Node.js** 18 or later (LTS recommended)
-- **Yarn** for the frontend
-
-Check versions: `node -v` and `yarn -v`.
-
-## Structure
-
-- **react-app/** — Vite + React (Chakra UI, Zustand). Build output can be deployed to Firebase Hosting.
-- **server/** — Express app (`server.js`). Handles auth, proxies to Redmine/Jira/ClickUp, file upload/parsing for worklog import.
-
-## Local development
-
-Run backend and frontend in parallel (two terminals). Install dependencies in **both** the server and the frontend before running.
-
-1. **Environment**
-
-   In `react-app/` create a `.env` file:
-
-   ```
-   VITE_BASE_URL=http://localhost:8000
-   ```
-
-   The frontend uses this as the API base URL.
-
-2. **Backend**
-
-   From the repo root:
-
-   ```bash
-   cd server
-   npm install
-   node server.js
-   ```
-
-   Server runs on port 8000 by default (check `server.js` if you change it).
-
-3. **Frontend**
-
-   In another terminal:
-
-   ```bash
-   cd react-app
-   yarn install
-   yarn dev
-   ```
-
-   Vite dev server runs on its own port (e.g. 5173). Open that URL in the browser; API requests go to `VITE_BASE_URL`.
-
-Firebase and integration credentials (Redmine, Jira, ClickUp) are configured in the app settings or via your own env/backend config as needed.
-
----
-
-## DEMO
+- **Transfer** — pull existing logs from one tracker, adjust, push to another.
+- **Compare** — put time entries from all connected systems side by side to catch gaps and double entries.
+- **One login** — Firebase auth covers every integration, including several instances of the same tracker (multiple Jira presets, for example).
+- **Bulk import** — upload a spreadsheet and the server parses it into worklog entries.
 
 <p align="center">
-  <img src="public/settings.png" width="50%" alt="Settings" />
+  <img src="public/compare-table.png" width="70%" alt="Comparing worklogs across Redmine, Jira and ClickUp" />
 </p>
-<p align="center"><em>Settings — first step after Google login: add API keys and instance URLs for Redmine, Jira, ClickUp</em></p>
+
+## How it is put together
+
+**`react-app/`** — Vite, React, Chakra UI, Zustand. Deployed to Firebase Hosting.
+
+**`server/`** — Express. Proxies the three tracker APIs, parses uploaded spreadsheets with `xlsx`, and throttles outbound calls through `bottleneck` so a bulk transfer doesn't trip rate limits.
+
+Credentials never reach the bundle: the frontend holds no tracker API keys, and every call goes through the backend.
 
 <p align="center">
-  <img src="public/dashboard.png" width="50%" alt="Dashboard" />
+  <img src="public/settings.png" width="70%" alt="Settings screen with API keys and instance URLs" />
 </p>
-<p align="center"><em>Dashboard — overview and quick access</em></p>
 
-<p align="center">
-  <img src="public/compare-table.png" width="50%" alt="Compare table" />
-</p>
-<p align="center"><em>Compare worklogs across Redmine, Jira, ClickUp</em></p>
+## Running locally
 
-<p align="center">
-  <img src="public/worklog-showcase.png" width="50%" alt="Worklog showcase" />
-</p>
-<p align="center"><em>Worklog — log time and manage entries</em></p>
+Node 18+ and Yarn. Two terminals.
+
+Backend:
+
+```bash
+cd server
+npm install
+node server.js
+```
+
+Frontend — create `react-app/.env` with `VITE_BASE_URL=http://localhost:8000`, then:
+
+```bash
+cd react-app
+yarn install
+yarn dev
+```
+
+The server listens on port 8000. Tracker API keys and instance URLs are entered in the app's Settings screen after the first login.
