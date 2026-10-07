@@ -38,8 +38,16 @@ header is unchanged, and the action row wraps within a narrow viewport.
 
 ## Delivery
 
-Implemented and verified locally. Current prefix-mapping/modal changes have not
-been pushed or deployed; the previous Jira/ClickUp matching release remains live.
+Source commit `94eb199` was pushed to `origin/firebase-click-up-app` and deployed
+to [Firebase Hosting](https://redmine-scheduler-app.web.app/) on 2026-10-07 from an
+isolated archive of that commit. Firebase reported `Deploy complete!`.
+
+The served HTML, JavaScript (`index-p_Tp5xcs.js`) and CSS
+(`index-BuDZ7cwc.css`) matched the release files byte for byte. JavaScript SHA-256:
+`92e7d0adcdc2bf903f386c6f379bbd9fd4f7afbd5784db9274bccb5ad4e1b828`.
+Pre-release checks passed all 19 focused tests and lint had no errors.
+Browser behavior was verified locally with demo data; production verification
+checked the exact served release artifacts.
 
 ## Help and footer polish
 
@@ -51,4 +59,4 @@ been pushed or deployed; the previous Jira/ClickUp matching release remains live
   navigation is automatic. Hover/focus stops the effect; reduced-motion disables
   it (verified through browser media emulation, then reset).
 - Focused lint: no errors; existing App auth-effect dependency warning remains.
-  Production build and whitespace validation passed. Changes remain local.
+  Production build and whitespace validation passed. Included in the release above.
