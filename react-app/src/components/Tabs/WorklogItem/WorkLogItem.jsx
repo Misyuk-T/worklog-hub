@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import {
   Button,
@@ -27,6 +27,7 @@ import {
   getClickUpTaskValue,
 } from "../../../helpers/transformToSelectData";
 import { getAssignedTasks } from "../../../actions/clickup";
+import { normalizeServiceScope } from "../../../helpers/matchWorklogTasks";
 
 import DescriptionInput from "./DescriptionInput";
 import DatePicker from "./DatePicker";
@@ -37,6 +38,8 @@ import IssuesSelect from "./IssuesSelect";
 import JiraInstanceSelect from "./JiraInstanceSelect";
 import ClickUpTeamSelect from "./ClickUpTeamSelect";
 import ClickUpTaskSelect from "./ClickUpTaskSelect";
+
+const EMPTY_ISSUES = [];
 
 const handleNumbersValidate = (value) => {
   if (isNaN(value) || value > 8 || value <= 0) {
@@ -66,10 +69,20 @@ const WorkLogItem = ({ data }) => {
   } = useClickUpStore();
   const { updateWorkLog, deleteWorkLog } = useWorkLogsStore();
 
-  const truncatedOrganizationURL = organizationURL?.slice(
-    8,
-    organizationURL?.length,
-  );
+  const truncatedOrganizationURL = normalizeServiceScope(organizationURL);
+
+  const getIssuesForJira = (jiraUrl) => {
+    const normalizedUrl = normalizeServiceScope(jiraUrl);
+    if (normalizedUrl === truncatedOrganizationURL) return assignedIssues;
+    const additionalEntry = Object.entries(additionalAssignedIssues).find(
+      ([url]) => normalizeServiceScope(url) === normalizedUrl
+    );
+    return additionalEntry?.[1] || EMPTY_ISSUES;
+  };
+
+  const initialJiraUrl =
+    normalizeServiceScope(data.jiraUrl) || truncatedOrganizationURL;
+  const initialJiraIssues = getIssuesForJira(initialJiraUrl);
 
   // Tasks known for a team: the ones assigned to the user plus any pulled in by
   // id. Needed before the form is created so a manually loaded task still
@@ -83,7 +96,20 @@ const WorkLogItem = ({ data }) => {
     return [...(assigned || []), ...(manualClickUpTasks[teamId] || [])];
   };
 
-  const tasksForCardTeam = getTasksForTeam(data.clickupTeamId || selectedTeamId);
+  const tasksForCardTeam = useMemo(() => {
+    const teamId = data.clickupTeamId || selectedTeamId;
+    const assigned =
+      teamId === selectedTeamId
+        ? clickUpTasks
+        : additionalClickUpTasks[teamId] || [];
+    return [...(assigned || []), ...(manualClickUpTasks[teamId] || [])];
+  }, [
+    data.clickupTeamId,
+    selectedTeamId,
+    clickUpTasks,
+    additionalClickUpTasks,
+    manualClickUpTasks,
+  ]);
 
   const {
     handleSubmit,
@@ -101,8 +127,8 @@ const WorkLogItem = ({ data }) => {
       project: data.project,
       hours: data.hours,
       blb: data.blb,
-      task: getIssueValue(data.task, assignedIssues),
-      jiraUrl: data.jiraUrl || truncatedOrganizationURL,
+      task: getIssueValue(data.task, initialJiraIssues),
+      jiraUrl: initialJiraUrl,
       clickupTeamId: data.clickupTeamId || selectedTeamId,
       clickupTask: getClickUpTaskValue(data.clickupTask, tasksForCardTeam),
     },
@@ -116,8 +142,8 @@ const WorkLogItem = ({ data }) => {
   const borderCardColor = isNotValidCard
     ? "tomato"
     : isNewTask
-      ? "blue.600"
-      : "transparent";
+    ? "blue.600"
+    : "transparent";
 
   const mainJiraOptionItem = {
     value: truncatedOrganizationURL,
@@ -126,17 +152,13 @@ const WorkLogItem = ({ data }) => {
   const jiraInstanceOptions = [
     mainJiraOptionItem,
     ...Object.keys(additionalAssignedIssues).map((url) => ({
-      value: url,
-      label: url,
+      value: normalizeServiceScope(url),
+      label: normalizeServiceScope(url),
     })),
   ];
 
   const selectedJiraUrl = getValues().jiraUrl?.value || watch("jiraUrl");
-  const isMainOrganizationSelected =
-    selectedJiraUrl === truncatedOrganizationURL;
-  const assignedIssuesForSelectedJira = isMainOrganizationSelected
-    ? assignedIssues
-    : additionalAssignedIssues[selectedJiraUrl] || [];
+  const assignedIssuesForSelectedJira = getIssuesForJira(selectedJiraUrl);
 
   const clickUpTeamOptions = teams.map((team) => ({
     value: team.id,
@@ -154,8 +176,8 @@ const WorkLogItem = ({ data }) => {
       project: data.project,
       hours: data.hours,
       blb: data.blb,
-      task: getIssueValue(data.task, assignedIssues),
-      jiraUrl: data.jiraUrl || truncatedOrganizationURL,
+      task: getIssueValue(data.task, initialJiraIssues),
+      jiraUrl: initialJiraUrl,
       clickupTeamId: data.clickupTeamId || selectedTeamId,
       clickupTask: getClickUpTaskValue(data.clickupTask, tasksForCardTeam),
     });
@@ -198,26 +220,34 @@ const WorkLogItem = ({ data }) => {
 
   useEffect(() => {
     setValue("blb", data.blb);
-  }, [data.blb]);
+  }, [data.blb, setValue]);
 
   useEffect(() => {
-    setValue("jiraUrl", data.jiraUrl);
-  }, [data.jiraUrl]);
+    setValue("jiraUrl", initialJiraUrl);
+  }, [initialJiraUrl, setValue]);
 
   useEffect(() => {
-    setValue("task", getIssueValue(data.task, assignedIssues));
-  }, [data.task]);
+    if (isEdited) return;
+    setValue("task", getIssueValue(data.task, assignedIssuesForSelectedJira));
+  }, [
+    data.task,
+    selectedJiraUrl,
+    assignedIssuesForSelectedJira,
+    isEdited,
+    setValue,
+  ]);
 
   useEffect(() => {
-    setValue("clickupTeamId", data.clickupTeamId);
-  }, [data.clickupTeamId]);
+    setValue("clickupTeamId", data.clickupTeamId || selectedTeamId);
+  }, [data.clickupTeamId, selectedTeamId, setValue]);
 
   useEffect(() => {
+    if (isEdited) return;
     setValue(
       "clickupTask",
-      getClickUpTaskValue(data.clickupTask, tasksForCardTeam),
+      getClickUpTaskValue(data.clickupTask, tasksForCardTeam)
     );
-  }, [data.clickupTask]);
+  }, [data.clickupTask, tasksForCardTeam, isEdited, setValue]);
 
   useEffect(() => {
     const teamId = data.clickupTeamId || selectedTeamId;
@@ -228,7 +258,13 @@ const WorkLogItem = ({ data }) => {
         });
       }
     }
-  }, [data.clickupTeamId, selectedTeamId, clickUpUser, additionalClickUpTasks]);
+  }, [
+    data.clickupTeamId,
+    selectedTeamId,
+    clickUpUser,
+    additionalClickUpTasks,
+    addAdditionalAssignedTasks,
+  ]);
 
   return (
     <Card
@@ -388,14 +424,14 @@ const WorkLogItem = ({ data }) => {
                         if (!additionalClickUpTasks[teamIdValue]) {
                           const tasks = await getAssignedTasks(
                             teamIdValue,
-                            clickUpUser.id,
+                            clickUpUser.id
                           );
                           addAdditionalAssignedTasks(teamIdValue, tasks);
                         }
                       }
                     }}
                     value={clickUpTeamOptions.find(
-                      (item) => item.value === selectedClickUpTeamId,
+                      (item) => item.value === selectedClickUpTeamId
                     )}
                   />
                 </Box>
@@ -466,7 +502,7 @@ const WorkLogItem = ({ data }) => {
                       setValue("task", "");
                     }}
                     value={jiraInstanceOptions.find(
-                      (item) => item.value === selectedJiraUrl,
+                      (item) => item.value === selectedJiraUrl
                     )}
                   />
                 </Box>

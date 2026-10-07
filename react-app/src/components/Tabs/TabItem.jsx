@@ -1,4 +1,3 @@
-import { forwardRef } from "react";
 import {
   Box,
   Flex,
@@ -15,7 +14,7 @@ import WorkLogItem from "./WorklogItem/WorkLogItem";
 import { getHours, round } from "../../helpers/getHours";
 import useJiraStore from "../../store/jiraStore";
 
-const TabItem = forwardRef(({ dayLogs, date }, ref) => {
+const TabItem = ({ dayLogs, date }) => {
   const { addWorkLog } = useWorkLogsStore();
   const { organizationURL } = useJiraStore();
   const { totalHours, blbHours, nblbHours } = getHours(dayLogs);
@@ -44,14 +43,8 @@ const TabItem = forwardRef(({ dayLogs, date }, ref) => {
   };
 
   return (
-    <TabPanel
-      px={0}
-      position="relative"
-      h="100%"
-      overflowY="auto"
-      overflowX="hidden"
-    >
-      <Box left={0} w="100%" ref={ref}>
+    <TabPanel px={0} position="relative">
+      <Box w="100%">
         <Flex gap={5}>
           <Text color={totalTextColor}>
             <Text as="span" fontWeight={700} color="black">
@@ -97,6 +90,6 @@ const TabItem = forwardRef(({ dayLogs, date }, ref) => {
       </Box>
     </TabPanel>
   );
-});
+};
 
 export default TabItem;

@@ -18,6 +18,7 @@ import {
   Divider,
 } from "@chakra-ui/react";
 import Select from "react-select";
+import { toast } from "react-toastify";
 
 import useWorkLogsStore from "../../../store/worklogsStore";
 import useRedmineStore from "../../../store/redmineStore";
@@ -30,16 +31,24 @@ import {
 } from "../../../actions/redmine";
 import {
   createJiraWorklogs,
+  getJiraIssueByKey,
   getLatestJiraWorkLogs,
 } from "../../../actions/jira";
 import {
   createClickUpTimeEntries,
+  getClickUpTaskById,
   getLatestClickUpTimeEntries,
 } from "../../../actions/clickup";
 import { transformToProjectData } from "../../../helpers/transformToSelectData";
 import { getTotalHoursFromObject } from "../../../helpers/getHours";
 import { filterWorklogsByTask } from "../../../helpers/filterWorklogsForJira";
 import { filterWorklogsForClickUp } from "../../../helpers/filterWorklogsForClickUp";
+import {
+  collectScopedTaskCodes,
+  countUnscopedTaskCodes,
+  normalizeServiceScope,
+  resolveMissingScopedItems,
+} from "../../../helpers/matchWorklogTasks";
 
 import ModalDialog from "../../ModalDialog";
 import { QuestionIcon } from "@chakra-ui/icons";
@@ -79,8 +88,10 @@ const renderPopover = () => {
             <strong> CP-47:</strong> for ClickUp).
           </Text>
           <Text mt={2}>
-            If a match is found, the card will be linked to the corresponding
-            issue/task. If no match exists, nothing will happen.
+            Missing items are loaded from the Jira instance or ClickUp team
+            selected on each card, including items no longer assigned to you.
+            Matching only reads issue/task details; it does not create remote
+            worklogs.
           </Text>
         </PopoverBody>
       </PopoverContent>
@@ -103,15 +114,22 @@ const RedmineForm = () => {
     user: jiraUser,
     assignedIssues,
     additionalAssignedIssues,
+    organizationURL,
+    addFetchedIssue,
   } = useJiraStore();
   const {
     user: clickUpUser,
     assignedTasks: clickUpTasks,
     additionalAssignedTasks: additionalClickUpTasks,
+    manualTasks,
+    selectedTeamId,
+    addManualTask,
   } = useClickUpStore();
 
   const [selectedItem, setSelectedItem] = useState(null);
   const [isBlbLog, setIsBlbLog] = useState(false);
+  const [isMatchingJira, setIsMatchingJira] = useState(false);
+  const [isMatchingClickUp, setIsMatchingClickUp] = useState(false);
 
   const jiraWoklogs = filterWorklogsByTask(workLogs);
   const formattedProjectData = transformToProjectData(projects);
@@ -120,20 +138,96 @@ const RedmineForm = () => {
   const isWorklogHaveProject =
     isWorkLogsExist && worklogsArray[0][1][0].project;
 
-  const handleBulkUpdate = () => {
-    const allJiraIssues = [
-      ...assignedIssues,
-      ...Object.values(additionalAssignedIssues).flat(),
-    ];
-    bulkUpdateWorkLogsWithJira(allJiraIssues);
+  const handleBulkUpdate = async () => {
+    setIsMatchingJira(true);
+    try {
+      const mainJiraUrl = normalizeServiceScope(organizationURL);
+      const allJiraIssues = [
+        ...assignedIssues.map((issue) => ({ ...issue, jiraUrl: mainJiraUrl })),
+        ...Object.entries(additionalAssignedIssues).flatMap(
+          ([jiraUrl, issues]) => issues.map((issue) => ({ ...issue, jiraUrl }))
+        ),
+      ];
+      const scopedCodes = collectScopedTaskCodes(
+        workLogs,
+        (workLog) => normalizeServiceScope(workLog.jiraUrl) || mainJiraUrl,
+        false
+      );
+      const missingScope = countUnscopedTaskCodes(
+        workLogs,
+        (workLog) => normalizeServiceScope(workLog.jiraUrl) || mainJiraUrl,
+        false
+      );
+      const { failed: failedLookups } = await resolveMissingScopedItems({
+        scopedCodes,
+        items: allJiraIssues,
+        getScope: (issue) => normalizeServiceScope(issue.jiraUrl),
+        load: getJiraIssueByKey,
+        withScope: (issue, jiraUrl) => ({ ...issue, jiraUrl }),
+        onLoaded: (issue, jiraUrl) => addFetchedIssue(jiraUrl, issue),
+      });
+
+      bulkUpdateWorkLogsWithJira(allJiraIssues, mainJiraUrl);
+      if (failedLookups) {
+        toast.warning(
+          `${failedLookups} Jira issue(s) could not be loaded. Check access and task codes.`
+        );
+      }
+      if (missingScope) {
+        toast.info(
+          `${missingScope} card(s) need a Jira instance before matching.`
+        );
+      }
+    } finally {
+      setIsMatchingJira(false);
+    }
   };
 
-  const handleClickUpBulkUpdate = () => {
-    const allClickUpTasks = [
-      ...clickUpTasks,
-      ...Object.values(additionalClickUpTasks).flat(),
-    ];
-    bulkUpdateWorkLogsWithClickUp(allClickUpTasks);
+  const handleClickUpBulkUpdate = async () => {
+    setIsMatchingClickUp(true);
+    try {
+      const allClickUpTasks = [
+        ...clickUpTasks.map((task) => ({
+          ...task,
+          teamId: task.teamId || selectedTeamId,
+        })),
+        ...Object.values(additionalClickUpTasks).flat(),
+        ...Object.values(manualTasks).flat(),
+      ];
+      const scopedCodes = collectScopedTaskCodes(
+        workLogs,
+        (workLog) => workLog.clickupTeamId || selectedTeamId
+      );
+      const missingScope = countUnscopedTaskCodes(
+        workLogs,
+        (workLog) => workLog.clickupTeamId || selectedTeamId
+      );
+      const { failed: failedLookups } = await resolveMissingScopedItems({
+        scopedCodes,
+        items: allClickUpTasks,
+        getScope: (task) => task.teamId,
+        load: (code, teamId) => getClickUpTaskById(code, teamId, false),
+        withScope: (task, teamId) => ({
+          ...task,
+          teamId: task.teamId || teamId,
+        }),
+        onLoaded: (task, teamId) => addManualTask(teamId, task),
+      });
+
+      bulkUpdateWorkLogsWithClickUp(allClickUpTasks, selectedTeamId);
+      if (failedLookups) {
+        toast.warning(
+          `${failedLookups} ClickUp task(s) could not be loaded. Check access and task codes.`
+        );
+      }
+      if (missingScope) {
+        toast.info(
+          `${missingScope} card(s) need a ClickUp team before matching.`
+        );
+      }
+    } finally {
+      setIsMatchingClickUp(false);
+    }
   };
 
   const handleAddProject = () => {
@@ -266,7 +360,8 @@ const RedmineForm = () => {
                 colorScheme="blue"
                 size={"sm"}
                 onClick={handleBulkUpdate}
-                isDisabled={!isWorkLogsExist}
+                isDisabled={!isWorkLogsExist || isMatchingJira}
+                isLoading={isMatchingJira}
               >
                 Match jira issues
               </Button>
@@ -276,7 +371,8 @@ const RedmineForm = () => {
                 colorScheme="purple"
                 size={"sm"}
                 onClick={handleClickUpBulkUpdate}
-                isDisabled={!isWorkLogsExist}
+                isDisabled={!isWorkLogsExist || isMatchingClickUp}
+                isLoading={isMatchingClickUp}
               >
                 Match ClickUp tasks
               </Button>

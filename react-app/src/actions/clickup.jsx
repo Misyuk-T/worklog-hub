@@ -228,7 +228,7 @@ const CUSTOM_ID_PATTERN = /^[A-Za-z][A-Za-z0-9]*-\d+$/;
 // The task dropdowns are built from tasks assigned to the user, so a task you
 // were unassigned from vanishes even though ClickUp still accepts time for it.
 // This pulls any task the API key can reach back into the list by its id.
-export const getClickUpTaskById = async (rawTaskId, teamId) => {
+export const getClickUpTaskById = async (rawTaskId, teamId, showToast = true) => {
   const taskId = (rawTaskId || "").trim();
   if (!taskId) return null;
 
@@ -268,7 +268,7 @@ export const getClickUpTaskById = async (rawTaskId, teamId) => {
       throw new Error(`Task ${taskId} was not found`);
     }
 
-    toast.success(
+    if (showToast) toast.success(
       <Stack>
         <Text fontWeight={600}>Loaded task {task.custom_id || task.id}</Text>
         <Text>{task.name}</Text>
@@ -293,7 +293,7 @@ export const getClickUpTaskById = async (rawTaskId, teamId) => {
     };
   } catch (error) {
     console.error(`Error while fetching ClickUp task ${taskId}:`, error);
-    toast.error(
+    if (showToast) toast.error(
       <Stack>
         <Text fontWeight={600}>Can't load task {taskId}</Text>
         <Text>Check the id and that your API key has access to it.</Text>

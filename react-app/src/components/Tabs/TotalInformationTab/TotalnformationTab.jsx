@@ -1,4 +1,3 @@
-import { forwardRef } from "react";
 import {
   Box,
   Flex,
@@ -51,16 +50,16 @@ const mainLinkStyles = {
   bg: "gray.50",
 };
 
-const TotalInformationTab = forwardRef(({ data }, ref) => {
+const TotalInformationTab = ({ data }) => {
   const { projects } = useRedmineStore();
 
   const totalPeriodHours = getTotalHours(data);
 
   return (
-    <TabPanel px={0} mr="40px" h="100%" overflowY="auto" overflowX="hidden">
+    <TabPanel px={0}>
       <Stack spacing={4}>
         <Card boxShadow="sm" borderRadius="md">
-          <CardBody p={0}>
+          <CardBody p={0} overflowX="auto">
             <Flex>
               <Stack
                 justifyContent="center"
@@ -180,12 +179,12 @@ const TotalInformationTab = forwardRef(({ data }, ref) => {
           </CardBody>
         </Card>
 
-        <Box ref={ref}>
+        <Box>
           <RedmineForm />
         </Box>
       </Stack>
     </TabPanel>
   );
-});
+};
 
 export default TotalInformationTab;

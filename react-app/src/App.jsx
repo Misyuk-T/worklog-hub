@@ -105,7 +105,6 @@ const App = () => {
         flexGrow={1}
         flexShrink={0}
         alignItems="stretch"
-        h="100%"
         w="100%"
         pt={"10px"}
         centerContent

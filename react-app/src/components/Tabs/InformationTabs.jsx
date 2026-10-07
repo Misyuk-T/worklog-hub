@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { addDays, format } from "date-fns";
 import { Button, Tab, TabList, TabPanels, Tabs, Box } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
@@ -21,18 +21,9 @@ const getSortedByDate = (data) =>
   });
 
 const InformationTabs = () => {
-  const parentContainerRef = useRef(null);
-  const fixedContainerRef = useRef(null);
-  const fixedActionsPanelRef = useRef(null);
-
   const { workLogs, addWorkLog, setIsJiraExport } = useWorkLogsStore();
   const { organizationURL } = useJiraStore();
-  const [isScrollEnable, setIsScrollEnable] = useState(false);
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
-
-  const container = parentContainerRef?.current;
-  const pinDiv = fixedContainerRef?.current;
-  const pinActionsPanel = fixedActionsPanelRef?.current;
 
   const workLogsArray = workLogs ? Object.entries(workLogs) : [];
   const sortedArray =
@@ -63,48 +54,25 @@ const InformationTabs = () => {
     setIsJiraExport(false);
   };
 
-  const handleScroll = () => {
-    requestAnimationFrame(() => {
-      if (container.scrollLeft > 0 && isScrollEnable) {
-        pinDiv.style.transform = `translateX(${container.scrollLeft}px)`;
-      } else {
-        pinDiv.style.transform = "none";
-        pinActionsPanel.style.transform = `translateX(${container.scrollLeft}px)`;
-      }
-    });
-  };
-
   useEffect(() => {
-    if (sortedArray.length === 0) {
-      setSelectedTabIndex(0);
-      container?.scrollTo({ left: 0 });
-    }
-  }, [sortedArray]);
+    setSelectedTabIndex((index) => Math.min(index, workLogsArray.length));
+  }, [workLogsArray.length]);
 
   return (
-    <Box h="100%" position="relative">
+    <Box w="100%" minW={0} position="relative">
       <Tabs
         position="relative"
         className={styles.informationTabs}
         variant="enclosed"
         isFitted
-        h="calc(100% - 21px)"
-        overflowX="auto"
-        // Not "visible": CSS computes a visible axis to auto as soon as the
-        // other one isn't visible, which put a vertical scrollbar on the whole
-        // Tabs box and scrolled the TabList away with it. Each TabPanel scrolls
-        // its own cards instead, so the tab headers stay put.
-        overflowY="hidden"
-        ref={parentContainerRef}
-        onChange={(index) => {
-          setSelectedTabIndex(index);
-          setIsScrollEnable(index !== 0);
-          pinDiv.style.transform = `translateX(${container.scrollLeft}px)`;
-        }}
-        onScroll={handleScroll}
+        onChange={setSelectedTabIndex}
         index={selectedTabIndex}
       >
-        <TabList className={styles.tabsList}>
+        <TabList
+          className={styles.tabsList}
+          overflowX="auto"
+          overflowY="hidden"
+        >
           <Tab
             minW="130px"
             className={styles.tabItem}
@@ -138,6 +106,8 @@ const InformationTabs = () => {
             borderColor="transparent"
             height="auto"
             onClick={handleAddWorkLog}
+            aria-label="Add day"
+            flexShrink={0}
             w="40px"
             mb="-1px"
             _hover={{
@@ -148,16 +118,8 @@ const InformationTabs = () => {
           </Button>
         </TabList>
 
-        <TabPanels
-          h="calc(100% - 45px)"
-          position="relative"
-          w={"100%"}
-          ref={fixedContainerRef}
-        >
-          <TotalInformationTab
-            data={workLogsArray}
-            ref={fixedActionsPanelRef}
-          />
+        <TabPanels position="relative" w="100%">
+          <TotalInformationTab data={workLogsArray} />
 
           {sortedArray.map(([date, logs]) => {
             return <TabItem key={date} dayLogs={logs} date={date} />;

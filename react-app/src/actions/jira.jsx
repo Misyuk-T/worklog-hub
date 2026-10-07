@@ -268,6 +268,37 @@ export const getAssignedIssues = async (
   }
 };
 
+export const getJiraIssueByKey = async (rawIssueKey, jiraUrl) => {
+  const issueKey = (rawIssueKey || "").trim().toUpperCase();
+  if (!issueKey || !jiraUrl) return null;
+
+  try {
+    const response = await instance.get(
+      `/jira/rest/api/3/issue/${encodeURIComponent(issueKey)}`,
+      {
+        params: { jiraUrl },
+      },
+    );
+    const issue = response.data;
+    if (!issue?.key) return null;
+
+    return {
+      id: issue.id,
+      key: issue.key,
+      summary: issue.fields?.summary || issue.key,
+      issueType: issue.fields?.issuetype?.name,
+      parent: issue.fields?.parent?.key || null,
+      project: issue.fields?.project?.name,
+      status: issue.fields?.status?.name,
+      jiraUrl,
+      lookupAliases: issue.key === issueKey ? [] : [issueKey],
+    };
+  } catch (error) {
+    console.error(`Error while fetching JIRA issue ${issueKey}:`, error);
+    return null;
+  }
+};
+
 export const createJiraWorklogs = async (worklogs) => {
   try {
     validateWorkLogsData(worklogs, true);

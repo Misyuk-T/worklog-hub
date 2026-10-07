@@ -1,6 +1,11 @@
 import { create } from "zustand";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "react-toastify";
+import {
+  findScopedItem,
+  getDescriptionTaskCode,
+  normalizeServiceScope,
+} from "../helpers/matchWorklogTasks.js";
 
 const initialState = {
   workLogs: null,
@@ -70,7 +75,7 @@ const useWorkLogsStore = create((set, get) => ({
       return { workLogs: oldState };
     });
   },
-  bulkUpdateWorkLogsWithJira: (jiraIssues) => {
+  bulkUpdateWorkLogsWithJira: (jiraIssues, defaultJiraUrl = "") => {
     set((state) => {
       const oldState = { ...state.workLogs };
 
@@ -78,16 +83,24 @@ const useWorkLogsStore = create((set, get) => ({
 
       Object.keys(oldState).forEach((date) => {
         oldState[date] = oldState[date].map((workLog) => {
-          const taskIdentifier = workLog.description.split(":")[0].trim();
-          const matchingIssue = jiraIssues.find(
-            (issue) => issue.key === taskIdentifier
+          const taskIdentifier = getDescriptionTaskCode(
+            workLog.description,
+            false
           );
+          const jiraScope = normalizeServiceScope(
+            workLog.jiraUrl || defaultJiraUrl
+          );
+          const matchingIssue =
+            jiraScope &&
+            findScopedItem(jiraIssues, taskIdentifier, jiraScope, (issue) =>
+              normalizeServiceScope(issue.jiraUrl)
+            );
 
           if (matchingIssue) {
             updatedWorkLogs.push(workLog.description);
             return {
               ...workLog,
-              jiraUrl: matchingIssue.jiraUrl,
+              jiraUrl: normalizeServiceScope(matchingIssue.jiraUrl),
               task: matchingIssue.key,
             };
           }
@@ -127,7 +140,7 @@ const useWorkLogsStore = create((set, get) => ({
   },
   setIsJiraExport: (isJiraExport) => set({ isJiraExport }),
   setIsClickUpExport: (isClickUpExport) => set({ isClickUpExport }),
-  bulkUpdateWorkLogsWithClickUp: (clickUpTasks) => {
+  bulkUpdateWorkLogsWithClickUp: (clickUpTasks, defaultTeamId = null) => {
     set((state) => {
       const oldState = { ...state.workLogs };
 
@@ -135,10 +148,16 @@ const useWorkLogsStore = create((set, get) => ({
 
       Object.keys(oldState).forEach((date) => {
         oldState[date] = oldState[date].map((workLog) => {
-          const taskIdentifier = workLog.description.split(":")[0].trim();
-          const matchingTask = clickUpTasks.find(
-            (task) => task.key === taskIdentifier
-          );
+          const taskIdentifier = getDescriptionTaskCode(workLog.description);
+          const teamScope = workLog.clickupTeamId || defaultTeamId;
+          const matchingTask =
+            teamScope &&
+            findScopedItem(
+              clickUpTasks,
+              taskIdentifier,
+              teamScope,
+              (task) => task.teamId
+            );
 
           if (matchingTask) {
             updatedWorkLogs.push(workLog.description);
