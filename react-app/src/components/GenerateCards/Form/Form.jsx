@@ -10,12 +10,15 @@ import {
   Text,
   useColorModeValue,
   Box,
+  Alert,
+  AlertIcon,
 } from "@chakra-ui/react";
 
 import useWorkLogsStore from "../../../store/worklogsStore";
 import FileUpload from "./FileUpload";
 import RadioGroup from "./RadioGroup";
 import { sendWorkLogs } from "../../../actions/workLogs";
+import { getApiErrorMessage } from "../../../helpers/apiErrors";
 
 const validateFiles = (value) => {
   if (!value || value.length < 1) return "File is required";
@@ -30,8 +33,7 @@ const validateFiles = (value) => {
 };
 
 const Form = () => {
-  const { addWorkLogs, addWorkLogsError, resetWorkLogs, setIsJiraExport } =
-    useWorkLogsStore();
+  const { addWorkLogs, resetWorkLogs, setIsJiraExport } = useWorkLogsStore();
 
   const {
     register,
@@ -42,6 +44,7 @@ const Form = () => {
   } = useForm();
 
   const [isSent, setIsSent] = useState(false);
+  const [importError, setImportError] = useState("");
 
   const border = useColorModeValue("gray.200", "gray.700");
   const subtle = useColorModeValue("gray.600", "gray.400");
@@ -54,16 +57,16 @@ const Form = () => {
     formData.append("file", data.file[0]);
     formData.append("type", data.type);
 
-    await sendWorkLogs(formData)
-      .then((resp) => {
-        resp && addWorkLogs(resp);
-        setIsSent(true);
-        setIsJiraExport(isJiraType);
-      })
-      .catch((error) => {
-        console.error("Error: ", error);
-        addWorkLogsError(error);
-      });
+    setImportError("");
+    try {
+      const workLogs = await sendWorkLogs(formData);
+      addWorkLogs(workLogs);
+      setIsSent(true);
+      setIsJiraExport(isJiraType);
+    } catch (error) {
+      setIsSent(false);
+      setImportError(getApiErrorMessage(error));
+    }
   });
 
   return (
@@ -104,13 +107,20 @@ const Form = () => {
             </Text>
 
             <FileUpload
-              accept={"text"}
+              accept=".txt,.xlsx"
               onReset={() => {
                 resetField("file");
                 setIsSent(false);
+                setImportError("");
                 resetWorkLogs();
               }}
-              register={register("file", { validate: validateFiles })}
+              register={register("file", {
+                validate: validateFiles,
+                onChange: () => {
+                  setIsSent(false);
+                  setImportError("");
+                },
+              })}
             />
 
             <FormErrorMessage mt={2} fontSize="sm">
@@ -141,7 +151,13 @@ const Form = () => {
               Choose file type
             </Text>
 
-            <RadioGroup control={control} onToggle={setIsSent} />
+            <RadioGroup
+              control={control}
+              onToggle={(value) => {
+                setIsSent(value);
+                setImportError("");
+              }}
+            />
 
             <FormErrorMessage mt={2} fontSize="sm">
               {errors?.type && errors.type.message}
@@ -150,6 +166,15 @@ const Form = () => {
         </Stack>
 
         <Divider />
+
+        {importError && (
+          <Alert status="error" alignItems="flex-start">
+            <AlertIcon mt={1} />
+            <Text fontSize="sm" whiteSpace="pre-wrap" overflowWrap="anywhere">
+              {importError}
+            </Text>
+          </Alert>
+        )}
 
         <Flex justify="flex-end">
           <Button

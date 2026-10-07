@@ -1,3 +1,4 @@
+import { describeWorklog, submitWorklogRequests } from "../helpers/apiErrors";
 import { Stack, Text } from "@chakra-ui/react";
 import { toast } from "react-toastify";
 import { endOfDay, format, startOfDay, subDays } from "date-fns";
@@ -317,17 +318,19 @@ export const createJiraWorklogs = async (worklogs) => {
         };
 
         // Make an API call to create the worklog and store the promise
-        const request = instance.post(
-          `/jira/rest/api/3/issue/${task}/worklog`,
-          data,
-          { params: { jiraUrl: worklog.jiraUrl } },
-        );
-        requests.push(request);
+        requests.push({
+          context: describeWorklog(worklog),
+          send: () => instance.post(
+            `/jira/rest/api/3/issue/${task}/worklog`,
+            data,
+            { params: { jiraUrl: worklog.jiraUrl }, skipErrorToast: true },
+          ),
+        });
       }
     }
 
-    // Execute all API calls concurrently using Promise.all
-    await Promise.all(requests).then(() => {
+    // Wait for all responses and report any partial success.
+    await submitWorklogRequests(requests, "Jira").then(() => {
       toast.success(
         <Stack>
           <Text fontWeight={600}>
@@ -347,18 +350,18 @@ export const createJiraWorklogs = async (worklogs) => {
   } catch (error) {
     toast.error(
       <Stack>
-        <Text fontWeight={600}>Can't submit due to error: {error.message}</Text>
+        <Text whiteSpace="pre-wrap" maxH="50vh" overflowY="auto" overflowWrap="anywhere">{error.message}</Text>
       </Stack>,
       {
         position: "bottom-center",
-        autoClose: 5000,
+        autoClose: false,
         hideProgressBar: false,
         closeOnClick: true,
         progress: undefined,
         theme: "light",
       },
     );
-    console.error("Error while creating worklogs:", error);
+    console.error("Error while creating worklogs:", error.message);
   }
 };
 

@@ -13,7 +13,7 @@ const FileUpload = ({ register, accept, multiple, onReset }) => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
 
-    setFileName(file.name);
+    setFileName(file?.name || "");
     register.onChange(e);
   };
 

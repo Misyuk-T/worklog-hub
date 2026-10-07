@@ -1,3 +1,4 @@
+import { describeWorklog, submitWorklogRequests } from "../helpers/apiErrors";
 import { Stack, Text } from "@chakra-ui/react";
 
 import { toast } from "react-toastify";
@@ -159,11 +160,17 @@ export const trackTimeToRedmine = async (data) => {
     validateWorkLogsData(data, false);
     const redmineData = transformToRedmineData(data);
 
-    const requests = redmineData.map((entry) => {
-      return instance.post(`/redmine/time_entries.json`, entry);
-    });
+    const requests = redmineData.map((entry) => ({
+      context: describeWorklog({
+        date: entry.time_entry.spent_on,
+        hours: entry.time_entry.hours,
+        task: entry.time_entry.issue_id,
+        description: entry.time_entry.comments,
+      }),
+      send: () => instance.post(`/redmine/time_entries.json`, entry, { skipErrorToast: true }),
+    }));
 
-    await Promise.all(requests).then(() => {
+    await submitWorklogRequests(requests, "Redmine").then(() => {
       toast.success(
         <Stack>
           <Text fontWeight={600}>
@@ -183,17 +190,17 @@ export const trackTimeToRedmine = async (data) => {
   } catch (error) {
     toast.error(
       <Stack>
-        <Text fontWeight={600}>Can`t submit due to error: {error.message}</Text>
+        <Text whiteSpace="pre-wrap" maxH="50vh" overflowY="auto" overflowWrap="anywhere">{error.message}</Text>
       </Stack>,
       {
         position: "bottom-center",
-        autoClose: 5000,
+        autoClose: false,
         hideProgressBar: false,
         closeOnClick: true,
         progress: undefined,
         theme: "light",
       }
     );
-    console.error("Error while tracking time:", error);
+    console.error("Error while tracking time:", error.message);
   }
 };

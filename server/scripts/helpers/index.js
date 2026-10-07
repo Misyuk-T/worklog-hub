@@ -9,6 +9,7 @@ const groupedDataByDate = (data) =>
   }, {});
 
 const getHoursFromString = (str) => {
+  if (typeof str !== "string") return null;
   const regex = /^(\d+(\.\d+)?)h$/;
   const match = str.match(regex);
   if (match) {
@@ -29,17 +30,25 @@ const validateDataArray = (requiredFields) => {
 
 const VALID_EMPTY_VALUES = ["project", "task"];
 
-const validateDataObject = (data) => {
+const validateDataObject = (data, context = {}) => {
   for (const [key, value] of Object.entries(data)) {
-    if (!value && !VALID_EMPTY_VALUES.includes(key)) {
-      throw new Error(
-        `Error while formatted values. Invalid or missing value (${value}) for field "${key}".`
-      );
+    if ((value === undefined || value === null || value === "") && !VALID_EMPTY_VALUES.includes(key)) {
+      const error = new Error(`Invalid or missing value for field "${key}".`);
+      error.field = key;
+      error.context = context;
+      throw error;
     }
 
-    if (key === "hours" && value > 8) {
-      throw new Error(`Error: Invalid task working hours. The hours worked for single task cannot be more than ${8}.
-         Please check the logs on ${data.date}`);
+    if (key === "description" && (typeof value !== "string" || !value.trim())) {
+      const error = new Error("Description must contain text.");
+      error.field = key;
+      throw error;
+    }
+    if (key === "hours" && (!["number", "string"].includes(typeof value) || !Number.isFinite(Number(value)) || Number(value) <= 0)) {
+      const error = new Error("Hours must be a finite number greater than zero.");
+      error.field = key;
+      error.context = context;
+      throw error;
     }
   }
 };

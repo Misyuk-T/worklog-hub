@@ -1,3 +1,4 @@
+import { describeWorklog, submitWorklogRequests } from "../helpers/apiErrors";
 import { Stack, Text } from "@chakra-ui/react";
 import { toast } from "react-toastify";
 import { endOfDay, format, parse, startOfDay } from "date-fns";
@@ -332,15 +333,18 @@ export const createClickUpTimeEntries = async (worklogs) => {
           tid: task,
         };
 
-        const request = instance.post(
-          `/clickup/team/${teamId}/time_entries`,
-          data,
-        );
-        requests.push(request);
+        requests.push({
+          context: describeWorklog(worklog),
+          send: () => instance.post(
+            `/clickup/team/${teamId}/time_entries`,
+            data,
+            { skipErrorToast: true },
+          ),
+        });
       }
     }
 
-    await Promise.all(requests).then(() => {
+    await submitWorklogRequests(requests, "ClickUp").then(() => {
       toast.success(
         <Stack>
           <Text fontWeight={600}>
@@ -360,18 +364,18 @@ export const createClickUpTimeEntries = async (worklogs) => {
   } catch (error) {
     toast.error(
       <Stack>
-        <Text fontWeight={600}>Can't submit due to error: {error.message}</Text>
+        <Text whiteSpace="pre-wrap" maxH="50vh" overflowY="auto" overflowWrap="anywhere">{error.message}</Text>
       </Stack>,
       {
         position: "bottom-center",
-        autoClose: 5000,
+        autoClose: false,
         hideProgressBar: false,
         closeOnClick: true,
         progress: undefined,
         theme: "light",
       },
     );
-    console.error("Error while creating ClickUp time entries:", error);
+    console.error("Error while creating ClickUp time entries:", error.message);
   }
 };
 

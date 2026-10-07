@@ -28,6 +28,7 @@ import {
 } from "../../../helpers/transformToSelectData";
 import { getAssignedTasks } from "../../../actions/clickup";
 import { normalizeServiceScope } from "../../../helpers/matchWorklogTasks";
+import { validateWorklogHours } from "../../../helpers/validateWorklogsData";
 
 import DescriptionInput from "./DescriptionInput";
 import DatePicker from "./DatePicker";
@@ -40,13 +41,6 @@ import ClickUpTeamSelect from "./ClickUpTeamSelect";
 import ClickUpTaskSelect from "./ClickUpTaskSelect";
 
 const EMPTY_ISSUES = [];
-
-const handleNumbersValidate = (value) => {
-  if (isNaN(value) || value > 8 || value <= 0) {
-    return "Incorrect hours field";
-  }
-  return true;
-};
 
 const handleTextValidate = (value) => {
   if (value.length < 1) {
@@ -333,7 +327,7 @@ const WorkLogItem = ({ data }) => {
             </Text>
             <HoursInput
               register={register("hours", {
-                validate: handleNumbersValidate,
+                validate: validateWorklogHours,
               })}
               defaultValue={data.hours}
               value={watch("hours")}

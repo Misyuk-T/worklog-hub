@@ -13,7 +13,6 @@ const HoursInput = ({ defaultValue, value, onChange, register }) => {
       value={value}
       w="70px"
       min={0.1}
-      max={8}
       step={0.25}
       keepWithinRange
       allowMouseWheel
@@ -24,7 +23,7 @@ const HoursInput = ({ defaultValue, value, onChange, register }) => {
     >
       <NumberInputField
         h="25px"
-        register={register}
+        {...register}
         cursor="pointer"
         border="none"
         pl="5px"

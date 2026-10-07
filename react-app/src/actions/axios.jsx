@@ -2,6 +2,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { Stack, Text } from "@chakra-ui/react";
 import useSettingsStore from "../store/settingsStore";
+import { getApiErrorMessage } from "../helpers/apiErrors";
 
 export const instance = axios.create({
   baseURL: import.meta.env.VITE_BASE_URL,
@@ -32,14 +33,15 @@ instance.interceptors.request.use(async (config) => {
 });
 
 instance.interceptors.response.use(null, (error) => {
-  const errorText = error?.response?.data;
+  const errorText = getApiErrorMessage(error);
+  error.message = errorText;
   const statusRequest = error?.response?.status;
 
-  if (statusRequest === 500) {
+  if (statusRequest === 500 && !error.config?.skipErrorToast) {
     toast.error(
       <Stack>
         <Text fontWeight={600}>Status: {statusRequest}</Text>
-        <Text>{errorText}</Text>
+        <Text whiteSpace="pre-wrap">{errorText}</Text>
       </Stack>,
       {
         position: "bottom-center",

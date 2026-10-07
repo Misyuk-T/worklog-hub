@@ -14,12 +14,9 @@ import {
 
 export const sendWorkLogs = (formData) => {
   return instance
-    .post("/submit-form", formData)
+    .post("/submit-form", formData, { skipErrorToast: true })
     .then((response) => {
       return response.data;
-    })
-    .catch((error) => {
-      console.error(error);
     });
 };
 
