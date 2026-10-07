@@ -203,7 +203,35 @@ const App = () => {
             gap={1.5}
             fontSize="xs"
             color="blue.600"
-            _hover={{ color: "blue.700", textDecoration: "underline" }}
+            borderRadius="md"
+            px={2}
+            py={1}
+            sx={{
+              "@keyframes githubStarHint": {
+                "0%, 8%, 100%": {
+                  backgroundColor: "transparent",
+                  boxShadow: "0 0 0 0 rgba(49, 130, 206, 0)",
+                },
+                "2%, 6%": {
+                  backgroundColor: "var(--chakra-colors-blue-50)",
+                  boxShadow: "0 0 0 4px rgba(49, 130, 206, 0.12)",
+                },
+                "4%": {
+                  backgroundColor: "transparent",
+                  boxShadow: "0 0 0 0 rgba(49, 130, 206, 0)",
+                },
+              },
+              animation: "githubStarHint 60s ease-in-out 12s infinite",
+              "@media (prefers-reduced-motion: reduce)": {
+                animation: "none",
+              },
+            }}
+            _hover={{
+              color: "blue.700",
+              textDecoration: "underline",
+              animation: "none",
+            }}
+            _focusVisible={{ animation: "none", boxShadow: "outline" }}
           >
             <Box
               as="img"

@@ -6,6 +6,7 @@ import {
   getDescriptionTaskCode,
   normalizeServiceScope,
 } from "../helpers/matchWorklogTasks.js";
+import { applyRedminePrefixMappings } from "../helpers/redminePrefixMappings.js";
 
 const initialState = {
   workLogs: null,
@@ -74,6 +75,21 @@ const useWorkLogsStore = create((set, get) => ({
 
       return { workLogs: oldState };
     });
+  },
+  applyRedminePrefixMappings: (mappings, allowedIssueIds, options) => {
+    let result;
+    set((state) => {
+      result = applyRedminePrefixMappings(
+        state.workLogs,
+        mappings,
+        allowedIssueIds,
+        options
+      );
+      return result.workLogs === state.workLogs
+        ? state
+        : { workLogs: result.workLogs };
+    });
+    return result;
   },
   bulkUpdateWorkLogsWithJira: (jiraIssues, defaultJiraUrl = "") => {
     set((state) => {

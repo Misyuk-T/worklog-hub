@@ -40,13 +40,19 @@ const theme = extendTheme({
         },
 
       "*::-webkit-scrollbar": {
-        width: "10px",
+        width: "6px",
+        height: "6px",
+      },
+
+      "@supports not selector(::-webkit-scrollbar)": {
+        "*": {
+          scrollbarWidth: "thin",
+          scrollbarColor: "var(--chakra-colors-gray-500) transparent",
+        },
       },
 
       "*::-webkit-scrollbar-track": {
         background: "transparent",
-        border: "1px solid",
-        borderColor: "var(--chakra-colors-gray-300)",
         borderRadius: 5,
       },
 

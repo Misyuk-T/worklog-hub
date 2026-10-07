@@ -223,6 +223,10 @@ const WorkLogItem = ({ data }) => {
   }, [data.blb, setValue]);
 
   useEffect(() => {
+    setValue("project", data.project);
+  }, [data.project, setValue]);
+
+  useEffect(() => {
     setValue("jiraUrl", initialJiraUrl);
   }, [initialJiraUrl, setValue]);
 

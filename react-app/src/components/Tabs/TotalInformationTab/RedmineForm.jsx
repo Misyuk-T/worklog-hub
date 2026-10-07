@@ -52,6 +52,7 @@ import {
 
 import ModalDialog from "../../ModalDialog";
 import { QuestionIcon } from "@chakra-ui/icons";
+import RedminePrefixMappings from "./RedminePrefixMappings";
 
 const renderPopover = () => {
   return (
@@ -393,73 +394,88 @@ const RedmineForm = () => {
         </CardBody>
       </Card>
 
-      <Flex gap={3} justifyContent={"flex-end"} flexWrap="wrap">
-        <ModalDialog
-          headerTitle="Submitting to Jira"
-          trigger={
-            <Button
-              isDisabled={!jiraUser || !isWorkLogsExist}
-              colorScheme="blue"
-              size="sm"
-              minW="160px"
-            >
-              Submit cards to Jira
-            </Button>
-          }
-          onConfirm={handleJiraSubmit}
+      <Flex
+        gap={3}
+        justifyContent="space-between"
+        alignItems="center"
+        flexWrap="wrap"
+        maxW={{ base: "calc(100vw - 32px)", sm: "calc(100vw - 48px)" }}
+      >
+        <RedminePrefixMappings />
+        <Flex
+          gap={3}
+          ml="auto"
+          justifyContent="flex-end"
+          flexWrap="wrap"
+          minW={0}
         >
-          <Text>
-            Do you really want to submit{" "}
-            <strong> {getTotalHoursFromObject(jiraWoklogs)} </strong>
-            hours to <strong>Jira</strong>?
-          </Text>
-        </ModalDialog>
+          <ModalDialog
+            headerTitle="Submitting to Jira"
+            trigger={
+              <Button
+                isDisabled={!jiraUser || !isWorkLogsExist}
+                colorScheme="blue"
+                size="sm"
+                minW="160px"
+              >
+                Submit cards to Jira
+              </Button>
+            }
+            onConfirm={handleJiraSubmit}
+          >
+            <Text>
+              Do you really want to submit{" "}
+              <strong> {getTotalHoursFromObject(jiraWoklogs)} </strong>
+              hours to <strong>Jira</strong>?
+            </Text>
+          </ModalDialog>
 
-        <ModalDialog
-          headerTitle="Submitting to ClickUp"
-          trigger={
-            <Button
-              isDisabled={!clickUpUser || !isWorkLogsExist}
-              colorScheme="purple"
-              size="sm"
-              minW="160px"
-            >
-              Submit cards to ClickUp
-            </Button>
-          }
-          onConfirm={handleClickUpSubmit}
-        >
-          <Text>
-            Do you really want to submit{" "}
-            <strong>
-              {getTotalHoursFromObject(filterWorklogsForClickUp(workLogs))}{" "}
-            </strong>
-            hours to <strong>ClickUp</strong>?
-          </Text>
-        </ModalDialog>
+          <ModalDialog
+            headerTitle="Submitting to ClickUp"
+            trigger={
+              <Button
+                isDisabled={!clickUpUser || !isWorkLogsExist}
+                colorScheme="purple"
+                size="sm"
+                minW="160px"
+              >
+                Submit cards to ClickUp
+              </Button>
+            }
+            onConfirm={handleClickUpSubmit}
+          >
+            <Text>
+              Do you really want to submit{" "}
+              <strong>
+                {getTotalHoursFromObject(filterWorklogsForClickUp(workLogs))}{" "}
+              </strong>
+              hours to <strong>ClickUp</strong>?
+            </Text>
+          </ModalDialog>
 
-        <ModalDialog
-          headerTitle="Submitting to Redmine"
-          trigger={
-            <Button
-              isDisabled={
-                !isWorklogHaveProject || !user?.id || !isWorkLogsExist
-              }
-              colorScheme="red"
-              size="sm"
-              minW="160px"
-            >
-              Submit cards to Redmine
-            </Button>
-          }
-          onConfirm={handleRedmineSubmit}
-        >
-          <Text>
-            Do you really want to submit{" "}
-            <strong>{getTotalHoursFromObject(workLogs)} </strong>
-            hours to <strong>Redmine</strong>?
-          </Text>
-        </ModalDialog>
+          <ModalDialog
+            headerTitle="Submitting to Redmine"
+            trigger={
+              <Button
+                isDisabled={
+                  !isWorklogHaveProject || !user?.id || !isWorkLogsExist
+                }
+                colorScheme="red"
+                size="sm"
+                minW="160px"
+              >
+                Submit cards to Redmine
+              </Button>
+            }
+            onConfirm={handleRedmineSubmit}
+          >
+            <Text>
+              Do you really want to submit{" "}
+              <strong>{getTotalHoursFromObject(workLogs)} </strong>
+              hours to <strong>Redmine</strong>?
+            </Text>
+          </ModalDialog>
+        </Flex>
       </Flex>
     </Stack>
   );
