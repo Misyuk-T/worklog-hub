@@ -25,7 +25,7 @@ import {
 } from "@chakra-ui/react";
 import { CalendarIcon } from "@chakra-ui/icons";
 import { DayPicker } from "react-day-picker";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import { round } from "../../../helpers/getHours";
 import groupByField from "../../../helpers/groupByField";
 import { getLatestRedmineWorkLogs } from "../../../actions/redmine";
@@ -338,7 +338,11 @@ const CompareActivityTable = ({ panelSize }) => {
     const dates1 = Object.keys(source1Logs);
     const dates2 = Object.keys(source2Logs);
     const uniqueDates = Array.from(new Set([...dates1, ...dates2]));
-    uniqueDates.sort((a, b) => new Date(b) - new Date(a));
+    uniqueDates.sort(
+      (a, b) =>
+        parse(b, "dd-MM-yyyy", new Date()) -
+        parse(a, "dd-MM-yyyy", new Date()),
+    );
     return uniqueDates;
   }, [source1Logs, source2Logs]);
 
