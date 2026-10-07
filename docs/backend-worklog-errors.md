@@ -49,4 +49,26 @@ frontend and Northflank `logger/github` for the backend. Northflank builds `/ser
 from the same repository/branch. Automatic deployment is disabled; deployment must
 pin the successful build of the reviewed source commit. The prior deployed backend
 commit was `74ece0db81e55e802e167e0f5d1043cc355b3fde` and its server tree matched the
-pre-change checkout. Release verification is recorded below after completion.
+pre-change checkout.
+
+### Completed release — 2026-10-07
+
+- Source commit `b7bf28051135b2274f05eddf4d25bb209a50e7c0` pushed to
+  `origin/firebase-click-up-app`.
+- Firebase Hosting deployment completed from an isolated archive of that commit.
+  Live HTML and both JS/CSS assets exactly matched the released files:
+  `index-CMMdRF6Z.js` and `index-BuDZ7cwc.css`.
+- Northflank build `true-range-5706` succeeded. Manual deployment pinned that
+  build ID; service status is `COMPLETED` and `deployedSHA` matches the source
+  commit. The deployment API accepts either `buildId` or `buildSHA`, not both.
+  Automatic deployment remains disabled.
+- Live API checks: a synthetic 12.5h TXT import returned 200 with hours unchanged;
+  missing duration returned 400 / `INVALID_TXT` with line 2 and field `hours`;
+  missing upload returned 400 / `MISSING_FILE`; missing Redmine connection settings
+  returned 400 / `MISSING_CREDENTIALS`.
+- No downstream worklogs were created. Authenticated submissions to Redmine,
+  Jira and ClickUp were covered through mocked upstream responses, not live writes.
+
+Frontend: https://redmine-scheduler-app.web.app/
+
+Backend: https://rest--github--jjfz5dbqtvkd.code.run
