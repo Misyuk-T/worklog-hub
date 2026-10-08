@@ -199,7 +199,10 @@ const WorkLogItem = ({ data }) => {
       blb: blb || data.blb,
       project: project?.value || data.project,
       task: task?.value || "",
-      jiraUrl: jiraUrl?.value || data.jiraUrl || organizationURL,
+      jiraUrl:
+        jiraUrl?.value ||
+        normalizeServiceScope(data.jiraUrl) ||
+        truncatedOrganizationURL,
       clickupTeamId: clickupTeamId?.value || data.clickupTeamId,
       clickupTask: clickupTask?.value || data.clickupTask || "",
     };

@@ -4,12 +4,16 @@ import useWorkLogsStore from "../store/worklogsStore.js";
 import useJiraStore from "../store/jiraStore.js";
 
 import {
+  buildJiraIssuePool,
   collectScopedTaskCodes,
   countUnscopedTaskCodes,
   findScopedItem,
+  formatMissingJiraCodes,
   getDescriptionTaskCode,
   itemMatchesTaskCode,
   normalizeServiceScope,
+  pickJiraIssue,
+  resolveMissingJiraIssues,
   resolveMissingScopedItems,
 } from "./matchWorklogTasks.js";
 
@@ -194,4 +198,211 @@ test("Jira hydration reuses normalized instances and preserves moved-key aliases
   assert.equal(state.assignedIssues.length, 1);
   assert.deepEqual(state.assignedIssues[0].lookupAliases, ["OLD-1", "OLD-2"]);
   useJiraStore.getState().resetAll();
+});
+
+const MAIN = "main.atlassian.net";
+const OTHER = "other.atlassian.net";
+const jiraPool = (main = [], other = []) =>
+  buildJiraIssuePool(main, { [`https://${OTHER}/`]: other }, `https://${MAIN}/`);
+
+test("builds a Jira pool tagged with normalized instance URLs", () => {
+  const pool = jiraPool([{ key: "A-1" }], [{ key: "B-1" }]);
+  assert.deepEqual(
+    pool.map((issue) => [issue.key, issue.jiraUrl]),
+    [
+      ["A-1", MAIN],
+      ["B-1", OTHER],
+    ]
+  );
+});
+
+test("a card defaulting to main still matches a key known only on another instance", () => {
+  const pool = jiraPool([], [{ key: "ABC-102" }]);
+  assert.equal(pickJiraIssue(pool, "ABC-102", MAIN, MAIN).jiraUrl, OTHER);
+  assert.equal(pickJiraIssue(pool, "ABC-102", undefined, MAIN).jiraUrl, OTHER);
+
+  useWorkLogsStore.setState({
+    workLogs: {
+      day: [
+        { id: "a", description: "ABC-102: imported" },
+        { id: "b", description: "ABC-102: new card", jiraUrl: MAIN },
+      ],
+    },
+  });
+  useWorkLogsStore.getState().bulkUpdateWorkLogsWithJira(pool, MAIN);
+  const [a, b] = useWorkLogsStore.getState().workLogs.day;
+  assert.deepEqual([a.task, a.jiraUrl], ["ABC-102", OTHER]);
+  assert.deepEqual([b.task, b.jiraUrl], ["ABC-102", OTHER]);
+  useWorkLogsStore.getState().resetAll();
+});
+
+test("an ambiguous Jira key prefers the card's instance, then main", () => {
+  const pool = jiraPool([{ key: "QA-1" }], [{ key: "QA-1" }]);
+  assert.equal(pickJiraIssue(pool, "QA-1", OTHER, MAIN).jiraUrl, OTHER);
+  assert.equal(pickJiraIssue(pool, "QA-1", MAIN, MAIN).jiraUrl, MAIN);
+  assert.equal(pickJiraIssue(pool, "QA-1", undefined, MAIN).jiraUrl, MAIN);
+  assert.equal(pickJiraIssue(pool, "QA-1", "third.net", MAIN), null);
+  assert.equal(pickJiraIssue(pool, "QA-1", undefined, ""), null);
+  assert.equal(pickJiraIssue(pool, "NOPE-1", OTHER, MAIN), null);
+});
+
+test("fetches only Jira keys that no loaded list contains", async () => {
+  const issues = jiraPool([{ key: "A-1" }], [{ key: "ABC-102" }]);
+  const calls = [];
+  const result = await resolveMissingJiraIssues({
+    workLogs: {
+      day: [
+        { description: "A-1: main" },
+        { description: "ABC-102: other", jiraUrl: MAIN },
+        { description: "meeting: no key" },
+      ],
+    },
+    issues,
+    mainJiraUrl: MAIN,
+    instanceUrls: [OTHER],
+    load: async (code, scope) => {
+      calls.push([code, scope]);
+      return null;
+    },
+    onLoaded: () => {},
+  });
+  assert.deepEqual(calls, []);
+  assert.deepEqual(result.notFound, []);
+});
+
+test("an unknown Jira key is tried on the card instance, then main, then others; first success wins", async () => {
+  const issues = jiraPool();
+  const calls = [];
+  const loaded = [];
+  const result = await resolveMissingJiraIssues({
+    workLogs: {
+      day: [
+        { description: "XX-1: a" },
+        { description: "xx-1: dup", jiraUrl: `https://${MAIN}/` },
+        { description: "XX-2: gone" },
+      ],
+    },
+    issues,
+    mainJiraUrl: `https://${MAIN}/`,
+    instanceUrls: [`https://${OTHER}/`, "third.atlassian.net"],
+    load: async (code, scope) => {
+      calls.push([code, scope]);
+      return code === "XX-1" && scope === OTHER
+        ? { key: "XX-1", summary: "Found" }
+        : null;
+    },
+    onLoaded: (issue, scope) => loaded.push([issue.key, scope]),
+  });
+  assert.deepEqual(calls, [
+    ["XX-1", MAIN],
+    ["XX-1", OTHER],
+    ["XX-2", MAIN],
+    ["XX-2", OTHER],
+    ["XX-2", "third.atlassian.net"],
+  ]);
+  assert.deepEqual(loaded, [["XX-1", OTHER]]);
+  assert.deepEqual(result.notFound, ["XX-2"]);
+  assert.equal(result.issues[0].jiraUrl, OTHER);
+  assert.equal(pickJiraIssue(result.issues, "XX-1", MAIN, MAIN).jiraUrl, OTHER);
+});
+
+test("a thrown Jira lookup does not stop the remaining instances", async () => {
+  const result = await resolveMissingJiraIssues({
+    workLogs: { day: [{ description: "ZZ-1: x" }] },
+    issues: [],
+    mainJiraUrl: MAIN,
+    instanceUrls: [OTHER],
+    load: async (code, scope) => {
+      if (scope === MAIN) throw new Error("forbidden");
+      return { key: code };
+    },
+    onLoaded: () => {},
+  });
+  assert.deepEqual(result.notFound, []);
+  assert.equal(result.issues[0].jiraUrl, OTHER);
+});
+
+test("Jira matching never calls ClickUp", async () => {
+  useWorkLogsStore.setState({
+    workLogs: { day: [{ id: "a", description: "CE-1: x", clickupTeamId: "1" }] },
+  });
+  const pool = jiraPool([{ key: "CE-1" }]);
+  await resolveMissingJiraIssues({
+    workLogs: useWorkLogsStore.getState().workLogs,
+    issues: pool,
+    mainJiraUrl: MAIN,
+    load: async () => assert.fail("no fetch expected"),
+    onLoaded: () => {},
+  });
+  useWorkLogsStore.getState().bulkUpdateWorkLogsWithJira(pool, MAIN);
+  const [card] = useWorkLogsStore.getState().workLogs.day;
+  assert.equal(card.task, "CE-1");
+  assert.equal(card.clickupTask, undefined);
+  useWorkLogsStore.getState().resetAll();
+});
+
+test("formats the missing Jira key warning with a cap", () => {
+  assert.equal(
+    formatMissingJiraCodes(["ABC-102", "XX-12"]),
+    "Could not find Jira issue(s): ABC-102, XX-12"
+  );
+  assert.equal(
+    formatMissingJiraCodes(["A-1", "A-2", "A-3", "A-4", "A-5", "A-6", "A-7"]),
+    "Could not find Jira issue(s): A-1, A-2, A-3, A-4, A-5 and 2 more"
+  );
+});
+
+test("an authoritative card never falls back to another instance's issue", async () => {
+  const issues = jiraPool([{ key: "QA-5", summary: "Unrelated" }], []);
+  const calls = [];
+  const result = await resolveMissingJiraIssues({
+    workLogs: { day: [{ description: "QA-5: work", jiraUrl: OTHER }] },
+    issues,
+    mainJiraUrl: MAIN,
+    instanceUrls: [OTHER],
+    load: async (code, scope) => {
+      calls.push([code, scope]);
+      return null;
+    },
+    onLoaded: () => {},
+  });
+  assert.deepEqual(calls, [["QA-5", OTHER]]);
+  assert.deepEqual(result.notFound, ["QA-5"]);
+  assert.equal(pickJiraIssue(issues, "QA-5", OTHER, MAIN), null);
+
+  const logs = [{ id: "a", description: "QA-5: work", jiraUrl: OTHER }];
+  useWorkLogsStore.setState({ workLogs: { day: logs } });
+  useWorkLogsStore.getState().bulkUpdateWorkLogsWithJira(issues, MAIN);
+  assert.deepEqual(useWorkLogsStore.getState().workLogs.day[0], logs[0]);
+  useWorkLogsStore.getState().resetAll();
+});
+
+test("an authoritative card links to its own instance without a fetch", async () => {
+  const issues = jiraPool(
+    [{ key: "QA-5", summary: "Main" }],
+    [{ key: "QA-5", summary: "Other" }]
+  );
+  const result = await resolveMissingJiraIssues({
+    workLogs: { day: [{ description: "QA-5: work", jiraUrl: OTHER }] },
+    issues,
+    mainJiraUrl: MAIN,
+    instanceUrls: [OTHER],
+    load: async () => assert.fail("no fetch expected"),
+    onLoaded: () => {},
+  });
+  assert.deepEqual(result.notFound, []);
+  assert.equal(pickJiraIssue(issues, "QA-5", OTHER, MAIN).summary, "Other");
+});
+
+test("an authoritative card's fetched issue stays on its own instance", async () => {
+  const issues = jiraPool([{ key: "QA-5" }], []);
+  const result = await resolveMissingJiraIssues({
+    workLogs: { day: [{ description: "QA-5: work", jiraUrl: OTHER }] },
+    issues,
+    mainJiraUrl: MAIN,
+    load: async (code) => ({ key: code, summary: "Fetched" }),
+    onLoaded: () => {},
+  });
+  assert.deepEqual(result.notFound, []);
+  assert.equal(pickJiraIssue(issues, "QA-5", OTHER, MAIN).summary, "Fetched");
 });

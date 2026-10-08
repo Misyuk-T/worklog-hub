@@ -44,9 +44,12 @@ import { getTotalHoursFromObject } from "../../../helpers/getHours";
 import { filterWorklogsByTask } from "../../../helpers/filterWorklogsForJira";
 import { filterWorklogsForClickUp } from "../../../helpers/filterWorklogsForClickUp";
 import {
+  buildJiraIssuePool,
   collectScopedTaskCodes,
   countUnscopedTaskCodes,
+  formatMissingJiraCodes,
   normalizeServiceScope,
+  resolveMissingJiraIssues,
   resolveMissingScopedItems,
 } from "../../../helpers/matchWorklogTasks";
 
@@ -143,41 +146,23 @@ const RedmineForm = () => {
     setIsMatchingJira(true);
     try {
       const mainJiraUrl = normalizeServiceScope(organizationURL);
-      const allJiraIssues = [
-        ...assignedIssues.map((issue) => ({ ...issue, jiraUrl: mainJiraUrl })),
-        ...Object.entries(additionalAssignedIssues).flatMap(
-          ([jiraUrl, issues]) => issues.map((issue) => ({ ...issue, jiraUrl }))
-        ),
-      ];
-      const scopedCodes = collectScopedTaskCodes(
-        workLogs,
-        (workLog) => normalizeServiceScope(workLog.jiraUrl) || mainJiraUrl,
-        false
+      const allJiraIssues = buildJiraIssuePool(
+        assignedIssues,
+        additionalAssignedIssues,
+        mainJiraUrl
       );
-      const missingScope = countUnscopedTaskCodes(
+      const { notFound } = await resolveMissingJiraIssues({
         workLogs,
-        (workLog) => normalizeServiceScope(workLog.jiraUrl) || mainJiraUrl,
-        false
-      );
-      const { failed: failedLookups } = await resolveMissingScopedItems({
-        scopedCodes,
-        items: allJiraIssues,
-        getScope: (issue) => normalizeServiceScope(issue.jiraUrl),
+        issues: allJiraIssues,
+        mainJiraUrl,
+        instanceUrls: Object.keys(additionalAssignedIssues),
         load: getJiraIssueByKey,
-        withScope: (issue, jiraUrl) => ({ ...issue, jiraUrl }),
         onLoaded: (issue, jiraUrl) => addFetchedIssue(jiraUrl, issue),
       });
 
       bulkUpdateWorkLogsWithJira(allJiraIssues, mainJiraUrl);
-      if (failedLookups) {
-        toast.warning(
-          `${failedLookups} Jira issue(s) could not be loaded. Check access and task codes.`
-        );
-      }
-      if (missingScope) {
-        toast.info(
-          `${missingScope} card(s) need a Jira instance before matching.`
-        );
+      if (notFound.length) {
+        toast.warning(formatMissingJiraCodes(notFound));
       }
     } finally {
       setIsMatchingJira(false);

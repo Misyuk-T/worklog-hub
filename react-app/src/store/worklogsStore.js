@@ -5,6 +5,7 @@ import {
   findScopedItem,
   getDescriptionTaskCode,
   normalizeServiceScope,
+  pickJiraIssue,
 } from "../helpers/matchWorklogTasks.js";
 import { applyRedminePrefixMappings } from "../helpers/redminePrefixMappings.js";
 
@@ -103,14 +104,12 @@ const useWorkLogsStore = create((set, get) => ({
             workLog.description,
             false
           );
-          const jiraScope = normalizeServiceScope(
-            workLog.jiraUrl || defaultJiraUrl
+          const matchingIssue = pickJiraIssue(
+            jiraIssues,
+            taskIdentifier,
+            workLog.jiraUrl,
+            defaultJiraUrl
           );
-          const matchingIssue =
-            jiraScope &&
-            findScopedItem(jiraIssues, taskIdentifier, jiraScope, (issue) =>
-              normalizeServiceScope(issue.jiraUrl)
-            );
 
           if (matchingIssue) {
             updatedWorkLogs.push(workLog.description);

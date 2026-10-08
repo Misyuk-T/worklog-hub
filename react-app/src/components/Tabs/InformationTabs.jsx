@@ -12,6 +12,7 @@ import BoxOverlay from "../BoxOverlay";
 
 import styles from "./InformationTabs.module.scss";
 import useJiraStore from "../../store/jiraStore";
+import { normalizeServiceScope } from "../../helpers/matchWorklogTasks";
 
 const getSortedByDate = (data) =>
   data.sort((a, b) => {
@@ -36,10 +37,7 @@ const InformationTabs = () => {
     : new Date();
   const formattedLastDate = format(lastDate, "dd-MM-yyyy");
 
-  const truncatedOrganizationURL = organizationURL?.slice(
-    8,
-    organizationURL?.length,
-  );
+  const truncatedOrganizationURL = normalizeServiceScope(organizationURL);
 
   const handleAddWorkLog = () => {
     addWorkLog(formattedLastDate, {

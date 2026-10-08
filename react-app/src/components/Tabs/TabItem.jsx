@@ -13,6 +13,7 @@ import useWorkLogsStore from "../../store/worklogsStore";
 import WorkLogItem from "./WorklogItem/WorkLogItem";
 import { getHours, round } from "../../helpers/getHours";
 import useJiraStore from "../../store/jiraStore";
+import { normalizeServiceScope } from "../../helpers/matchWorklogTasks";
 
 const TabItem = ({ dayLogs, date }) => {
   const { addWorkLog } = useWorkLogsStore();
@@ -25,10 +26,7 @@ const TabItem = ({ dayLogs, date }) => {
       ? "red"
       : "orange";
 
-  const truncatedOrganizationURL = organizationURL?.slice(
-    8,
-    organizationURL?.length
-  );
+  const truncatedOrganizationURL = normalizeServiceScope(organizationURL);
 
   const handleCreate = () => {
     addWorkLog(date, {

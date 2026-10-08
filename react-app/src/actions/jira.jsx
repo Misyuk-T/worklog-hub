@@ -278,6 +278,7 @@ export const getJiraIssueByKey = async (rawIssueKey, jiraUrl) => {
       `/jira/rest/api/3/issue/${encodeURIComponent(issueKey)}`,
       {
         params: { jiraUrl },
+        skipErrorToast: true,
       },
     );
     const issue = response.data;
