@@ -1,54 +1,91 @@
-# Redmine Logger
+# Worklog Hub
 
-Web app for logging time and managing work across Redmine, Jira, and ClickUp. Auth via Firebase; frontend talks to a Node backend that proxies requests to Redmine/Jira/ClickUp APIs.
+Log your hours once, then move them between **Redmine**, **Jira** and **ClickUp** and see where the trackers disagree.
 
-## Requirements
+**[Open the app](https://redmine-scheduler-app.web.app/)**: press **Try the demo** to see it with invented data, no sign-in needed.
 
-- **Node.js** 18 or later (LTS recommended)
-- **Yarn** for the frontend
+![Compare view in the demo workspace: Jira and ClickUp hours against Redmine, day by day](docs/screenshots/demo-compare.jpg)
 
-Check versions: `node -v` and `yarn -v`.
+Teams that track time in one system for themselves and another for a client end up typing the same hours twice. Worklog Hub reads worklogs from one source, turns them into cards you can edit, and submits them to another tracker. Compare puts two sources side by side for a date range, so you can spot missing or mismatched entries.
 
-## Structure
+## What it does
 
-- **react-app/** — Vite + React (Chakra UI, Zustand). Build output can be deployed to Firebase Hosting.
-- **server/** — Express app (`server.js`). Handles auth, proxies to Redmine/Jira/ClickUp, file upload/parsing for worklog import.
+| | Redmine | Jira | ClickUp |
+|---|---|---|---|
+| Show your latest worklogs | yes | yes, across several Jira sites | yes, across teams |
+| Generate cards from its worklogs | yes | yes | yes |
+| Submit cards as worklogs | yes, with project and billable flag | yes, matched to issue keys | yes, matched to tasks |
+| Compare against another tracker | yes | yes | yes |
+| Edit or delete an entry from Compare | yes | yes | yes |
 
-## Local development
+Cards can also come from a file:
 
-Run backend and frontend in parallel (two terminals).
+- **TXT**: a date line `DD.MM`, then numbered entries ending in hours, e.g. `1. ABC-101: Fix login redirect 2h`.
+- **XLSX**: an export from the JiraAssistant Chrome extension.
 
-1. **Environment**
+Jira keys and ClickUp task ids in a card's description are matched to issues and tasks automatically. Redmine projects can be set per card, in bulk, or through prefix mappings (`ABC-` → a Redmine issue).
 
-   In `react-app/` create a `.env` file:
+![Cards for one day, ready to submit](docs/screenshots/demo-cards.jpg)
 
-   ```
-   VITE_BASE_URL=http://localhost:8000
-   ```
+## How credentials are handled
 
-   The frontend uses this as the API base URL.
+The app needs a personal API key for each tracker you connect. This is what the code does with them:
 
-2. **Backend**
+- **Storage.** Keys are saved in the Firebase Realtime Database of the app's Firebase project, in plain text, under your user record (`users/<id>/settings`). They are not encrypted at rest beyond what Firebase does. The rules in [`react-app/database.rules.json`](react-app/database.rules.json) let a signed-in user read and write only their own record.
+- **Use.** The browser sends each request to the proxy server in [`server/`](server/) with the key in an `X-*` request header. The proxy calls the tracker's API over HTTPS with that key and returns the response. It does not store keys or log them. Error messages have keys masked.
+- **Who can see them.** You, and whoever runs the Firebase project and the proxy server. For the hosted app that is the author. If that is not acceptable, run your own copy (below) with your own Firebase project and server.
+- **Demo mode** sends nothing anywhere. All data is generated in the browser.
 
-   From the repo root:
+Use keys with the narrowest access your tracker allows, and revoke them in the tracker when you stop using the app.
 
-   ```bash
-   cd server
-   node server.js
-   ```
+## Run it locally
 
-   Server runs on port 8000 by default (check `server.js` if you change it).
+Requirements: Node.js 18 or newer, Yarn 1 for the frontend, npm for the server.
 
-3. **Frontend**
+```bash
+git clone https://github.com/Misyuk-T/worklog-hub.git
+cd worklog-hub
 
-   In another terminal:
+# 1. Proxy server, port 8000 (set PORT to change it)
+cd server
+npm install
+node server.js
 
-   ```bash
-   cd react-app
-   yarn install
-   yarn dev
-   ```
+# 2. Frontend, in a second terminal
+cd react-app
+cp .env.example .env.local      # VITE_BASE_URL points at the server
+yarn install
+yarn dev
+```
 
-   Vite dev server runs on its own port (e.g. 5173). Open that URL in the browser; API requests go to `VITE_BASE_URL`.
+Open the URL Vite prints and press **Try the demo**. That works with an empty Firebase config.
 
-Firebase and integration credentials (Redmine, Jira, ClickUp) are configured in the app settings or via your own env/backend config as needed.
+To sign in and use real trackers, create a Firebase project with Google sign-in and a Realtime Database, fill in the `VITE_FIREBASE_*` values in `react-app/.env.local`, and deploy the database rules:
+
+```bash
+cd react-app
+firebase deploy --only database
+```
+
+Then sign in, open **Settings** (gear icon), paste your keys and tracker addresses, and press **Save & Use**.
+
+## Project layout
+
+- `react-app/`: Vite, React 18, Chakra UI, Zustand. Deployed to Firebase Hosting.
+- `server/`: Express proxy for the three tracker APIs. It parses TXT and XLSX imports and throttles calls with `bottleneck`.
+
+## Checks
+
+```bash
+cd react-app && yarn test && yarn lint && yarn build
+cd server && npm test
+```
+
+## Known limits
+
+- The Redmine billable flag assumes a custom field with id 7 (values 1 and 3). Other Redmine setups need that mapping changed in `react-app/src/helpers/transformToRedmineData.js`.
+- The interface is built for desktop. On phones the panels stack and the wide tables scroll sideways.
+
+## License
+
+[MIT](LICENSE)
