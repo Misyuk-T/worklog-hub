@@ -8,25 +8,30 @@ export const instance = axios.create({
   baseURL: import.meta.env.VITE_BASE_URL,
 });
 
+// Credentials go in request headers, not the query string, so they stay out of
+// proxy and access logs. The proxy never forwards them upstream.
+const setHeaders = (config, headers) => {
+  for (const [name, value] of Object.entries(headers)) {
+    if (typeof value === "string" && value) config.headers.set(name, value);
+  }
+};
+
 instance.interceptors.request.use(async (config) => {
   const settings = useSettingsStore.getState().currentSettings;
-  if (config.url.includes("jira") && settings) {
-    config.params = {
-      ...config.params,
-      jiraApiKey: settings.jiraApiKey,
-      jiraEmail: settings.jiraEmail,
-    };
-  } else if (config.url.includes("redmine") && settings) {
-    config.params = {
-      ...config.params,
-      redmineApiKey: settings.redmineApiKey,
-      redmineUrl: settings.redmineUrl,
-    };
-  } else if (config.url.includes("clickup") && settings) {
-    config.params = {
-      ...config.params,
-      clickupApiKey: settings.clickupApiKey,
-    };
+  if (!settings) return config;
+
+  if (config.url.includes("jira")) {
+    setHeaders(config, {
+      "X-Jira-Api-Key": settings.jiraApiKey,
+      "X-Jira-Email": settings.jiraEmail,
+    });
+  } else if (config.url.includes("redmine")) {
+    setHeaders(config, {
+      "X-Redmine-Api-Key": settings.redmineApiKey,
+      "X-Redmine-Url": settings.redmineUrl,
+    });
+  } else if (config.url.includes("clickup")) {
+    setHeaders(config, { "X-ClickUp-Api-Key": settings.clickupApiKey });
   }
 
   return config;

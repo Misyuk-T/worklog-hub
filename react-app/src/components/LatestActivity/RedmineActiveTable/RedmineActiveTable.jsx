@@ -27,7 +27,7 @@ function isDayWeekend(dateString) {
 }
 
 const RedmineActivityTable = ({ panelSize }) => {
-  const { latestActivity, projects } = useRedmineStore();
+  const { latestActivity, projects, organizationURL } = useRedmineStore();
   const groupedByDate = useMemo(
     () => groupByField(latestActivity, "spent_on"),
     [latestActivity],
@@ -126,8 +126,12 @@ const RedmineActivityTable = ({ panelSize }) => {
                         activity?.custom_fields?.[0]?.value === "3"
                           ? "nblb"
                           : "blb";
-                      const redmineIssueUrl = `https://redmine.anyforsoft.com/issues/${activity?.issue?.id}`;
-                      const redmineEditUrl = `https://redmine.anyforsoft.com/time_entries/${activity?.id}/edit`;
+                      const redmineIssueUrl = organizationURL
+                        ? `${organizationURL}/issues/${activity?.issue?.id}`
+                        : "";
+                      const redmineEditUrl = organizationURL
+                        ? `${organizationURL}/time_entries/${activity?.id}/edit`
+                        : "";
                       return (
                         <Tr key={activity.id}>
                           <Td fontSize="14px" minWidth="200px">
@@ -137,9 +141,13 @@ const RedmineActivityTable = ({ panelSize }) => {
                           </Td>
                           <Td fontSize="14px" minWidth="200px">
                             {projectInfo?.subject ? (
-                              <Link href={redmineIssueUrl} isExternal>
-                                {projectInfo.subject}
-                              </Link>
+                              redmineIssueUrl ? (
+                                <Link href={redmineIssueUrl} isExternal>
+                                  {projectInfo.subject}
+                                </Link>
+                              ) : (
+                                projectInfo.subject
+                              )
                             ) : (
                               activity?.issue?.id
                             )}
@@ -152,13 +160,17 @@ const RedmineActivityTable = ({ panelSize }) => {
                             {round(activity?.hours)}h ({blb})
                           </Td>
                           <Td fontSize="14px" w="100%">
-                            <Link
-                              color="blue.500"
-                              href={redmineEditUrl}
-                              isExternal
-                            >
-                              {activity?.comments || "No comment"}
-                            </Link>
+                            {redmineEditUrl ? (
+                              <Link
+                                color="blue.500"
+                                href={redmineEditUrl}
+                                isExternal
+                              >
+                                {activity?.comments || "No comment"}
+                              </Link>
+                            ) : (
+                              activity?.comments || "No comment"
+                            )}
                           </Td>
                         </Tr>
                       );

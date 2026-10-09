@@ -4,14 +4,14 @@ import useRedmineStore from "../../../store/redmineStore";
 import { round } from "../../../helpers/getHours";
 
 const RedmineCardItem = ({ activities, fontSize }) => {
-  const { projects } = useRedmineStore();
+  const { projects, organizationURL } = useRedmineStore();
 
   return (
     <Box mb={5}>
       {activities.map((activity) => {
         const projectId = activity?.issue?.id || {}
         const project = projects.find((item) => item.id === projectId);
-        const blb = activity.custom_fields[0].value === "3" ? "nblb" : "blb";
+        const blb = activity?.custom_fields?.[0]?.value === "3" ? "nblb" : "blb";
 
         return (
           <LinkBox key={activity.id}>
@@ -22,14 +22,20 @@ const RedmineCardItem = ({ activities, fontSize }) => {
               }}
             >
               <Flex gap={1}>
-                <LinkOverlay
-                  href={`https://redmine.anyforsoft.com/time_entries/${activity.id}/edit`}
-                  target="_blank"
-                  fontSize={fontSize}
-                  fontWeight={700}
-                >
-                  {project ? project.projectName : "Untracked project"}
-                </LinkOverlay>
+                {organizationURL ? (
+                  <LinkOverlay
+                    href={`${organizationURL}/time_entries/${activity.id}/edit`}
+                    target="_blank"
+                    fontSize={fontSize}
+                    fontWeight={700}
+                  >
+                    {project ? project.projectName : "Untracked project"}
+                  </LinkOverlay>
+                ) : (
+                  <Text fontSize={fontSize} fontWeight={700}>
+                    {project ? project.projectName : "Untracked project"}
+                  </Text>
+                )}
                 {project && <Text fontSize={fontSize}>{project.subject}</Text>}
 
                 <Text

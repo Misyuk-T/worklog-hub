@@ -4,7 +4,7 @@ const axios = require("axios");
 const Bottleneck = require("bottleneck");
 
 const { multer } = require("../middlewares");
-const { parseText, parseXMLS } = require("../scripts");
+const { parseText, parseXMLS, resolveRedmineBaseUrl, assertSafeTarget } = require("../scripts");
 const { AppError, sendError, upstreamError } = require("../errors");
 
 const defaultLimiter = new Bottleneck({ minTime: 333 });
@@ -19,6 +19,29 @@ const requireValues = (values) => {
 const forwardedQuery = (query, credentialFields) => Object.fromEntries(
   Object.entries(query).filter(([field]) => !credentialFields.includes(field))
 );
+
+// Credentials travel in headers; the query string is still read so an older frontend keeps working.
+const CREDENTIAL_SOURCES = {
+  redmineApiKey: "x-redmine-api-key",
+  redmineUrl: "x-redmine-url",
+  jiraApiKey: "x-jira-api-key",
+  jiraEmail: "x-jira-email",
+  clickupApiKey: "x-clickup-api-key",
+};
+
+const readCredentials = (req, fields) => Object.fromEntries(
+  fields.map((field) => [field, req.get(CREDENTIAL_SOURCES[field]) || req.query[field]])
+);
+
+const redmineBaseUrl = (redmineUrl) => {
+  const isLegacySlug = !redmineUrl.includes(".") && !redmineUrl.includes("://");
+  if (isLegacySlug && !/^[a-z0-9-]+$/i.test(redmineUrl.trim())) {
+    throw new AppError(400, "BLOCKED_TARGET", "This server address is not allowed.", [
+      { field: "redmineUrl", message: "Use a Redmine host such as redmine.example.com." },
+    ]);
+  }
+  return resolveRedmineBaseUrl(redmineUrl);
+};
 
 const createRouter = ({ axiosClient = axios, limiter = defaultLimiter } = {}) => {
   const router = express.Router();
@@ -57,25 +80,26 @@ const createRouter = ({ axiosClient = axios, limiter = defaultLimiter } = {}) =>
 
   router.all("/redmine/*", async (req, res) => {
     try {
-      const { redmineApiKey, redmineUrl } = req.query;
+      const { redmineApiKey, redmineUrl } = readCredentials(req, ["redmineApiKey", "redmineUrl"]);
       requireValues({ redmineApiKey, redmineUrl });
-      const url = `https://redmine.${redmineUrl}.com${req.path.replace("/redmine", "")}`;
+      const url = assertSafeTarget(`${redmineBaseUrl(redmineUrl)}${req.path.replace("/redmine", "")}`, "redmineUrl").href;
       const params = { ...forwardedQuery(req.query, ["redmineApiKey", "redmineUrl"]), key: redmineApiKey };
       const response = await axiosClient({ method: req.method, url, data: req.body, params });
       return res.send(response.data);
     } catch (error) {
-      const { redmineApiKey } = req.query;
+      const { redmineApiKey } = readCredentials(req, ["redmineApiKey"]);
       return sendError(res, error instanceof AppError ? error : upstreamError("Redmine", error, req.body, [redmineApiKey]));
     }
   });
 
   router.all("/jira/*", async (req, res) => {
     try {
-      const { jiraUrl, jiraApiKey, jiraEmail } = req.query;
+      const { jiraApiKey, jiraEmail } = readCredentials(req, ["jiraApiKey", "jiraEmail"]);
+      const { jiraUrl } = req.query;
       requireValues({ jiraUrl, jiraApiKey, jiraEmail });
       const config = {
         method: req.method,
-        url: `https://${jiraUrl}${req.path.replace("/jira", "")}`,
+        url: assertSafeTarget(`https://${jiraUrl}${req.path.replace("/jira", "")}`, "jiraUrl").href,
         headers: { Authorization: `Basic ${Buffer.from(`${jiraEmail}:${jiraApiKey}`).toString("base64")}` },
         params: forwardedQuery(req.query, ["jiraUrl", "jiraApiKey", "jiraEmail"]),
       };
@@ -83,7 +107,7 @@ const createRouter = ({ axiosClient = axios, limiter = defaultLimiter } = {}) =>
       const response = await limiter.schedule(() => axiosClient(config));
       return res.send(response.data);
     } catch (error) {
-      const { jiraApiKey, jiraEmail } = req.query;
+      const { jiraApiKey, jiraEmail } = readCredentials(req, ["jiraApiKey", "jiraEmail"]);
       const basicCredential = jiraApiKey && jiraEmail
         ? Buffer.from(`${jiraEmail}:${jiraApiKey}`).toString("base64")
         : undefined;
@@ -93,7 +117,7 @@ const createRouter = ({ axiosClient = axios, limiter = defaultLimiter } = {}) =>
 
   router.all("/clickup/*", async (req, res) => {
     try {
-      const { clickupApiKey } = req.query;
+      const { clickupApiKey } = readCredentials(req, ["clickupApiKey"]);
       requireValues({ clickupApiKey });
       const config = {
         method: req.method,
@@ -105,7 +129,7 @@ const createRouter = ({ axiosClient = axios, limiter = defaultLimiter } = {}) =>
       const response = await limiter.schedule(() => axiosClient(config));
       return res.send(response.data);
     } catch (error) {
-      const { clickupApiKey } = req.query;
+      const { clickupApiKey } = readCredentials(req, ["clickupApiKey"]);
       return sendError(res, error instanceof AppError ? error : upstreamError("ClickUp", error, req.body, [clickupApiKey]));
     }
   });

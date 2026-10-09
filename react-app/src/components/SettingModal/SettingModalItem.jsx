@@ -26,6 +26,7 @@ import {
 } from "../../actions/settings";
 
 import SettingModalFieldItem from "./SettingModalFieldItem";
+import { getRedmineHostForDisplay } from "../../helpers/getOrganizationUrl";
 
 import RedmineApi from "../../assets/RedmineAPI.png";
 import JiraUserName from "../../assets/JiraUserName.png";
@@ -89,8 +90,8 @@ const fieldSections = [
       {
         name: "Redmine URL",
         id: "redmineUrl",
-        leftAddon: "https://redmine.",
-        rightAddon: ".com",
+        leftAddon: "https://",
+        rightAddon: "",
       },
       {
         name: "Redmine API Key",
@@ -180,6 +181,19 @@ const SettingModalItem = ({
     name: "additionalJiraUrls",
   });
 
+  // Redmine URL is a full host. Drop a pasted "https://" while typing and show a hint.
+  const registerRedmineUrl = (name, options) => {
+    const field = register(name, options);
+    return {
+      ...field,
+      placeholder: "redmine.example.com",
+      onChange: (event) => {
+        event.target.value = event.target.value.replace(/^\s*https:\/\//i, "");
+        return field.onChange(event);
+      },
+    };
+  };
+
   const handleDelete = async () => {
     deleteSetting(data.id);
     await deleteSettings(user.ownerId, data.id);
@@ -225,7 +239,8 @@ const SettingModalItem = ({
 
   useEffect(() => {
     setValue("presetName", data?.presetName || "");
-    setValue("redmineUrl", data?.redmineUrl || "");
+    // Legacy settings store only a slug ("acme"); show the real host instead.
+    setValue("redmineUrl", getRedmineHostForDisplay(data?.redmineUrl));
     setValue("jiraUrl", data?.jiraUrl || "");
     setValue("redmineApiKey", data?.redmineApiKey || "");
     setValue("jiraApiKey", data?.jiraApiKey || "");
@@ -272,7 +287,7 @@ const SettingModalItem = ({
                 <SettingModalFieldItem
                   id={id}
                   name={name}
-                  register={register}
+                  register={id === "redmineUrl" ? registerRedmineUrl : register}
                   leftAddon={leftAddon}
                   rightAddon={rightAddon}
                   errors={errors}
