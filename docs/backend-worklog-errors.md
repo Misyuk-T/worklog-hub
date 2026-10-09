@@ -71,4 +71,4 @@ pre-change checkout.
 
 Frontend: https://redmine-scheduler-app.web.app/
 
-Backend: https://rest--github--jjfz5dbqtvkd.code.run
+Backend: the production proxy (host kept out of the repo)
