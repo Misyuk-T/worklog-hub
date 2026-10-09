@@ -6,15 +6,14 @@ import {
   Button,
 } from "@chakra-ui/react";
 import { logoutUser, openLoginPopup } from "../actions/auth";
-import { exitDemo, useDemoStore } from "../demo/demoMode";
+import { DEMO_BUILD } from "../demo/demoMode";
+import { SourceLink } from "../demo/DemoBanner";
 
 const Avatar = ({ user }) => {
-  const isDemo = useDemoStore((state) => state.isDemo);
+  const isDemo = DEMO_BUILD;
 
   const handleClick = async () => {
-    if (isDemo && !user) {
-      exitDemo();
-    } else if (user) {
+    if (user) {
       await logoutUser();
     } else {
       await openLoginPopup();
@@ -60,17 +59,27 @@ const Avatar = ({ user }) => {
           </Text>
         </Flex>
       </Flex>
-      <Button
-        onClick={handleClick}
-        boxShadow="sm"
-        size="sm"
-        height="100%"
-        borderRadius="0"
-        colorScheme={user || isDemo ? "red" : "teal"}
-        opacity={0.8}
-      >
-        {user ? "Logout" : isDemo ? "Exit demo" : "Login"}
-      </Button>
+      {isDemo ? (
+        <SourceLink
+          boxShadow="sm"
+          size="sm"
+          height="100%"
+          colorScheme="teal"
+          opacity={0.8}
+        />
+      ) : (
+        <Button
+          onClick={handleClick}
+          boxShadow="sm"
+          size="sm"
+          height="100%"
+          borderRadius="0"
+          colorScheme={user ? "red" : "teal"}
+          opacity={0.8}
+        >
+          {user ? "Logout" : "Login"}
+        </Button>
+      )}
     </Flex>
   );
 };

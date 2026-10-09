@@ -2,6 +2,8 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 
+import { DEMO_BUILD } from "./demo/demoMode";
+
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -13,12 +15,11 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-// Without Firebase config the app still runs: sign-in is disabled and the
-// demo workspace is the only way in. This keeps a fresh clone from showing a
-// blank page.
-export const isFirebaseConfigured = Boolean(
-  firebaseConfig.apiKey && firebaseConfig.databaseURL,
-);
+// Without Firebase config the app still runs with sign-in disabled, so a
+// fresh clone does not throw on load. The demo build never touches Firebase,
+// even if a config happens to be present.
+export const isFirebaseConfigured =
+  !DEMO_BUILD && Boolean(firebaseConfig.apiKey && firebaseConfig.databaseURL);
 
 const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
 

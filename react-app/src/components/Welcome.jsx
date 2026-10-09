@@ -12,7 +12,6 @@ import {
 
 import { openLoginPopup } from "../actions/auth";
 import { isFirebaseConfigured } from "../firebase";
-import { exitDemo, startDemo, useDemoStore } from "../demo/demoMode";
 
 const README_URL = "https://github.com/Misyuk-T/worklog-hub#how-credentials-are-handled";
 
@@ -44,12 +43,9 @@ export const Welcome = () => (
       </OrderedList>
 
       <Flex gap={3} wrap="wrap">
-        <Button colorScheme="teal" size="lg" borderRadius="0" onClick={startDemo}>
-          Try the demo
-        </Button>
         <Button
+          colorScheme="teal"
           size="lg"
-          variant="outline"
           borderRadius="0"
           onClick={openLoginPopup}
           isDisabled={!isFirebaseConfigured}
@@ -59,9 +55,8 @@ export const Welcome = () => (
       </Flex>
 
       <Text fontSize="14px" color="gray.600">
-        The demo uses invented data and sends nothing anywhere.
         {!isFirebaseConfigured &&
-          " Sign-in is off in this build because no Firebase config was provided."}{" "}
+          "Sign-in is off in this build because no Firebase config was provided. "}
         Your API keys are saved in your own record in the app&apos;s Firebase
         database and passed to the proxy server with each request.{" "}
         <Link href={README_URL} isExternal color="blue.600" textDecoration="underline">
@@ -71,33 +66,3 @@ export const Welcome = () => (
     </Stack>
   </Box>
 );
-
-export const DemoBanner = () => {
-  const isDemo = useDemoStore((state) => state.isDemo);
-  if (!isDemo) return null;
-
-  return (
-    <Flex
-      role="status"
-      w="100%"
-      bg="yellow.50"
-      borderWidth="1px"
-      borderColor="yellow.300"
-      px={4}
-      py={2}
-      gap={3}
-      align="center"
-      justify="space-between"
-      wrap="wrap"
-    >
-      <Text fontSize="14px" color="gray.800">
-        <strong>Demo workspace.</strong> Invented worklogs from Jira, ClickUp
-        and Redmine. Try Compare, edit the cards below, open Latest activity.
-        Nothing is sent anywhere.
-      </Text>
-      <Button size="sm" variant="outline" borderRadius="0" onClick={exitDemo}>
-        Exit demo
-      </Button>
-    </Flex>
-  );
-};

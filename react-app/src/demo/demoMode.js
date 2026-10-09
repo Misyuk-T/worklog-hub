@@ -8,42 +8,36 @@ import useClickUpStore from "../store/clickupStore";
 import useWorkLogsStore from "../store/worklogsStore";
 import { buildDemoWorkspace } from "./demoData";
 
-export const useDemoStore = create(() => ({ isDemo: false }));
+// The demo exists only in builds made with VITE_DEMO=true (the public demo
+// site). The flag is a compile-time constant, so in every other build the
+// branches guarded by it are dropped, along with the demo data.
+export const DEMO_BUILD = import.meta.env.VITE_DEMO === "true";
+
+export const useDemoStore = create(() => ({ isDemo: DEMO_BUILD }));
 
 export const DEMO_BLOCKED_CODE = "DEMO_MODE";
 
-// While the demo runs, no request leaves the browser. Reads and writes to the
-// trackers stop here with a short explanation instead of an auth error.
-instance.interceptors.request.use((config) => {
-  if (!useDemoStore.getState().isDemo) return config;
+if (DEMO_BUILD) {
+  // The demo never talks to a tracker. Reads and writes stop here with a short
+  // explanation instead of an auth error.
+  instance.interceptors.request.use((config) => {
+    toast.info(
+      "Demo: nothing is sent to Redmine, Jira or ClickUp. The real app does this with your own API keys.",
+      { toastId: "demo-blocked", position: "bottom-center", autoClose: 4000 },
+    );
+    const error = new Error("Demo: requests to trackers are disabled.");
+    error.code = DEMO_BLOCKED_CODE;
+    error.config = { ...config, skipErrorToast: true };
+    return Promise.reject(error);
+  });
 
-  toast.info(
-    "Demo mode: nothing is sent to Redmine, Jira or ClickUp. Sign in and add your API keys to do this for real.",
-    { toastId: "demo-blocked", position: "bottom-center", autoClose: 4000 },
-  );
-  const error = new Error("Demo mode: requests to trackers are disabled.");
-  error.code = DEMO_BLOCKED_CODE;
-  error.config = { ...config, skipErrorToast: true };
-  return Promise.reject(error);
-});
-
-export const startDemo = () => {
+  // Fill the stores before the first render: the demo opens on the workspace.
   const demo = buildDemoWorkspace();
-
   useRedmineStore.setState(demo.redmine);
   useJiraStore.setState(demo.jira);
   useClickUpStore.setState(demo.clickUp);
   useWorkLogsStore.setState({ workLogs: demo.workLogs });
-  useDemoStore.setState({ isDemo: true });
-};
-
-export const exitDemo = () => {
-  useRedmineStore.getState().resetAll();
-  useJiraStore.getState().resetAll();
-  useClickUpStore.getState().resetAll();
-  useWorkLogsStore.getState().resetAll();
-  useDemoStore.setState({ isDemo: false });
-};
+}
 
 // Compare reads date ranges through the action layer. In demo mode the
 // actions answer from the demo stores instead of the network.
@@ -59,7 +53,7 @@ const filterGrouped = (grouped, startDate, endDate) =>
     ),
   );
 
-export const isDemoActive = () => useDemoStore.getState().isDemo;
+export const isDemoActive = () => DEMO_BUILD;
 
 export const getDemoRedmineLogs = (startDate, endDate) =>
   useRedmineStore

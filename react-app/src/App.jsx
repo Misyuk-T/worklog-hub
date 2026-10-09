@@ -33,8 +33,9 @@ import useSettingsStore from "./store/settingsStore";
 import LatestActivityPanels from "./components/LatestActivity/LatestActivityPanels";
 import LatestActivityTabs from "./components/LatestActivity/LatestActivityTabs";
 
-import { Welcome, DemoBanner } from "./components/Welcome";
-import { useDemoStore } from "./demo/demoMode";
+import { Welcome } from "./components/Welcome";
+import { DemoBanner } from "./demo/DemoBanner";
+import { DEMO_BUILD } from "./demo/demoMode";
 
 import GitHubIcon from "./assets/GitHubIcon.svg";
 
@@ -58,7 +59,7 @@ const App = () => {
     user: clickUpUser,
   } = useClickUpStore();
   const { isAuthObserve, user: googleUser, isLoading } = useAuthStore();
-  const isDemo = useDemoStore((state) => state.isDemo);
+  const isDemo = DEMO_BUILD;
   const showWorkspace = Boolean(googleUser) || isDemo;
 
   const saveOrganizationUrls = (jiraOrganization, redmineOrganization) => {
@@ -203,7 +204,7 @@ const App = () => {
               </Flex>
             </Stack>
           </Flex>
-          <DemoBanner />
+          {DEMO_BUILD && <DemoBanner />}
           {showWorkspace ? <LatestActivityPanels /> : <Welcome />}
         </Stack>
 
