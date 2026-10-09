@@ -35,7 +35,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy": "vite build & firebase deploy --only hosting"
+    "deploy": "vite build && firebase deploy --only hosting",
+    "test": "node --experimental-default-type=module --test src/helpers/*.test.js src/hooks/*.test.js",
+    "lint": "eslint --ext .js,.jsx src"
   },
   "eslintConfig": {
     "extends": [
