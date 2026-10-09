@@ -2,7 +2,7 @@
 
 Log time once and move it between **Redmine**, **Jira**, and **ClickUp**.
 
-**[Live app](https://redmine-scheduler-app.web.app/)**
+**[Live demo](https://misyuk-t.github.io/worklog-hub/)**: opens straight into a workspace with invented data. No sign-in, and nothing is sent anywhere.
 
 Agencies often run one tracker internally and another for the client, so the same hours get entered twice by hand. This app reads worklogs from one system, turns them into editable cards, and pushes them into another.
 
