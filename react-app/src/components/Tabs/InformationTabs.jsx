@@ -116,7 +116,7 @@ const InformationTabs = () => {
           </Button>
         </TabList>
 
-        <TabPanels position="relative" w="100%">
+        <TabPanels position="relative" w="100%" overflowX="auto">
           <TotalInformationTab data={workLogsArray} />
 
           {sortedArray.map(([date, logs]) => {

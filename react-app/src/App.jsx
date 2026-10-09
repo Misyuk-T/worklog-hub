@@ -33,6 +33,9 @@ import useSettingsStore from "./store/settingsStore";
 import LatestActivityPanels from "./components/LatestActivity/LatestActivityPanels";
 import LatestActivityTabs from "./components/LatestActivity/LatestActivityTabs";
 
+import { Welcome, DemoBanner } from "./components/Welcome";
+import { useDemoStore } from "./demo/demoMode";
+
 import GitHubIcon from "./assets/GitHubIcon.svg";
 
 const App = () => {
@@ -55,6 +58,8 @@ const App = () => {
     user: clickUpUser,
   } = useClickUpStore();
   const { isAuthObserve, user: googleUser, isLoading } = useAuthStore();
+  const isDemo = useDemoStore((state) => state.isDemo);
+  const showWorkspace = Boolean(googleUser) || isDemo;
 
   const saveOrganizationUrls = (jiraOrganization, redmineOrganization) => {
     const { redmineUrl, jiraUrl } = getOrganizationUrls(
@@ -116,20 +121,29 @@ const App = () => {
             gap={3}
             w="100%"
             minW={0}
-            flexWrap="nowrap"
+            flexWrap={{ base: "wrap", lg: "nowrap" }}
+            display={showWorkspace ? "flex" : "none"}
           >
-            <Box flex="1 1 35%" minW={0} maxW="35%">
+            <Box
+              flex={{ base: "1 1 100%", md: "1 1 calc(50% - 6px)", lg: "1 1 35%" }}
+              minW={0}
+              maxW={{ base: "100%", md: "calc(50% - 6px)", lg: "35%" }}
+            >
               <LatestActivityTabs />
             </Box>
 
-            <Box flex="1 1 35%" minW={0} maxW="35%">
+            <Box
+              flex={{ base: "1 1 100%", md: "1 1 calc(50% - 6px)", lg: "1 1 35%" }}
+              minW={0}
+              maxW={{ base: "100%", md: "calc(50% - 6px)", lg: "35%" }}
+            >
               <GenerateCards isDisabled={!user} />
             </Box>
 
             <Stack
-              flex="1 1 30%"
+              flex={{ base: "1 1 100%", lg: "1 1 30%" }}
               minW={0}
-              maxW="30%"
+              maxW={{ base: "100%", lg: "30%" }}
               alignSelf="stretch"
               justifyContent="space-between"
               gap={0}
@@ -175,7 +189,7 @@ const App = () => {
                     h="100%"
                     minH="52px"
                     onClick={handleRefresh}
-                    isDisabled={!user}
+                    isDisabled={!user || isDemo}
                     borderRightWidth="1px"
                     borderRightColor={border}
                     _hover={{ bg: hoverBg }}
@@ -189,19 +203,20 @@ const App = () => {
               </Flex>
             </Stack>
           </Flex>
-          <LatestActivityPanels />
+          <DemoBanner />
+          {showWorkspace ? <LatestActivityPanels /> : <Welcome />}
         </Stack>
 
-        <InformationTabs />
+        {showWorkspace && <InformationTabs />}
 
         <Flex as="footer" justify="center" w="100%" mt={"-15px"} py={"5px"}>
           <Link
-            href="https://github.com/Misyuk-T/redmine-logger"
+            href="https://github.com/Misyuk-T/worklog-hub"
             isExternal
             display="inline-flex"
             alignItems="center"
             gap={1.5}
-            fontSize="xs"
+            fontSize="14px"
             color="blue.600"
             borderRadius="md"
             px={2}
@@ -242,7 +257,7 @@ const App = () => {
               display="block"
               aria-hidden
             />
-            If useful, click here to star on GitHub
+            Source on GitHub. A star helps if it saved you time
           </Link>
         </Flex>
 

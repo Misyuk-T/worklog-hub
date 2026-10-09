@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { endOfDay, format, parse, startOfDay } from "date-fns";
 
 import { instance } from "./axios";
+import { getDemoClickUpLogs, isDemoActive } from "../demo/demoMode";
 import groupByField from "../helpers/groupByField";
 import { validateWorkLogsData } from "../helpers/validateWorklogsData";
 import useClickUpStore from "../store/clickupStore";
@@ -425,6 +426,7 @@ export const fetchAllClickUpTimeEntries = async ({
   startDate,
   endDate,
 }) => {
+  if (isDemoActive()) return getDemoClickUpLogs(startDate, endDate);
   const allTimeEntries = {};
 
   try {

@@ -3,6 +3,7 @@ import { Stack, Text } from "@chakra-ui/react";
 
 import { toast } from "react-toastify";
 import { instance } from "./axios";
+import { getDemoRedmineLogs, isDemoActive } from "../demo/demoMode";
 
 import { transformToRedmineData } from "../helpers/transformToRedmineData";
 import { validateWorkLogsData } from "../helpers/validateWorklogsData";
@@ -69,6 +70,7 @@ export const getLatestRedmineWorkLogs = async (
   offset = 0,
   workLogs = []
 ) => {
+  if (isDemoActive()) return getDemoRedmineLogs(startDate, endDate);
   if (!startDate || !endDate) {
     const now = new Date();
     const defaultStartDate = format(startOfMonth(now), "yyyy-MM-dd");

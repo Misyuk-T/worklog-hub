@@ -6,10 +6,15 @@ import {
   Button,
 } from "@chakra-ui/react";
 import { logoutUser, openLoginPopup } from "../actions/auth";
+import { exitDemo, useDemoStore } from "../demo/demoMode";
 
 const Avatar = ({ user }) => {
+  const isDemo = useDemoStore((state) => state.isDemo);
+
   const handleClick = async () => {
-    if (user) {
+    if (isDemo && !user) {
+      exitDemo();
+    } else if (user) {
       await logoutUser();
     } else {
       await openLoginPopup();
@@ -31,11 +36,15 @@ const Avatar = ({ user }) => {
         borderColor="gray.200"
       >
         <Flex flex="1" alignItems="center" gap={2} minW={0}>
-          <ChakraAvatar size="sm" name={user?.name || "name"} src={user?.photo}>
+          <ChakraAvatar
+            size="sm"
+            name={user?.name || (isDemo ? "Demo User" : undefined)}
+            src={user?.photo}
+          >
             <AvatarBadge
               borderColor="papayawhip"
               boxSize="1em"
-              bg={user ? "green.500" : "tomato"}
+              bg={user || isDemo ? "green.500" : "tomato"}
             />
           </ChakraAvatar>
         </Flex>
@@ -46,8 +55,8 @@ const Avatar = ({ user }) => {
           minW={0}
           p={"0 8px"}
         >
-          <Text fontSize="xs" fontWeight={700} textAlign="right" noOfLines={1}>
-            {user ? user.name : "Login to continue"}
+          <Text fontSize="14px" fontWeight={700} textAlign="right" noOfLines={1}>
+            {user ? user.name : isDemo ? "Demo user" : "Login to continue"}
           </Text>
         </Flex>
       </Flex>
@@ -57,10 +66,10 @@ const Avatar = ({ user }) => {
         size="sm"
         height="100%"
         borderRadius="0"
-        colorScheme={user ? "red" : "teal"}
+        colorScheme={user || isDemo ? "red" : "teal"}
         opacity={0.8}
       >
-        {user ? "Logout" : "Login"}
+        {user ? "Logout" : isDemo ? "Exit demo" : "Login"}
       </Button>
     </Flex>
   );

@@ -25,7 +25,8 @@ import {
 } from "@chakra-ui/react";
 import { CalendarIcon } from "@chakra-ui/icons";
 import { DayPicker } from "react-day-picker";
-import { format, parse } from "date-fns";
+import { isDemoActive } from "../../../demo/demoMode";
+import { format, parse, subDays } from "date-fns";
 import { round } from "../../../helpers/getHours";
 import groupByField from "../../../helpers/groupByField";
 import { getLatestRedmineWorkLogs } from "../../../actions/redmine";
@@ -95,7 +96,7 @@ const pairLogsBySimilarity = (source1Entries, source2Entries) => {
   return matchedRows;
 };
 
-const renderLogContent = (log) => {
+const renderLogContent = (log, redmineBaseUrl) => {
   if (!log) return null;
 
   const source = log.source;
@@ -114,14 +115,18 @@ const renderLogContent = (log) => {
             Hours: {hours}h
           </Text>
         </Flex>
-        <Link
-          href={`https://redmine.anyforsoft.com/time_entries/${log.id}/edit`}
-          isExternal
-          fontSize="12px"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {description}
-        </Link>
+        {redmineBaseUrl ? (
+          <Link
+            href={`${redmineBaseUrl}/time_entries/${log.id}/edit`}
+            isExternal
+            fontSize="12px"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {description}
+          </Link>
+        ) : (
+          <Text fontSize="12px">{description}</Text>
+        )}
       </>
     );
   }
@@ -188,7 +193,8 @@ const renderLogContent = (log) => {
 };
 
 const CompareActivityTable = ({ panelSize }) => {
-  const { user: redmineUser } = useRedmineStore();
+  const { user: redmineUser, organizationURL: redmineBaseUrl } =
+    useRedmineStore();
   const {
     user: jiraUser,
     organizationURL,
@@ -200,7 +206,12 @@ const CompareActivityTable = ({ panelSize }) => {
     additionalAssignedTasks,
   } = useClickUpStore();
 
-  const [range, setRange] = useState({ from: new Date(), to: new Date() });
+  // The demo has worklogs for the last working days, so open on that range.
+  const [range, setRange] = useState(() =>
+    isDemoActive()
+      ? { from: subDays(new Date(), 10), to: new Date() }
+      : { from: new Date(), to: new Date() },
+  );
   const [source1Services, setSource1Services] = useState(["jira", "clickup"]);
   const [source2Services, setSource2Services] = useState(["redmine"]);
   const [source1Logs, setSource1Logs] = useState({});
@@ -502,8 +513,8 @@ const CompareActivityTable = ({ panelSize }) => {
                     </Tr>
                     {paired.map((row) => {
                       const { log1, log2, difference } = row;
-                      const source1Content = renderLogContent(log1);
-                      const source2Content = renderLogContent(log2);
+                      const source1Content = renderLogContent(log1, redmineBaseUrl);
+                      const source2Content = renderLogContent(log2, redmineBaseUrl);
                       const rowKey = `${log1?.source || "e"}:${
                         log1?.id || "e"
                       }|${log2?.source || "e"}:${log2?.id || "e"}`;

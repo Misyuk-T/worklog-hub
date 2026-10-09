@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { endOfDay, format, startOfDay, subDays } from "date-fns";
 
 import { instance } from "./axios";
+import { getDemoJiraLogs, isDemoActive } from "../demo/demoMode";
 
 import { parseDataFromJira } from "../helpers/parseDataFromJira";
 import groupByField from "../helpers/groupByField";
@@ -441,6 +442,7 @@ export const fetchAllJiraWorklogs = async ({
   startDate,
   endDate,
 }) => {
+  if (isDemoActive()) return getDemoJiraLogs(startDate, endDate);
   const allWorkLogs = {};
 
   try {

@@ -31,7 +31,8 @@ const theme = extendTheme({
       },
 
       "#root": {
-        flex: "1 0 auto",
+        flex: "1 1 auto",
+        minWidth: 0,
       },
 
       "input, select, textarea, [role='combobox'], button, [data-chakra-input], [data-chakra-select]":
