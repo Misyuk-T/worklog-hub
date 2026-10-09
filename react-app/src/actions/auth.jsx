@@ -1,35 +1,31 @@
 import {
-  getAuth,
   GoogleAuthProvider,
   onAuthStateChanged,
   signInWithPopup,
   signOut,
 } from "firebase/auth";
-import { get, getDatabase, push, ref, set } from "firebase/database";
+import {
+  equalTo,
+  get,
+  orderByChild,
+  push,
+  query,
+  ref,
+  set,
+} from "firebase/database";
 
-import { initializeApp } from "firebase/app";
+import { auth, db, isFirebaseConfigured } from "../firebase";
 import useAuthStore from "../store/userStore";
 import useJiraStore from "../store/jiraStore";
 import useRedmineStore from "../store/redmineStore";
+import useClickUpStore from "../store/clickupStore";
 import useSettingsStore from "../store/settingsStore";
 import useWorkLogsStore from "../store/worklogsStore";
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
-};
-
-initializeApp(firebaseConfig);
 const provider = new GoogleAuthProvider();
-const auth = getAuth();
 
 export const openLoginPopup = async () => {
+  if (!isFirebaseConfigured) return;
   provider.addScope("profile");
   provider.addScope("email");
   await signInWithPopup(auth, provider).then();
@@ -46,19 +42,19 @@ export const loginUser = async (googleUserData) => {
       uid: uid,
       currentSettings: "",
     };
-    const db = getDatabase();
+    // Look up only this user's record. Reading the whole "users" node would
+    // need a rule that lets every signed-in user read everyone's saved
+    // tracker API keys; see database.rules.json.
     const usersRef = ref(db, "users");
-    const userQuery = await get(usersRef);
+    const userQuery = await get(
+      query(usersRef, orderByChild("uid"), equalTo(uid)),
+    );
     let existingUserData = null;
 
-    if (userQuery.exists()) {
-      userQuery.forEach((childSnapshot) => {
-        const user = childSnapshot.val();
-        if (user.uid === uid) {
-          existingUserData = user;
-        }
-      });
-    }
+    userQuery.forEach((childSnapshot) => {
+      existingUserData = { ownerId: childSnapshot.key, ...childSnapshot.val() };
+      return true;
+    });
 
     if (!existingUserData) {
       const newUserRef = push(usersRef);
@@ -83,6 +79,7 @@ export const logoutUser = async () => {
 
     useJiraStore.getState().resetAll();
     useRedmineStore.getState().resetAll();
+    useClickUpStore.getState().resetAll();
     useSettingsStore.getState().resetAll();
     useWorkLogsStore.getState().resetAll();
 
@@ -95,6 +92,7 @@ export const logoutUser = async () => {
 };
 
 export const observeAuth = () => {
+  if (!isFirebaseConfigured) return;
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       await loginUser(user);
