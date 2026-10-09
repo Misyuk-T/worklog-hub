@@ -41,8 +41,6 @@ const JiraActivityTable = ({ panelSize }) => {
     panelSize === "partial" ? "400px" : panelSize === "full" ? "100vh" : "auto";
   const isInitialLoading = allJiraWorklogs === null;
 
-  console.log(allJiraWorklogs);
-
   useEffect(() => {
     if (user && isInitialLoading) {
       setIsLoading(true);

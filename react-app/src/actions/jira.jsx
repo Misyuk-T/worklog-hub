@@ -98,7 +98,6 @@ export const getJiraWorklogIssues = async (
       ],
     };
 
-    console.log(nextPageToken, "console");
     if (nextPageToken) {
       // TODO: could be bottleneck with new endpoint
       requestBody.nextPageToken = nextPageToken;
@@ -482,12 +481,9 @@ export const fetchAllJiraWorklogs = async ({
   }
 };
 
-export const getLatestJiraWorkLogs = async (place = "undefined") => {
+export const getLatestJiraWorkLogs = async () => {
   const { user, organizationURL, additionalAssignedIssues } =
     useJiraStore.getState();
-  if (place) {
-    console.log(place, user);
-  }
   if (!user?.emailAddress) return;
   const today = new Date();
   const startDate = format(
@@ -507,14 +503,5 @@ export const getLatestJiraWorkLogs = async (place = "undefined") => {
     endDate,
   });
 
-  console.log("user: ", user);
-  console.log(
-    allWorklogs,
-    "after fetch",
-    "truncatedOrgUrl: ",
-    truncatedOrgUrl,
-    "additionalAssignedIssues: ",
-    additionalAssignedIssues,
-  );
   useJiraStore.getState().addAllJiraWorklogs(allWorklogs);
 };

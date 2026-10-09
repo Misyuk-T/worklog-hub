@@ -486,6 +486,5 @@ export const getLatestClickUpTimeEntries = async () => {
     endDate,
   });
 
-  console.log("ClickUp time entries: ", allTimeEntries);
   useClickUpStore.getState().addAllClickUpTimeEntries(allTimeEntries);
 };
