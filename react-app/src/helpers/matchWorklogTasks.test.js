@@ -217,22 +217,22 @@ test("builds a Jira pool tagged with normalized instance URLs", () => {
 });
 
 test("a card defaulting to main still matches a key known only on another instance", () => {
-  const pool = jiraPool([], [{ key: "ABC-102" }]);
-  assert.equal(pickJiraIssue(pool, "ABC-102", MAIN, MAIN).jiraUrl, OTHER);
-  assert.equal(pickJiraIssue(pool, "ABC-102", undefined, MAIN).jiraUrl, OTHER);
+  const pool = jiraPool([], [{ key: "ABC-1179" }]);
+  assert.equal(pickJiraIssue(pool, "ABC-1179", MAIN, MAIN).jiraUrl, OTHER);
+  assert.equal(pickJiraIssue(pool, "ABC-1179", undefined, MAIN).jiraUrl, OTHER);
 
   useWorkLogsStore.setState({
     workLogs: {
       day: [
-        { id: "a", description: "ABC-102: imported" },
-        { id: "b", description: "ABC-102: new card", jiraUrl: MAIN },
+        { id: "a", description: "ABC-1179: imported" },
+        { id: "b", description: "ABC-1179: new card", jiraUrl: MAIN },
       ],
     },
   });
   useWorkLogsStore.getState().bulkUpdateWorkLogsWithJira(pool, MAIN);
   const [a, b] = useWorkLogsStore.getState().workLogs.day;
-  assert.deepEqual([a.task, a.jiraUrl], ["ABC-102", OTHER]);
-  assert.deepEqual([b.task, b.jiraUrl], ["ABC-102", OTHER]);
+  assert.deepEqual([a.task, a.jiraUrl], ["ABC-1179", OTHER]);
+  assert.deepEqual([b.task, b.jiraUrl], ["ABC-1179", OTHER]);
   useWorkLogsStore.getState().resetAll();
 });
 
@@ -247,13 +247,13 @@ test("an ambiguous Jira key prefers the card's instance, then main", () => {
 });
 
 test("fetches only Jira keys that no loaded list contains", async () => {
-  const issues = jiraPool([{ key: "A-1" }], [{ key: "ABC-102" }]);
+  const issues = jiraPool([{ key: "A-1" }], [{ key: "ABC-1179" }]);
   const calls = [];
   const result = await resolveMissingJiraIssues({
     workLogs: {
       day: [
         { description: "A-1: main" },
-        { description: "ABC-102: other", jiraUrl: MAIN },
+        { description: "ABC-1179: other", jiraUrl: MAIN },
         { description: "meeting: no key" },
       ],
     },
@@ -343,8 +343,8 @@ test("Jira matching never calls ClickUp", async () => {
 
 test("formats the missing Jira key warning with a cap", () => {
   assert.equal(
-    formatMissingJiraCodes(["ABC-102", "XX-12"]),
-    "Could not find Jira issue(s): ABC-102, XX-12"
+    formatMissingJiraCodes(["ABC-1179", "XX-12"]),
+    "Could not find Jira issue(s): ABC-1179, XX-12"
   );
   assert.equal(
     formatMissingJiraCodes(["A-1", "A-2", "A-3", "A-4", "A-5", "A-6", "A-7"]),
