@@ -49,6 +49,11 @@ import {
   getClickUpTaskValue,
 } from "../../../helpers/transformToSelectData";
 import { round } from "../../../helpers/getHours";
+import {
+  MAX_HOURS,
+  isAllowedHoursInput,
+  isHoursCharacter,
+} from "../../../helpers/hoursInput";
 import useClickUpTaskSearch from "../../../hooks/useClickUpTaskSearch";
 
 const SOURCE_LABELS = {
@@ -337,10 +342,14 @@ const WorklogEditModal = ({ isOpen, onClose, log, onMutated }) => {
               <FormLabel fontSize="14px">Hours</FormLabel>
               <NumberInput
                 value={hours}
-                onChange={(valueString) => setHours(valueString)}
+                onChange={(valueString) => {
+                  if (isAllowedHoursInput(valueString)) setHours(valueString);
+                }}
                 min={0}
+                max={MAX_HOURS}
                 step={0.25}
                 precision={2}
+                isValidCharacter={isHoursCharacter}
               >
                 <NumberInputField fontSize="14px" />
                 <NumberInputStepper>
