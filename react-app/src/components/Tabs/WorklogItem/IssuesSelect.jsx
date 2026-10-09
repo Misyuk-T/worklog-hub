@@ -10,6 +10,7 @@ import {
   PopoverContent,
   PopoverHeader,
   PopoverTrigger,
+  Portal,
   Text,
 } from "@chakra-ui/react";
 import { QuestionIcon } from "@chakra-ui/icons";
@@ -43,20 +44,22 @@ const IssuesSelect = ({ onChange, control, value, assignedIssues }) => {
             />
           </Box>
         </PopoverTrigger>
-        <PopoverContent p={5} maxW="300px">
-          <PopoverArrow />
-          <PopoverCloseButton />
-          <PopoverHeader fontWeight={600} fontSize={16}>
-            Warning
-          </PopoverHeader>
-          <PopoverBody>
-            Worklogs with{" "}
-            <Text as="span" color="orange">
-              undefined
-            </Text>{" "}
-            task <strong>will not be logged in Jira</strong>
-          </PopoverBody>
-        </PopoverContent>
+        <Portal>
+          <PopoverContent p={5} maxW="300px">
+            <PopoverArrow />
+            <PopoverCloseButton />
+            <PopoverHeader fontWeight={600} fontSize={16}>
+              Warning
+            </PopoverHeader>
+            <PopoverBody>
+              Worklogs with{" "}
+              <Text as="span" color="orange">
+                undefined
+              </Text>{" "}
+              task <strong>will not be logged in Jira</strong>
+            </PopoverBody>
+          </PopoverContent>
+        </Portal>
       </Popover>
     );
   };

@@ -60,6 +60,10 @@ const ISSUES = {
   "OPS-9": "Releases",
 };
 
+// ClickUp tasks are referenced by key in the plans above. Cards keep the task
+// id (what the real select stores), so the id has to be derived in one place.
+const clickUpTaskId = (key) => `cu-${key.toLowerCase().replace("cu-", "")}`;
+
 const REDMINE_ISSUES = {
   4101: ["Acme Shop", "Cart discounts"],
   4102: ["Acme Shop", "Payments refactor"],
@@ -103,7 +107,7 @@ export const buildDemoWorkspace = (today = new Date()) => {
       if (!(dayIndex === 2 && i === 2)) {
         (clickUpEntries[date] ||= []).push({
           id: `demo-cu-${n}`,
-          clickupTask: clickUpKey,
+          clickupTask: clickUpTaskId(clickUpKey),
           taskKey: clickUpKey,
           taskName: ISSUES[jiraKey],
           description: text,
@@ -139,12 +143,25 @@ export const buildDemoWorkspace = (today = new Date()) => {
           hours,
           blb,
           project: redmineId,
-          task: "",
+          task: jiraKey,
           jiraUrl: JIRA_HOST,
-          clickupTeamId: "",
-          clickupTask: "",
+          clickupTeamId: TEAM_ID,
+          clickupTask: clickUpTaskId(clickUpKey),
         });
       }
+    });
+  });
+
+  const clickUpTasks = [];
+  DAY_PLANS.flat().forEach(([jiraKey, , clickUpKey]) => {
+    if (clickUpTasks.some((task) => task.key === clickUpKey)) return;
+    clickUpTasks.push({
+      id: clickUpTaskId(clickUpKey),
+      key: clickUpKey,
+      summary: ISSUES[jiraKey],
+      status: "in progress",
+      teamId: TEAM_ID,
+      url: null,
     });
   });
 
@@ -182,14 +199,7 @@ export const buildDemoWorkspace = (today = new Date()) => {
       user: { id: 1, username: "Demo User", email: "demo@example.com" },
       teams: [{ id: TEAM_ID, name: "Acme Studio" }],
       selectedTeamId: TEAM_ID,
-      assignedTasks: Object.entries(ISSUES).map(([key, summary], index) => ({
-        id: `cu-${index}`,
-        key: `CU-${31 + index}`,
-        summary,
-        status: "in progress",
-        teamId: TEAM_ID,
-        url: null,
-      })),
+      assignedTasks: clickUpTasks,
       allClickUpTimeEntries: clickUpEntries,
     },
     workLogs: cards,
