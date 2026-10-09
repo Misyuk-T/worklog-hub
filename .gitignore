@@ -7,3 +7,12 @@ react-app/.env
 dist
 builds
 /.claude/
+
+# Build output and local tooling
+react-app/.firebase/
+react-app/dist/
+.DS_Store
+react-app/.yarn/install-state.gz
+.env
+.env.*
+!.env.example
