@@ -13,9 +13,8 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-// Without Firebase config the app still runs: sign-in is disabled and the
-// demo workspace is the only way in. This keeps a fresh clone from showing a
-// blank page.
+// Without Firebase config the app still loads with sign-in disabled instead
+// of crashing on a blank page.
 export const isFirebaseConfigured = Boolean(
   firebaseConfig.apiKey && firebaseConfig.databaseURL,
 );

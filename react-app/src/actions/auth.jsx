@@ -51,9 +51,10 @@ export const loginUser = async (googleUserData) => {
     );
     let existingUserData = null;
 
+    // If a uid somehow has several records, keep the last one, as the old
+    // whole-node scan did.
     userQuery.forEach((childSnapshot) => {
       existingUserData = { ownerId: childSnapshot.key, ...childSnapshot.val() };
-      return true;
     });
 
     if (!existingUserData) {
