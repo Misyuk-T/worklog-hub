@@ -1,0 +1,6 @@
+# Warning popover overflow
+
+- Problem: the "?" warning popover next to the ClickUp Task and Jira Issue fields was rendered inside the card. While closed it still sat about 20px past the card's right edge, so any scrollable parent got a horizontal scrollbar.
+- Fix: `PopoverContent` is wrapped in Chakra's `Portal` in `IssuesSelect.jsx` and `ClickUpTaskSelect.jsx`, as `DatePicker.jsx` already does. Same fix is on `rework` (commit `16325f6`), where the demo workspace made the scrollbar visible.
+- Validation (2026-10-09): 32 helper tests passed; `npx vite build` passed with the existing chunk-size warning. On `rework`, the tab panel measured 1172/1152 (scrollWidth/clientWidth) before and 1152/1152 after at 1300px, 343/343 at 375px. Reviewed by Claude Opus 5.5 in a separate context (Codex could not run `gpt-6.1-sol` on the ChatGPT account).
+- Release result (2026-10-09): deployed to [Firebase Hosting](https://redmine-scheduler-app.web.app/) from the working tree. Firebase reported `Deploy complete!`. Served HTML references `index-C59Ok7FJ.js` and `index-BuDZ7cwc.css`; the live JavaScript matched the built file byte for byte, SHA-256 `238ae261dc0810ad725a7d71b5957fa8871d93fb88f5a98b2119fa97a12fff5a`. Not pushed to the remote at release time.
