@@ -10,6 +10,7 @@ import {
   PopoverContent,
   PopoverHeader,
   PopoverTrigger,
+  Portal,
   Text,
 } from "@chakra-ui/react";
 import { QuestionIcon } from "@chakra-ui/icons";
@@ -55,27 +56,29 @@ const ClickUpTaskSelect = ({
             />
           </Box>
         </PopoverTrigger>
-        <PopoverContent p={5} maxW="300px">
-          <PopoverArrow />
-          <PopoverCloseButton />
-          <PopoverHeader fontWeight={600} fontSize={16}>
-            Warning
-          </PopoverHeader>
-          <PopoverBody>
-            <Text mb={2}>
-              Worklogs with{" "}
-              <Text as="span" color="orange">
-                undefined
-              </Text>{" "}
-              task <strong>will not be logged in ClickUp</strong>
-            </Text>
-            <Text fontSize="13px" color="gray.600">
-              Task not listed (e.g. you were unassigned)? Type its id —{" "}
-              <strong>86abc123</strong> or <strong>CP-170</strong> — and press
-              Enter to load it.
-            </Text>
-          </PopoverBody>
-        </PopoverContent>
+        <Portal>
+          <PopoverContent p={5} maxW="300px">
+            <PopoverArrow />
+            <PopoverCloseButton />
+            <PopoverHeader fontWeight={600} fontSize={16}>
+              Warning
+            </PopoverHeader>
+            <PopoverBody>
+              <Text mb={2}>
+                Worklogs with{" "}
+                <Text as="span" color="orange">
+                  undefined
+                </Text>{" "}
+                task <strong>will not be logged in ClickUp</strong>
+              </Text>
+              <Text fontSize="13px" color="gray.600">
+                Task not listed (e.g. you were unassigned)? Type its id —{" "}
+                <strong>86abc123</strong> or <strong>CP-170</strong> — and press
+                Enter to load it.
+              </Text>
+            </PopoverBody>
+          </PopoverContent>
+        </Portal>
       </Popover>
     );
   };
