@@ -1,0 +1,12 @@
+{
+  "name": "worklog-hub-rules-test",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "cd .. && firebase emulators:exec --only database --project demo-worklog-hub \"node test/rules.test.mjs\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
+    "firebase": "^10.8.1"
+  }
+}

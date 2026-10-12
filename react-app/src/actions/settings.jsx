@@ -1,8 +1,8 @@
-import { getDatabase, ref, set, update, remove, get } from "firebase/database";
+import { ref, set, update, remove, get } from "firebase/database";
+import { db } from "../firebase";
 import { toast } from "react-toastify";
 import { Stack, Text } from "@chakra-ui/react";
 
-const db = getDatabase();
 
 export const sendCurrentSettings = (ownerId, data) => {
   const userSettingsRef = ref(db, `users/${ownerId}`);
