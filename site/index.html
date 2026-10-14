@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Worklog Hub: log hours once, move them between trackers</title>
+  <meta name="description" content="Worklog Hub reads worklogs from Redmine, Jira or ClickUp, turns them into cards you can edit, and submits them to another tracker. Open source. Try the demo with invented data.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <link rel="canonical" href="https://misyuk-t.github.io/worklog-hub/">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+  <link rel="apple-touch-icon" href="assets/icon-128.png">
+  <link rel="preload" href="assets/fonts/silkscreen-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/jetbrains-mono-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/site.css">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Worklog Hub">
+  <meta property="og:title" content="Worklog Hub: log hours once, move them between trackers">
+  <meta property="og:description" content="Read worklogs from Redmine, Jira or ClickUp, edit them as cards, submit them to another tracker. Try the demo with invented data.">
+  <meta property="og:url" content="https://misyuk-t.github.io/worklog-hub/">
+  <meta property="og:image" content="https://misyuk-t.github.io/worklog-hub/assets/og-image.png">
+  <meta property="og:image:width" content="1400">
+  <meta property="og:image:height" content="560">
+  <meta property="og:image:alt" content="Worklog Hub: Log hours once. Move them between trackers. White pixel lettering and a pixel clock on black.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Worklog Hub: log hours once, move them between trackers">
+  <meta name="twitter:description" content="Read worklogs from Redmine, Jira or ClickUp, edit them as cards, submit them to another tracker. Try the demo with invented data.">
+  <meta name="twitter:image" content="https://misyuk-t.github.io/worklog-hub/assets/og-image.png">
+  <meta name="twitter:image:alt" content="Worklog Hub: Log hours once. Move them between trackers. White pixel lettering and a pixel clock on black.">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="./"><img class="logo" src="assets/logo.svg" width="28" height="28" alt="">Worklog Hub</a>
+      <nav class="nav" aria-label="Sections">
+        <a href="#what">What</a>
+        <a href="#how">How</a>
+        <a href="#keys">Keys</a>
+        <a href="#run">Run</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <section class="band hero" aria-labelledby="hero-title">
+      <div class="wrap cols cols-hero">
+        <div class="hero-copy">
+          <p class="eyebrow">&mdash; Web app</p>
+          <h1 id="hero-title">Worklog Hub</h1>
+          <p class="tagline">Log hours once. Move them between trackers.</p>
+          <p class="lead">Read worklogs from Redmine, Jira or ClickUp, edit them as cards, and submit them to another tracker. Compare two trackers to see where they disagree.</p>
+          <p class="actions">
+            <a class="btn" href="./demo/">Open the demo <span aria-hidden="true">&rarr;</span></a>
+            <a class="btn alt" href="https://github.com/Misyuk-T/worklog-hub"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>Source on GitHub</a>
+          </p>
+          <p class="fine">The demo opens on invented data. No sign-in, nothing is sent anywhere. MIT licence.</p>
+        </div>
+        <figure>
+          <div class="frame">
+            <div class="shot">
+              <img src="media/compare.png" width="880" height="600" fetchpriority="high" alt="The Compare view in the demo: Jira hours on the left, Redmine hours on the right, one block per day, with a row marked Hours differ.">
+            </div>
+          </div>
+        </figure>
+      </div>
+    </section>
+
+    <section class="band" id="what" aria-labelledby="what-title">
+      <div class="wrap">
+        <h2 id="what-title">What it does</h2>
+        <ul class="dash">
+          <li><strong>Reads worklogs</strong><span>From Redmine, Jira (several sites) and ClickUp (several teams), or from a TXT or XLSX file.</span></li>
+          <li><strong>Makes cards</strong><span>One card per entry. Edit hours, project, task and the billable flag, one card or all at once.</span></li>
+          <li><strong>Submits them</strong><span>To Redmine, Jira or ClickUp. Jira keys and ClickUp task ids in a description are matched for you.</span></li>
+          <li><strong>Compares trackers</strong><span>Two sources side by side, day by day. Missing entries and different hours stand out.</span></li>
+          <li><strong>Fixes entries in place</strong><span>Edit or delete a worklog straight from the Compare view.</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="band" id="how" aria-labelledby="how-title">
+      <div class="wrap">
+        <h2 id="how-title">How it works</h2>
+        <div class="how">
+
+          <div class="cols cols-media">
+            <div>
+              <h3><span class="n">01</span> Compare</h3>
+              <p>Pick two trackers and a date range. Each day shows both sides with a total, and marks entries that are missing or have different hours.</p>
+            </div>
+            <figure>
+              <div class="frame">
+                <div class="shot">
+                  <img loading="lazy" decoding="async" src="media/compare.gif" width="880" height="600" alt="Animation: open Compare, take ClickUp out of the left side so Jira is compared with Redmine, press Compare, then scroll through the days to a row where Jira has 4h and Redmine 3h.">
+                </div>
+              </div>
+            </figure>
+          </div>
+
+          <div class="cols cols-media">
+            <div>
+              <h3><span class="n">02</span> Edit the cards</h3>
+              <p>Generate cards from a source and fix them before anything leaves the browser. Change the hours, press Save, and the totals follow.</p>
+            </div>
+            <figure>
+              <div class="frame">
+                <div class="shot">
+                  <img loading="lazy" decoding="async" src="media/cards.gif" width="880" height="600" alt="Animation: the source tabs of the Generate box, then the cards for one day. The hours of one card change from 3 to 4, the card is saved, and the Total tab shows 17 hours for the period.">
+                </div>
+              </div>
+            </figure>
+          </div>
+
+          <div class="cols cols-media">
+            <div>
+              <h3><span class="n">03</span> Submit</h3>
+              <p>Send the cards to Redmine, Jira or ClickUp. You confirm the number of hours first. In the demo the request stops and says so.</p>
+            </div>
+            <figure>
+              <div class="frame">
+                <div class="shot">
+                  <img loading="lazy" decoding="async" src="media/submit.gif" width="880" height="600" alt="Animation: press Submit cards to Redmine, confirm 16 hours in the dialog, and the demo answers that nothing is sent.">
+                </div>
+              </div>
+            </figure>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="keys" aria-labelledby="keys-title">
+      <div class="wrap">
+        <h2 id="keys-title">Your keys</h2>
+        <p>Each tracker needs a personal API key. This is what happens to it.</p>
+        <ul class="dash cols cols-three">
+          <li><strong>Stored under your own user.</strong><span>In a Firebase Realtime Database record that the security rules let only you read and write. Plain text, as Firebase stores it.</span></li>
+          <li><strong>Sent in headers, never in URLs.</strong><span>The browser sends each request to a small proxy with the key in a request header. The proxy calls the tracker and does not store or log the key.</span></li>
+          <li><strong>Any Redmine host.</strong><span>Type your own address, plus your Jira sites and ClickUp teams. Use keys with the narrowest access your tracker allows.</span></li>
+        </ul>
+        <p class="links after">Whoever runs the Firebase project and the proxy can see what you store there. If that matters, run your own copy. <a href="https://github.com/Misyuk-T/worklog-hub#your-keys">Details in the README</a></p>
+      </div>
+    </section>
+
+    <section class="band" id="run" aria-labelledby="run-title">
+      <div class="wrap">
+        <h2 id="run-title">Run it yourself</h2>
+        <p>Node.js 18 or newer. This starts the demo on your machine:</p>
+        <div class="cmd"><pre><code>git clone https://github.com/Misyuk-T/worklog-hub.git</code></pre></div>
+        <div class="cmd"><pre><code>cd worklog-hub/react-app &amp;&amp; yarn install &amp;&amp; VITE_DEMO=true yarn dev</code></pre></div>
+        <p>For real use you also need a Firebase project (Google sign-in and a Realtime Database) and the proxy in <code>server/</code>. The steps are in the <a href="https://github.com/Misyuk-T/worklog-hub#readme">README</a>.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="foot">
+    <div class="wrap">
+      <ul>
+        <li><a href="./demo/">Demo</a></li>
+        <li><a href="https://github.com/Misyuk-T/worklog-hub">GitHub</a></li>
+        <li><a href="https://github.com/Misyuk-T/worklog-hub/issues">Issues</a></li>
+        <li><a href="https://github.com/Misyuk-T/worklog-hub/blob/master/LICENSE">MIT</a></li>
+      </ul>
+      <p class="meta">Redmine &middot; Jira &middot; ClickUp</p>
+      <p class="note">By Taras Misiuk. This site sets no cookies and loads nothing from other hosts.</p>
+    </div>
+  </footer>
+</body>
+</html>

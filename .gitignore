@@ -19,3 +19,4 @@ react-app/.yarn/install-state.gz
 
 # readme-media tool: built demo for recording
 tools/readme-media/.build/
+/_site/
