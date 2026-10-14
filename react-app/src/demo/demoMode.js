@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { toast } from "react-toastify";
+import { createElement } from "react";
 
 import { instance } from "../actions/axios";
 import useRedmineStore from "../store/redmineStore";
@@ -16,6 +17,8 @@ export const DEMO_BUILD = import.meta.env.VITE_DEMO === "true";
 export const useDemoStore = create(() => ({ isDemo: DEMO_BUILD }));
 
 export const DEMO_BLOCKED_CODE = "DEMO_MODE";
+
+let demoGenerated = {};
 
 if (DEMO_BUILD) {
   // The demo never talks to a tracker. Reads and writes stop here with a short
@@ -37,6 +40,7 @@ if (DEMO_BUILD) {
   useJiraStore.setState(demo.jira);
   useClickUpStore.setState(demo.clickUp);
   useWorkLogsStore.setState({ workLogs: demo.workLogs });
+  demoGenerated = demo.generated;
 }
 
 // Compare reads date ranges through the action layer. In demo mode the
@@ -65,3 +69,52 @@ export const getDemoJiraLogs = (startDate, endDate) =>
 
 export const getDemoClickUpLogs = (startDate, endDate) =>
   filterGrouped(useClickUpStore.getState().allClickUpTimeEntries, startDate, endDate);
+
+// Generate in the demo hands out cards made from the demo data, with no request.
+// Days inside the chosen range are used; when none fall inside it (the dialogs
+// open on today), the two most recent demo days stand in.
+const recentDates = (dates, count) =>
+  [...dates].sort((a, b) => (a < b ? 1 : -1)).slice(0, count);
+
+export const getDemoCards = (startDate, endDate) => {
+  const inside = filterGrouped(demoGenerated, startDate, endDate);
+  const picked = Object.keys(inside).length
+    ? inside
+    : Object.fromEntries(
+        recentDates(Object.keys(demoGenerated), 2).map((date) => [
+          date,
+          demoGenerated[date],
+        ]),
+      );
+  return Object.fromEntries(
+    Object.entries(picked).map(([date, list]) => [
+      date,
+      list.map((card) => ({ ...card })),
+    ]),
+  );
+};
+
+export const getDemoRedmineLogsForCards = (startDate, endDate) => {
+  const all = useRedmineStore.getState().latestActivity;
+  const inside = all.filter((entry) => inRange(entry.spent_on, startDate, endDate));
+  if (inside.length) return inside;
+  const latest = recentDates(new Set(all.map((entry) => entry.spent_on)), 2);
+  return all.filter((entry) => latest.includes(entry.spent_on));
+};
+
+// Submitting in the demo succeeds without sending anything.
+export const toastDemoSubmit = (count, trackerName) =>
+  toast.success(
+    createElement(
+      "strong",
+      null,
+      `Demo: ${count} worklog${count === 1 ? "" : "s"} would be saved to ${trackerName}. Nothing was sent.`,
+    ),
+    {
+      position: "bottom-center",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      theme: "light",
+    },
+  );

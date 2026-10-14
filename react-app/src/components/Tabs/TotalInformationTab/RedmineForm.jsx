@@ -54,6 +54,7 @@ import {
 } from "../../../helpers/matchWorklogTasks";
 
 import ModalDialog from "../../ModalDialog";
+import { DEMO_BUILD } from "../../../demo/demoMode";
 import { QuestionIcon } from "@chakra-ui/icons";
 import RedminePrefixMappings from "./RedminePrefixMappings";
 
@@ -174,6 +175,11 @@ const RedmineForm = () => {
   };
 
   const handleClickUpBulkUpdate = async () => {
+    if (DEMO_BUILD) {
+      // Jira keys in descriptions would be looked up as ClickUp ids over the network.
+      toast.info("Demo: the cards already point at their ClickUp tasks.");
+      return;
+    }
     setIsMatchingClickUp(true);
     try {
       const allClickUpTasks = [
@@ -241,6 +247,8 @@ const RedmineForm = () => {
 
   const handleRedmineSubmit = async () => {
     await trackTimeToRedmine(workLogs).then(async () => {
+      // The demo sent nothing, so there is nothing new to read back.
+      if (DEMO_BUILD) return;
       resetLatestActivity();
       addLatestActivity(await getLatestRedmineWorkLogs(user.id));
     });

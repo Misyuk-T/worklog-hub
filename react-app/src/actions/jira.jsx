@@ -4,7 +4,13 @@ import { toast } from "react-toastify";
 import { endOfDay, format, startOfDay, subDays } from "date-fns";
 
 import { instance } from "./axios";
-import { getDemoJiraLogs, isDemoActive } from "../demo/demoMode";
+import {
+  DEMO_BUILD,
+  getDemoCards,
+  getDemoJiraLogs,
+  isDemoActive,
+  toastDemoSubmit,
+} from "../demo/demoMode";
 
 import { parseDataFromJira } from "../helpers/parseDataFromJira";
 import groupByField from "../helpers/groupByField";
@@ -83,6 +89,7 @@ export const getJiraWorklogIssues = async (
   prevIssues = [],
   showToast = true,
 ) => {
+  if (DEMO_BUILD) return getDemoCards(startDate, endDate);
   try {
     const requestBody = {
       jql: `worklogAuthor = '${jiraEmail}' AND worklogDate >= '${startDate}' AND worklogDate <= '${endDate}'`,
@@ -330,6 +337,11 @@ export const createJiraWorklogs = async (worklogs) => {
       }
     }
 
+    if (DEMO_BUILD) {
+      toastDemoSubmit(requests.length, "Jira");
+      return;
+    }
+
     // Wait for all responses and report any partial success.
     await submitWorklogRequests(requests, "Jira").then(() => {
       toast.success(
@@ -482,6 +494,7 @@ export const fetchAllJiraWorklogs = async ({
 };
 
 export const getLatestJiraWorkLogs = async () => {
+  if (DEMO_BUILD) return;
   const { user, organizationURL, additionalAssignedIssues } =
     useJiraStore.getState();
   if (!user?.emailAddress) return;

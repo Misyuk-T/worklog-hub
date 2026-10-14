@@ -3,7 +3,12 @@ import { Stack, Text } from "@chakra-ui/react";
 
 import { toast } from "react-toastify";
 import { instance } from "./axios";
-import { getDemoRedmineLogs, isDemoActive } from "../demo/demoMode";
+import {
+  DEMO_BUILD,
+  getDemoRedmineLogs,
+  isDemoActive,
+  toastDemoSubmit,
+} from "../demo/demoMode";
 
 import { transformToRedmineData } from "../helpers/transformToRedmineData";
 import { validateWorkLogsData } from "../helpers/validateWorklogsData";
@@ -172,6 +177,11 @@ export const trackTimeToRedmine = async (data) => {
       }),
       send: () => instance.post(`/redmine/time_entries.json`, entry, { skipErrorToast: true }),
     }));
+
+    if (DEMO_BUILD) {
+      toastDemoSubmit(requests.length, "Redmine");
+      return;
+    }
 
     await submitWorklogRequests(requests, "Redmine").then(() => {
       toast.success(

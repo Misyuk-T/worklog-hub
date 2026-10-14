@@ -4,7 +4,13 @@ import { toast } from "react-toastify";
 import { endOfDay, format, parse, startOfDay } from "date-fns";
 
 import { instance } from "./axios";
-import { getDemoClickUpLogs, isDemoActive } from "../demo/demoMode";
+import {
+  DEMO_BUILD,
+  getDemoCards,
+  getDemoClickUpLogs,
+  isDemoActive,
+  toastDemoSubmit,
+} from "../demo/demoMode";
 import groupByField from "../helpers/groupByField";
 import { msToHours } from "../helpers/getHours";
 import { validateWorkLogsData } from "../helpers/validateWorklogsData";
@@ -80,6 +86,7 @@ export const getClickUpTimeEntries = async (
   userId,
   showToast = true,
 ) => {
+  if (DEMO_BUILD) return getDemoCards(startDate, endDate);
   try {
     // Local day boundaries of the requested range. ClickUp stores entry starts
     // as absolute timestamps, so we bucket/compare in local time to match how
@@ -346,6 +353,11 @@ export const createClickUpTimeEntries = async (worklogs) => {
       }
     }
 
+    if (DEMO_BUILD) {
+      toastDemoSubmit(requests.length, "ClickUp");
+      return;
+    }
+
     await submitWorklogRequests(requests, "ClickUp").then(() => {
       toast.success(
         <Stack>
@@ -464,6 +476,7 @@ export const fetchAllClickUpTimeEntries = async ({
 };
 
 export const getLatestClickUpTimeEntries = async () => {
+  if (DEMO_BUILD) return;
   const { user, selectedTeamId, additionalAssignedTasks } =
     useClickUpStore.getState();
 

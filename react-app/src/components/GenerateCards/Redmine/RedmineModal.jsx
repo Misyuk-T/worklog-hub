@@ -23,6 +23,10 @@ import {
   getLatestRedmineWorkLogs,
   transformRedmineWorkLogsToCards,
 } from "../../../actions/redmine";
+import {
+  DEMO_BUILD,
+  getDemoRedmineLogsForCards,
+} from "../../../demo/demoMode";
 
 const RedmineModal = ({ isOpen, onClose }) => {
   const { user, organizationURL } = useRedmineStore();
@@ -46,11 +50,9 @@ const RedmineModal = ({ isOpen, onClose }) => {
 
     const startDate = format(range.from, "yyyy-MM-dd");
     const endDate = format(range.to, "yyyy-MM-dd");
-    const redmineWorkLogs = await getLatestRedmineWorkLogs(
-      user.id,
-      startDate,
-      endDate,
-    );
+    const redmineWorkLogs = DEMO_BUILD
+      ? getDemoRedmineLogsForCards(startDate, endDate)
+      : await getLatestRedmineWorkLogs(user.id, startDate, endDate);
 
     addWorkLogs(transformRedmineWorkLogsToCards(redmineWorkLogs || []));
     setIsJiraExport(false);

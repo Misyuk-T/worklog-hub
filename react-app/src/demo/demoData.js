@@ -82,6 +82,7 @@ export const buildDemoWorkspace = (today = new Date()) => {
   const clickUpEntries = {};
   const redmineActivity = [];
   const cards = {};
+  const generated = {}; // cards for every demo day: what Generate hands out
   let n = 0;
 
   days.forEach((day, dayIndex) => {
@@ -135,20 +136,21 @@ export const buildDemoWorkspace = (today = new Date()) => {
         });
       }
 
-      if (dayIndex >= 3) {
-        (cards[date] ||= []).push({
-          id: `demo-card-${n}`,
-          date,
-          description: `${jiraKey}: ${text}`,
-          hours,
-          blb,
-          project: redmineId,
-          task: jiraKey,
-          jiraUrl: JIRA_HOST,
-          clickupTeamId: TEAM_ID,
-          clickupTask: clickUpTaskId(clickUpKey),
-        });
-      }
+      const card = {
+        id: `demo-card-${n}`,
+        date,
+        description: `${jiraKey}: ${text}`,
+        hours,
+        blb,
+        project: redmineId,
+        task: jiraKey,
+        jiraUrl: JIRA_HOST,
+        clickupTeamId: TEAM_ID,
+        clickupTask: clickUpTaskId(clickUpKey),
+      };
+      (generated[date] ||= []).push(card);
+      // The last two days start as cards; the earlier ones are logged everywhere.
+      if (dayIndex >= 3) (cards[date] ||= []).push({ ...card });
     });
   });
 
@@ -203,5 +205,6 @@ export const buildDemoWorkspace = (today = new Date()) => {
       allClickUpTimeEntries: clickUpEntries,
     },
     workLogs: cards,
+    generated,
   };
 };
