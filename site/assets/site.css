@@ -206,10 +206,25 @@ h3 { font-size: 16px; margin: 1.6em 0 0.6em; }
   background: var(--fg);
   margin-left: 4px;
 }
+/* a short link instead of the section nav on phones */
+.nav-demo { display: none; }
 @media (max-width: 599px) {
-  .top .wrap { gap: 0 20px; }
-  .nav { width: 100%; gap: 0 20px; }
-  .nav::after { display: none; }
+  .top .wrap { flex-wrap: nowrap; gap: 0 16px; }
+  .nav { display: none; }
+  .nav-demo {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border: 1px solid var(--fg);
+    padding: 10px 14px;
+    line-height: 1.2;
+  }
+  .nav-demo:hover, .nav-demo:focus-visible { background: var(--fg); color: var(--bg); }
 }
 .logo {
   display: block;

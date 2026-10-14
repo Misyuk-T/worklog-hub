@@ -21,7 +21,7 @@ Teams that track time in one system for themselves and another for a client end 
 
 ## Try it
 
-**[Open the demo](https://misyuk-t.github.io/worklog-hub/demo/)**. It opens on a workspace with invented data. No sign-in, and nothing is sent anywhere: when you submit cards, the demo stops the request and says so.
+**[Open the demo](https://misyuk-t.github.io/worklog-hub/demo/)**. It opens on a workspace with invented data. No sign-in, and nothing is sent anywhere. Generate makes cards from the invented data, and Submit only tells you how many worklogs it would save.
 
 ## Your keys
 
