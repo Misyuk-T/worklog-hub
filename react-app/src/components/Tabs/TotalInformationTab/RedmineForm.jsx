@@ -272,7 +272,12 @@ const RedmineForm = () => {
             Bulk Edit Block: Functionality here will edit all existing cards
           </Text>
 
-          <Flex gap={4} alignItems="center" flexWrap="wrap">
+          <Flex
+            gap={4}
+            direction={{ base: "column", md: "row" }}
+            alignItems={{ base: "stretch", md: "center" }}
+            flexWrap="wrap"
+          >
             <Flex alignItems="center" gap={2}>
               <Text fontSize={"sm"} fontWeight={600}>
                 Billability toggle:
@@ -286,7 +291,11 @@ const RedmineForm = () => {
             </Flex>
 
             <Flex gap={2} alignItems={"center"} flex={1} minW="0">
-              <Box flex={1} maxW="300px" minW="200px">
+              <Box
+                flex={1}
+                maxW={{ base: "none", md: "300px" }}
+                minW={{ base: 0, md: "200px" }}
+              >
                 <Select
                   value={selectedItem}
                   onChange={setSelectedItem}
@@ -344,7 +353,7 @@ const RedmineForm = () => {
             justifyContent="space-between"
             alignItems="center"
           >
-            <Flex gap={2} alignItems={"center"}>
+            <Flex gap={2} alignItems={"center"} flexWrap="wrap">
               <Button
                 variant="outline"
                 colorScheme="blue"
