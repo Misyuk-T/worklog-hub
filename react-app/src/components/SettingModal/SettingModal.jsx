@@ -24,6 +24,7 @@ import useJiraStore from "../../store/jiraStore";
 import useClickUpStore from "../../store/clickupStore";
 import useSettingsStore from "../../store/settingsStore";
 
+import { isJiraConfigured } from "../../helpers/jiraSettings";
 import { getCurrentSettings, getSettings } from "../../actions/settings";
 import { getOrganizationUrls } from "../../helpers/getOrganizationUrl";
 
@@ -180,8 +181,9 @@ const SettingModal = ({ border, hoverBg, buttonMinH }) => {
         .then(async ({ currentData, settingsData }) => {
           const isDataExist = Object.entries(settingsData).length > 0;
           if (isDataExist) {
+            const hasJira = isJiraConfigured(currentData);
             const currentJiraUrl = currentData?.jiraUrl;
-            if (currentJiraUrl) {
+            if (hasJira) {
               const jiraUser = await fetchJiraUser(currentJiraUrl);
               if (jiraUser) {
                 const assignedIssues = await getAssignedIssues(
@@ -196,7 +198,7 @@ const SettingModal = ({ border, hoverBg, buttonMinH }) => {
 
             resetAdditionalAssignedIssues();
             const additionalJiraUrls = currentData?.additionalJiraUrls;
-            if (additionalJiraUrls && additionalJiraUrls.length > 0) {
+            if (hasJira && additionalJiraUrls && additionalJiraUrls.length > 0) {
               const additionalFetches = additionalJiraUrls.map(
                 async (jiraUrlObj) => {
                   const jiraUrl = jiraUrlObj.url;

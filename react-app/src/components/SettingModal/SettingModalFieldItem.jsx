@@ -31,6 +31,7 @@ const SettingModalFieldItem = ({
   isDynamic,
   append,
   showAddButton,
+  rules,
 }) => {
   useEffect(() => {
     document.activeElement.blur();
@@ -79,7 +80,7 @@ const SettingModalFieldItem = ({
         <Input
           type="text"
           id={id}
-          {...register(id, { required: !isDynamic })}
+          {...register(id, rules ?? { required: !isDynamic })}
           isInvalid={errors[id]}
         />
         {rightAddon && <InputRightAddon>{rightAddon}</InputRightAddon>}
