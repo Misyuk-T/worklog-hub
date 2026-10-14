@@ -1,6 +1,6 @@
-# Publishes the demo build (invented data, no sign-in) to GitHub Pages:
-# https://misyuk-t.github.io/worklog-hub/
-name: Demo on GitHub Pages
+# Publishes the landing page (site/) at https://misyuk-t.github.io/worklog-hub/
+# and the demo build (invented data, no sign-in) under /demo/.
+name: Site and demo on GitHub Pages
 
 on:
   push:
@@ -38,13 +38,22 @@ jobs:
       - run: yarn build
         env:
           VITE_DEMO: "true"
-          VITE_BASE: /worklog-hub/
+          VITE_BASE: /worklog-hub/demo/
+
+      # _site/ = the landing page at the root, the demo in demo/, the GIFs in media/
+      - name: Assemble the site
+        working-directory: .
+        run: |
+          mkdir -p _site/demo
+          cp -R site/. _site/
+          cp docs/media/*.gif _site/media/
+          cp -R react-app/dist/. _site/demo/
 
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: react-app/dist
+          path: _site
 
   deploy:
     needs: build
