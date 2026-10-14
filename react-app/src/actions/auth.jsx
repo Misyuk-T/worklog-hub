@@ -93,10 +93,17 @@ export const logoutUser = async () => {
 };
 
 export const observeAuth = () => {
-  if (!isFirebaseConfigured) return;
+  if (!isFirebaseConfigured) {
+    // Demo build or no Firebase config: there is no sign-in state to wait for.
+    useAuthStore.setState({ isAuthResolved: true });
+    return;
+  }
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       await loginUser(user);
     }
+    // Resolved after the user record is loaded, so a signed-in user never
+    // sees the welcome screen between the auth callback and the lookup.
+    useAuthStore.setState({ isAuthResolved: true });
   });
 };

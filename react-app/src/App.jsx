@@ -58,7 +58,12 @@ const App = () => {
     setSelectedTeamId,
     user: clickUpUser,
   } = useClickUpStore();
-  const { isAuthObserve, user: googleUser, isLoading } = useAuthStore();
+  const {
+    isAuthObserve,
+    isAuthResolved,
+    user: googleUser,
+    isLoading,
+  } = useAuthStore();
   const isDemo = DEMO_BUILD;
   const showWorkspace = Boolean(googleUser) || isDemo;
 
@@ -205,7 +210,11 @@ const App = () => {
             </Stack>
           </Flex>
           {DEMO_BUILD && <DemoBanner />}
-          {showWorkspace ? <LatestActivityPanels /> : <Welcome />}
+          {showWorkspace ? (
+            <LatestActivityPanels />
+          ) : (
+            isAuthResolved && <Welcome />
+          )}
         </Stack>
 
         {showWorkspace && <InformationTabs />}

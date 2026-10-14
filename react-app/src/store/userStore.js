@@ -4,6 +4,9 @@ const initialState = {
   user: null,
   isLoading: false,
   isAuthObserve: false,
+  // True once Firebase has reported the initial sign-in state (or immediately
+  // when Firebase is not in use), so the UI can avoid flashing the welcome screen.
+  isAuthResolved: false,
 };
 
 const useAuthStore = create((set) => ({
@@ -13,7 +16,7 @@ const useAuthStore = create((set) => ({
       user,
     })),
   logout: async () => {
-    set(initialState);
+    set({ ...initialState, isAuthResolved: true });
   },
   setIsLoading: (isLoading) =>
     set(() => ({
