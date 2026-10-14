@@ -16,3 +16,6 @@ react-app/.yarn/install-state.gz
 .env
 .env.*
 !.env.example
+
+# readme-media tool: built demo for recording
+tools/readme-media/.build/
