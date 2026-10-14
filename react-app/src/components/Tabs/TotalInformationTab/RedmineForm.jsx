@@ -143,6 +143,10 @@ const RedmineForm = () => {
     isWorkLogsExist && worklogsArray[0][1][0].project;
 
   const handleBulkUpdate = async () => {
+    if (!jiraUser) {
+      toast.info("Jira is not set up in settings.");
+      return;
+    }
     setIsMatchingJira(true);
     try {
       const mainJiraUrl = normalizeServiceScope(organizationURL);

@@ -11,6 +11,8 @@ import {
   getAssignedTasks,
   getLatestClickUpTimeEntries,
 } from "./clickup";
+import useJiraStore from "../store/jiraStore";
+import { isJiraConfigured } from "../helpers/jiraSettings";
 
 export const sendWorkLogs = (formData) => {
   return instance
@@ -42,8 +44,13 @@ export const fetchAllData = async ({
   // 1) Save org URLs in Zustand stores.
   saveOrganizationUrls(jiraUrl, redmineUrl);
 
-  // 2) Fetch main JIRA
-  if (jiraUrl) {
+  // 2) Fetch main JIRA (optional: skipped when Jira is not set up)
+  const hasJira = isJiraConfigured(currentSettings);
+  if (!hasJira) {
+    // Drop data of a previously used preset so the status shows "Not connected".
+    useJiraStore.getState().resetAll();
+  }
+  if (hasJira) {
     const jiraUser = await jiraLogin(jiraUrl);
     if (jiraUser && jiraUser.accountId) {
       addJiraUser(jiraUser);
@@ -59,7 +66,7 @@ export const fetchAllData = async ({
 
   // 3) Fetch additional JIRA URLs
   resetAdditionalAssignedIssues();
-  if (additionalJiraUrls && Array.isArray(additionalJiraUrls)) {
+  if (hasJira && additionalJiraUrls && Array.isArray(additionalJiraUrls)) {
     for (const { url } of additionalJiraUrls) {
       if (url?.length) {
         const userForAdditional = await jiraLogin(url);
@@ -75,7 +82,7 @@ export const fetchAllData = async ({
       }
     }
   }
-  await getLatestJiraWorkLogs("all data");
+  if (hasJira) await getLatestJiraWorkLogs("all data");
 
   // 4) Fetch Redmine
   if (redmineUrl) {

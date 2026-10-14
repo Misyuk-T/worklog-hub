@@ -31,6 +31,14 @@ import RedmineApi from "../../assets/RedmineAPI.png";
 import JiraUserName from "../../assets/JiraUserName.png";
 import useAuthStore from "../../store/userStore";
 import { fetchAllData } from "../../actions/workLogs";
+import { JIRA_FIELD_IDS, validateJiraField } from "../../helpers/jiraSettings";
+
+// Jira is optional: all three fields empty is fine, otherwise all are required.
+// `deps` re-validates the sibling fields as soon as one of them changes.
+const jiraRules = {
+  validate: validateJiraField,
+  deps: JIRA_FIELD_IDS,
+};
 
 const fieldSections = [
   {
@@ -276,6 +284,7 @@ const SettingModalItem = ({
                   leftAddon={leftAddon}
                   rightAddon={rightAddon}
                   errors={errors}
+                  rules={JIRA_FIELD_IDS.includes(id) ? jiraRules : undefined}
                 >
                   {content}
                 </SettingModalFieldItem>
