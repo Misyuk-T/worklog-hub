@@ -22,16 +22,18 @@ export async function compare(page) {
   return r;
 }
 
-/** Pick a source, then edit hours on a card and watch the totals follow. */
+/** Generate cards from Jira for three days, then edit the hours of one card and watch the totals follow. */
 export async function cards(page) {
   const r = new Recorder(page, 2);
-  await r.hold(800);
-  for (const name of ["ClickUp", "File", "Jira"]) {
-    await r.click(page.getByRole("button", { name, exact: true }).last(), { settle: 200, hold: 350, steps: 2 });
-  }
+  await r.hold(900);
+  await r.click(btn(page, "Generate"), { settle: 700, hold: 700 });
+  const dialog = page.getByRole("dialog");
+  await r.click(dialog.getByRole("gridcell", { name: "11", exact: true }), { settle: 250, hold: 350, steps: 3 });
+  await r.click(dialog.getByRole("gridcell", { name: "13", exact: true }), { settle: 250, hold: 700, steps: 2 });
+  await r.click(dialog.getByRole("button", { name: "Export worklogs" }), { settle: 800, hold: 900 });
   await r.scrollTo(690, 4);
   await r.hold(400);
-  await r.click(page.getByRole("tab", { name: "17-03" }), { hold: 900 });
+  await r.click(page.getByRole("tab", { name: "11-03" }), { hold: 1000 });
   const hours = page.getByRole("spinbutton").first();
   const { x, y } = await r.center(hours);
   await r.glide(x, y);
@@ -53,7 +55,7 @@ export async function cards(page) {
   return r;
 }
 
-/** Submit the cards to Redmine. The demo stops the request and says so. */
+/** Submit the cards to Redmine. The demo says how many worklogs it would save and sends nothing. */
 export async function submit(page) {
   const r = new Recorder(page, 3);
   await page.evaluate(() => window.scrollTo(0, 700));
@@ -63,6 +65,6 @@ export async function submit(page) {
   await r.wait(300);
   await r.hold(700);
   await r.click(btn(page, "Submit cards to Redmine"), { hold: 1500 });
-  await r.click(btn(page, "Confirm"), { settle: 800, hold: 2800 });
+  await r.click(btn(page, "Confirm"), { settle: 900, hold: 3200 });
   return r;
 }
