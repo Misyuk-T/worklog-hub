@@ -10,6 +10,7 @@ import { validateWorkLogsData } from "../helpers/validateWorklogsData";
 import { endOfMonth, format, parse, startOfMonth } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
 import groupByField from "../helpers/groupByField";
+import { round } from "../helpers/getHours";
 
 export const redmineLogin = async () => {
   try {
@@ -119,7 +120,7 @@ export const transformRedmineWorkLogsToCards = (timeEntries = []) => {
       sourceId: entry.id,
       date,
       description: entry.comments || "",
-      hours: entry.hours,
+      hours: entry.hours == null ? entry.hours : round(Number(entry.hours)),
       blb,
       project: entry?.issue?.id || "",
       task: "",

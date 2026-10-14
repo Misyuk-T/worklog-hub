@@ -6,6 +6,7 @@ import { endOfDay, format, parse, startOfDay } from "date-fns";
 import { instance } from "./axios";
 import { getDemoClickUpLogs, isDemoActive } from "../demo/demoMode";
 import groupByField from "../helpers/groupByField";
+import { msToHours } from "../helpers/getHours";
 import { validateWorkLogsData } from "../helpers/validateWorklogsData";
 import useClickUpStore from "../store/clickupStore";
 
@@ -129,7 +130,7 @@ export const getClickUpTimeEntries = async (
         taskKey: entry.task?.custom_id || entry.task?.id || "No task",
         taskName: entry.task?.name || "No task",
         description: entry.description || "",
-        hours: parseInt(entry.duration, 10) / 3600000,
+        hours: msToHours(entry.duration),
         date: formattedDate,
         clickupTeamId: teamId,
         teamId: teamId,

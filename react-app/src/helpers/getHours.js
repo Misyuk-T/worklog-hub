@@ -49,6 +49,31 @@ export const round = (number, decimalPlaces = 2) => {
   return Math.round(number * factor) / factor;
 };
 
+// ClickUp reports durations in milliseconds; worklog hours carry two decimals
+// so the hours field (see hoursInput.js) can edit them.
+export const msToHours = (ms) => round(parseInt(ms, 10) / 3600000);
+
+// Rounds `hours` on every entry of a { date: [worklog, ...] } map (file import).
+// Entries whose hours are not numeric are left for the usual validation.
+export const roundWorklogsHours = (worklogsByDate) => {
+  if (!worklogsByDate || typeof worklogsByDate !== "object") return worklogsByDate;
+
+  return Object.fromEntries(
+    Object.entries(worklogsByDate).map(([date, logs]) => [
+      date,
+      Array.isArray(logs)
+        ? logs.map((log) => {
+            const hours = log?.hours;
+            const isNumeric =
+              (typeof hours === "number" || (typeof hours === "string" && hours.trim() !== "")) &&
+              Number.isFinite(Number(hours));
+            return isNumeric ? { ...log, hours: round(Number(hours)) } : log;
+          })
+        : logs,
+    ]),
+  );
+};
+
 export const parseTimeSpent = (timeSpent) => {
   const daysMatch = timeSpent.match(/(\d+)d/);
   const hoursMatch = timeSpent.match(/(\d+)h/);

@@ -13,12 +13,13 @@ import {
 } from "./clickup";
 import useJiraStore from "../store/jiraStore";
 import { isJiraConfigured } from "../helpers/jiraSettings";
+import { roundWorklogsHours } from "../helpers/getHours";
 
 export const sendWorkLogs = (formData) => {
   return instance
     .post("/submit-form", formData, { skipErrorToast: true })
     .then((response) => {
-      return response.data;
+      return roundWorklogsHours(response.data);
     });
 };
 
