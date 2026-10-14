@@ -13,7 +13,7 @@ import {
 import { openLoginPopup } from "../actions/auth";
 import { isFirebaseConfigured } from "../firebase";
 
-const README_URL = "https://github.com/Misyuk-T/worklog-hub#how-credentials-are-handled";
+const README_URL = "https://github.com/Misyuk-T/worklog-hub#your-keys";
 
 export const Welcome = () => (
   <Box
