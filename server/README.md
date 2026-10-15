@@ -1,58 +1,42 @@
-# Redmine Logger
+# Proxy
 
-Redmine Tracker is a cross-platform application built using Electron and React. It allows users to track
-and manage tasks in Redmine and Jira project management systems.
-The application is available for Windows, macOS or Linux.
+A small Express server that sits between the web app and the tracker APIs. Browsers can't call Redmine, Jira or ClickUp directly (CORS), so the app sends its requests here and the proxy forwards them over HTTPS.
 
-## Features
+It keeps nothing: no database, no stored keys, no request logs. Error messages have the keys masked.
 
-- Connects to Redmine and Jira project management systems.
-- Tracks and manages tasks, issues, and projects.
-- Provides a user-friendly interface for interacting with the project management systems.
+## What it does
 
-## Use already builded application for your Windows/Mac:
+- Reads the credentials from `X-*` request headers and builds the upstream call. The old query parameters (`redmineApiKey`, `redmineUrl`, `jiraApiKey`, `jiraEmail`, `clickupApiKey`) are still accepted so an older frontend keeps working.
+- Refuses targets that are not `https`, carry credentials in the URL, or point at localhost, `.local`/`.internal` hosts or private IP ranges.
+- Throttles Jira and ClickUp calls to about three per second.
+- Parses the TXT and XLSX worklog imports.
 
-1. Open builds folder on google drive and download file accordiong to your OS 
-https://drive.google.com/drive/folders/1GCbwj4CgdgjDnx6Ymo3wRZXMXSZgMIj0?usp=sharing
- 
-2. Unarhive and install downloaded file.
+## Routes
 
-##  Or install according to your requirments:
+| Route | What it does |
+| --- | --- |
+| `POST /submit-form` | Multipart upload (`file`, `type`). `custom` expects a `.txt`, `jira` expects an `.xlsx`. Returns the parsed worklogs. |
+| `ALL /redmine/*` | Forwards to `https://<redmine host>/*`. Headers: `X-Redmine-Api-Key`, `X-Redmine-Url`. |
+| `ALL /jira/*` | Forwards to `https://<jiraUrl>/*`. Headers: `X-Jira-Api-Key`, `X-Jira-Email`. The Jira host comes in the `jiraUrl` query parameter. |
+| `ALL /clickup/*` | Forwards to `https://api.clickup.com/api/v2/*`. Header: `X-ClickUp-Api-Key`. |
 
-To install and run the Redmine Tracker application on your platform, follow these steps:
+## Environment
 
-1. Clone the GitHub repository:
+| Variable | Default | |
+| --- | --- | --- |
+| `PORT` | `8000` | Port to listen on. |
 
-```bash
-git clone https://github.com/Misyuk-T/redmine-application.git
-```
+## Run locally
 
-2. Make sure that u have Node.js >= v16.0.0 and yarn >= v1.22.19
-
-```bash
-node --version && yarn --version
-```
-
-3. Install dependency
+Needs Node 18 (see `engines` in `package.json`).
 
 ```bash
-yarn install
+cd server
+npm ci
+npm start      # http://localhost:8000
+npm test       # node's built-in test runner
 ```
 
-4. Build electron app with necessary flag: --win --mac or --linux
+## Deploy
 
-```bash
-yarn build --mac
-```
-
-5. Run app
-```bash
-yarn electron
-```
-
-# Troubleshoot
-
-### `yarn` is not installed  
-```bash
-npm i --global yarn
-```
+Any Node host works: build context is `server/`, install with `npm ci`, start with `npm start`, set `PORT` if the host doesn't. Point the web app's proxy URL at the result.
