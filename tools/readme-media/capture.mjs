@@ -1,7 +1,7 @@
 // Records the animated GIFs of the README and the landing page from the demo build.
 //
 //   cd tools/readme-media && npm install && npx playwright install chromium   (once)
-//   npm run media                    -> ../../docs/media/{compare,cards,submit}.gif + compare.png
+//   npm run media                    -> ../../docs/media/{cards,submit,compare}.gif + cards.png (a still of the cards)
 //   DUMP=dir npm run media           also saves every frame as PNG into dir (to look at them)
 //   npm run media -- --og            -> also site/assets/og-image.png
 //
@@ -38,12 +38,12 @@ mkdirSync(out, { recursive: true });
 const server = await serve(build, PORT);
 const browser = await chromium.launch();
 try {
-  for (const [name, scene] of [["compare", compare], ["cards", cards], ["submit", submit]]) {
+  for (const [name, scene] of [["cards", cards], ["submit", submit], ["compare", compare]]) {
     const { context, page } = await createPage(browser, `http://127.0.0.1:${PORT}/`);
     const rec = await scene(page);
     const gif = encodeGif(rec.frames, SIZE);
     writeFileSync(resolve(out, `${name}.gif`), gif);
-    if (name === "compare") writeFileSync(resolve(out, "compare.png"), rec.frames.at(-1).png);
+    if (name === "cards") writeFileSync(resolve(out, "cards.png"), rec.still);
     if (process.env.DUMP) {
       mkdirSync(process.env.DUMP, { recursive: true });
       rec.frames.forEach((f, i) => writeFileSync(resolve(process.env.DUMP, `${name}-${String(i).padStart(2, "0")}.png`), f.png));

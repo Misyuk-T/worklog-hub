@@ -44,9 +44,9 @@ jobs:
       - name: Assemble the site
         working-directory: .
         run: |
-          mkdir -p _site/demo
+          mkdir -p _site/demo _site/media
           cp -R site/. _site/
-          cp docs/media/*.gif _site/media/
+          cp docs/media/*.gif docs/media/*.png _site/media/
           cp -R react-app/dist/. _site/demo/
 
       - uses: actions/configure-pages@v5

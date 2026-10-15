@@ -34,6 +34,11 @@ export async function cards(page) {
   await r.scrollTo(690, 4);
   await r.hold(400);
   await r.click(page.getByRole("tab", { name: "11-03" }), { hold: 1000 });
+  // The cards of the first day, without the cursor: the still for the hero of the site and the README.
+  const cursor = page.locator("#rm-cursor");
+  await cursor.evaluate((el) => (el.style.visibility = "hidden"));
+  r.still = await page.screenshot({ type: "png" });
+  await cursor.evaluate((el) => (el.style.visibility = ""));
   const hours = page.getByRole("spinbutton").first();
   const { x, y } = await r.center(hours);
   await r.glide(x, y);

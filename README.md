@@ -2,13 +2,13 @@
 
 **Log hours once. Move them between trackers.**
 
-![Compare Jira with Redmine day by day in the demo: open Compare, press Compare, scroll to a day where the hours differ](docs/media/compare.gif)
+![Generate cards in the demo: pick 11 to 13 March, export, edit the hours of a card, save it, and the totals follow](docs/media/cards.gif)
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Demo](https://img.shields.io/badge/demo-open-black)](https://misyuk-t.github.io/worklog-hub/demo/)
 [![Website](https://img.shields.io/badge/site-misyuk--t.github.io-black)](https://misyuk-t.github.io/worklog-hub/)
 
-Teams that track time in one system for themselves and another for a client end up typing the same hours twice. Worklog Hub reads worklogs from **Redmine**, **Jira** or **ClickUp**, turns them into cards you can edit, and submits them to another tracker. Compare puts two sources side by side for a date range, so you can spot missing or mismatched entries.
+Teams that track time in one system for themselves and another for a client end up typing the same hours twice. Worklog Hub reads worklogs from **Redmine**, **Jira** or **ClickUp**, or from a TXT or XLSX file, turns them into cards you can edit, and submits them to another tracker. Compare, a secondary view, puts two sources side by side for a date range, so you can spot missing or mismatched entries.
 
 ## Features
 
@@ -17,7 +17,13 @@ Teams that track time in one system for themselves and another for a client end 
 - **Submit** the cards to Redmine, Jira or ClickUp. Jira keys and ClickUp task ids in a description are matched for you.
 - **Compare** two trackers day by day. Edit or delete an entry straight from the comparison.
 
-![Edit the hours of a card, save it, and the totals follow](docs/media/cards.gif)
+![Submit the cards to Redmine in the demo: press Submit, confirm the hours, and a message says how many worklogs would be saved](docs/media/submit.gif)
+
+### Compare
+
+Pick two trackers and a date range. Each day shows both sides with a total, and marks entries that are missing or have different hours.
+
+![Compare Jira with Redmine day by day in the demo: open Compare, press Compare, scroll to a day where the hours differ](docs/media/compare.gif)
 
 ## Try it
 
