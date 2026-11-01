@@ -45,3 +45,8 @@
   - "Me": rows are clickable and the "Edit Jira worklog" modal opens.
   - Generate → Jira and Generate → Redmine each produced 7 cards and closed the modal, checked through React state (`isOpen: false`, `isLoading: false`).
 - Not verified: real tracker permissions. That covers the Redmine member directory against admin access, Jira `user/search` and `mypermissions`, ClickUp `assignee` for non-admins, and live Jira worklog pagination. Taras checks these on his account after the deploy.
+
+## Release (2026-11-01)
+- Source commit `8e0b1b2` deployed to [Firebase Hosting](https://redmine-scheduler-app.web.app/). Firebase reported `Deploy complete!`.
+- Served HTML references `index-DgAuYUL_.js` and `index-B2_Oly4f.css`. Both match the built files byte for byte. JS SHA-256: `1cbdb5e01444603ce79658cd41833ab2bc933867573044db9cba16e8d65be09a`.
+- Not pushed at release time.
