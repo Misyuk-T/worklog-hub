@@ -62,7 +62,7 @@ const SOURCE_LABELS = {
   clickup: "ClickUp",
 };
 
-const WorklogEditModal = ({ isOpen, onClose, log, onMutated }) => {
+const WorklogEditModal = ({ isOpen, onClose, log, onMutated, captureGuard }) => {
   const toast = useToast();
   const { projects } = useRedmineStore();
   const { assignedIssues, additionalAssignedIssues } = useJiraStore();
@@ -176,6 +176,7 @@ const WorklogEditModal = ({ isOpen, onClose, log, onMutated }) => {
 
     try {
       setSaving(true);
+      const stillCurrent = captureGuard?.();
 
       if (source === "redmine") {
         await updateRedmineTimeEntry({
@@ -228,7 +229,7 @@ const WorklogEditModal = ({ isOpen, onClose, log, onMutated }) => {
         position: "bottom-center",
       });
       handleClose();
-      await onMutated?.();
+      await onMutated?.(stillCurrent);
     } catch (error) {
       console.error("Error while updating worklog:", error);
       toast({
@@ -248,6 +249,7 @@ const WorklogEditModal = ({ isOpen, onClose, log, onMutated }) => {
     if (!log) return;
     try {
       setDeleting(true);
+      const stillCurrent = captureGuard?.();
 
       if (source === "redmine") {
         await deleteRedmineTimeEntry(log.id);
@@ -272,7 +274,7 @@ const WorklogEditModal = ({ isOpen, onClose, log, onMutated }) => {
         position: "bottom-center",
       });
       handleClose();
-      await onMutated?.();
+      await onMutated?.(stillCurrent);
     } catch (error) {
       console.error("Error while deleting worklog:", error);
       toast({

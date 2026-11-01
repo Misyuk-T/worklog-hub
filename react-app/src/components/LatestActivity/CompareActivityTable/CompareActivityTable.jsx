@@ -1,5 +1,7 @@
-import { useState, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
+  AlertIcon,
   Box,
   Heading,
   Text,
@@ -9,34 +11,38 @@ import {
   Tr,
   Th,
   Td,
-  Button,
   Flex,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  Portal,
-  PopoverArrow,
-  PopoverBody,
-  PopoverCloseButton,
   Link,
   Collapse,
-  Checkbox,
-  Stack,
-  Divider,
 } from "@chakra-ui/react";
-import { CalendarIcon } from "@chakra-ui/icons";
-import { DayPicker } from "react-day-picker";
-import { isDemoActive } from "../../../demo/demoMode";
+import { DEMO_PRESET, getDemoJiraHost, isDemoActive } from "../../../demo/demoMode";
 import { format, parse, subDays } from "date-fns";
 import { round } from "../../../helpers/getHours";
-import groupByField from "../../../helpers/groupByField";
-import { getLatestRedmineWorkLogs } from "../../../actions/redmine";
-import { fetchAllJiraWorklogs } from "../../../actions/jira";
-import { fetchAllClickUpTimeEntries } from "../../../actions/clickup";
+import {
+  fetchCompareClickUp,
+  fetchCompareJira,
+  fetchCompareRedmine,
+} from "../../../actions/compareLogs";
+import {
+  getMeClickUp,
+  getMeJiraAccountId,
+  getMeRedmineId,
+  getRedmineUserMail,
+} from "../../../actions/people";
+import { declaredJiraHosts } from "../../../helpers/credentialHost";
+import { normalizeServiceScope } from "../../../helpers/matchWorklogTasks";
+import { canEditResults, captureContext } from "../../../helpers/contextGuard";
+import { isJiraConfigured } from "../../../helpers/jiraSettings";
+import { credentialsSignature } from "../../../helpers/trackerConnections";
+import useSettingsStore from "../../../store/settingsStore";
 import useRedmineStore from "../../../store/redmineStore";
 import useJiraStore from "../../../store/jiraStore";
 import useClickUpStore from "../../../store/clickupStore";
 import WorklogEditModal from "./WorklogEditModal";
+import CompareToolbar from "./CompareToolbar";
+import SourceSummary from "./SourceSummary";
+import usePersonResolution from "./usePersonResolution";
+import { CLICKUP_ADMIN_NOTE } from "./ResolutionPanel";
 
 const isCommentSimilar = (c1 = "", c2 = "") => {
   if (!c1 || !c2) return false;
@@ -193,19 +199,37 @@ const renderLogContent = (log, redmineBaseUrl) => {
   return null;
 };
 
+const SERVICE_LABELS = { jira: "Jira", clickup: "ClickUp", redmine: "Redmine" };
+
+const SKIP_REASONS = {
+  loading: "still searching for this person",
+  notFound: "person not found on this site",
+  noPermission: "no permission to search users on this site",
+  error: "the search failed",
+  choose: "waiting for your confirmation",
+  suggest: "waiting for your confirmation",
+};
+
+const skipReason = (row) =>
+  SKIP_REASONS[row?.status] || "waiting for your confirmation";
+
+const sameRange = (a, b) =>
+  a?.from?.getTime() === b?.from?.getTime() && a?.to?.getTime() === b?.to?.getTime();
+
+const mergeGrouped = (target, grouped) => {
+  Object.entries(grouped || {}).forEach(([date, logs]) => {
+    (target[date] ||= []).push(...logs);
+  });
+};
+
 const CompareActivityTable = ({ panelSize }) => {
   const { user: redmineUser, organizationURL: redmineBaseUrl } =
     useRedmineStore();
-  const {
-    user: jiraUser,
-    organizationURL,
-    additionalAssignedIssues,
-  } = useJiraStore();
-  const {
-    user: clickUpUser,
-    selectedTeamId,
-    additionalAssignedTasks,
-  } = useClickUpStore();
+  const { user: jiraUser } = useJiraStore();
+  const { user: clickUpUser } = useClickUpStore();
+  const { settings, currentSettings } = useSettingsStore();
+  const activePreset = isDemoActive() ? DEMO_PRESET : currentSettings;
+  const presetSignature = credentialsSignature(activePreset);
 
   // The demo has worklogs for the last working days, so open on that range.
   const [range, setRange] = useState(() =>
@@ -215,140 +239,294 @@ const CompareActivityTable = ({ panelSize }) => {
   );
   const [source1Services, setSource1Services] = useState(["jira", "clickup"]);
   const [source2Services, setSource2Services] = useState(["redmine"]);
-  const [source1Logs, setSource1Logs] = useState({});
-  const [source2Logs, setSource2Logs] = useState({});
+  const [person, setPerson] = useState(null); // null = Me
+  const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [editingLog, setEditingLog] = useState(null);
-  const truncatedOrgUrl = organizationURL?.replace(/^https?:\/\//, "");
+  const [generation, setGeneration] = useState(0);
+  const generationRef = useRef(0);
+  const personTokenRef = useRef(0);
 
-  const availableServices = [
-    { key: "jira", label: "Jira", available: !!jiraUser },
-    { key: "clickup", label: "ClickUp", available: !!clickUpUser },
-    { key: "redmine", label: "Redmine", available: !!redmineUser },
+  const resolution = usePersonResolution({ person, settings, activePreset });
+
+  // Every change of person, preset, credentials or dates starts a new
+  // generation: responses of the previous one are ignored and its results,
+  // and any open edit, are dropped.
+  const invalidate = useCallback(() => {
+    generationRef.current += 1;
+    setGeneration(generationRef.current);
+    setLoading(false);
+    setResults(null);
+    setEditingLog(null);
+    return generationRef.current;
+  }, []);
+
+  useEffect(() => {
+    invalidate();
+    personTokenRef.current += 1;
+    setPerson(null);
+  }, [presetSignature, invalidate]);
+
+  const handlePersonChange = async (picked) => {
+    invalidate();
+    // A mail answer belongs to the person and preset it was asked for.
+    const personToken = ++personTokenRef.current;
+    if (!picked) {
+      setPerson(null);
+      return;
+    }
+    const next = {
+      id: `redmine:${picked.id}`,
+      redmineId: picked.id,
+      name: picked.name,
+      mail: picked.mail || "",
+      mailLoading: !picked.mail,
+    };
+    setPerson(next);
+    if (!picked.mail) {
+      const mail = await getRedmineUserMail(picked.id, activePreset);
+      if (personToken !== personTokenRef.current) return;
+      setPerson((current) =>
+        current?.id === next.id ? { ...current, mail, mailLoading: false } : current,
+      );
+    }
+  };
+
+  const handleRangeChange = (next) => {
+    if (sameRange(next, range)) return;
+    invalidate();
+    setRange(next);
+  };
+
+  const isMe = !person;
+  const demo = isDemoActive();
+  const hasConnection = (service) =>
+    resolution.connections.some((connection) => connection.service === service);
+  // "Me" is offered for what the active preset itself declares; the demo has no
+  // preset fields and answers from its own stores.
+  const meJira = demo ? !!jiraUser : isJiraConfigured(activePreset);
+  const meClickUp = demo ? !!clickUpUser : !!activePreset?.clickupApiKey;
+  const hasRedmine = demo
+    ? !!redmineUser
+    : !!activePreset?.redmineUrl && !!activePreset?.redmineApiKey;
+  const services = [
+    { key: "jira", label: "Jira", available: isMe ? meJira : hasConnection("jira") },
+    { key: "clickup", label: "ClickUp", available: isMe ? meClickUp : hasConnection("clickup") },
+    { key: "redmine", label: "Redmine", available: hasRedmine },
   ];
+  const isAvailable = (key) => services.find((service) => service.key === key)?.available;
 
   const handleSource1Toggle = (serviceKey) => {
-    setSource1Services((prev) => {
-      const newServices = prev.includes(serviceKey)
+    setSource1Services((prev) =>
+      prev.includes(serviceKey)
         ? prev.filter((s) => s !== serviceKey)
-        : [...prev, serviceKey];
-
-      // Remove from source2 if added to source1
-      if (newServices.includes(serviceKey)) {
-        setSource2Services((s2) => s2.filter((s) => s !== serviceKey));
-      }
-
-      return newServices;
-    });
+        : [...prev, serviceKey],
+    );
+    // A service can't sit on both sides.
+    setSource2Services((s2) => s2.filter((s) => s !== serviceKey));
   };
 
   const handleSource2Toggle = (serviceKey) => {
-    setSource2Services((prev) => {
-      const newServices = prev.includes(serviceKey)
+    setSource2Services((prev) =>
+      prev.includes(serviceKey)
         ? prev.filter((s) => s !== serviceKey)
-        : [...prev, serviceKey];
-
-      // Remove from source1 if added to source2
-      if (newServices.includes(serviceKey)) {
-        setSource1Services((s1) => s1.filter((s) => s !== serviceKey));
-      }
-
-      return newServices;
-    });
+        : [...prev, serviceKey],
+    );
+    setSource1Services((s1) => s1.filter((s) => s !== serviceKey));
   };
 
-  const fetchServiceLogs = async (services, startDateStr, endDateStr) => {
-    const allLogs = {};
+  // One job per connection. Credentials and the person are taken from `ctx`,
+  // captured when Compare was pressed, never read again later. For "Me" the
+  // sites, workspaces and ids come from that preset's own declared hosts and
+  // keys, not from the Jira/ClickUp/Redmine stores, which may still hold the
+  // data of a previously active preset.
+  const buildJobs = async (service, ctx) => {
+    const { startDate, endDate, preset, target } = ctx;
+    const common = { startDate, endDate, isMe: !target };
+    const demo = isDemoActive();
 
-    for (const serviceKey of services) {
-      try {
-        if (serviceKey === "redmine" && redmineUser) {
-          const redmineWorkLogs = await getLatestRedmineWorkLogs(
-            redmineUser.id,
-            startDateStr,
-            endDateStr,
-          );
-          const normalizedRedmineLogs = redmineWorkLogs.map((log) => ({
-            ...log,
-            source: "redmine",
-            date: format(new Date(log.spent_on), "dd-MM-yyyy"),
-            hours: log.hours,
-            description: log.comments,
-          }));
-          const redmineGrouped = groupByField(normalizedRedmineLogs, "date");
-          Object.keys(redmineGrouped).forEach((date) => {
-            if (!allLogs[date]) allLogs[date] = [];
-            allLogs[date].push(...redmineGrouped[date]);
-          });
-        }
-
-        if (serviceKey === "jira" && jiraUser) {
-          const jiraWorklogs = await fetchAllJiraWorklogs({
-            userEmail: jiraUser?.emailAddress,
-            organizationURL: truncatedOrgUrl,
-            additionalUrls: additionalAssignedIssues,
-            startDate: startDateStr,
-            endDate: endDateStr,
-          });
-          Object.keys(jiraWorklogs).forEach((date) => {
-            if (!allLogs[date]) allLogs[date] = [];
-            const logsWithSource = jiraWorklogs[date].map((log) => ({
-              ...log,
-              source: "jira",
-              date,
-            }));
-            allLogs[date].push(...logsWithSource);
-          });
-        }
-
-        if (serviceKey === "clickup" && clickUpUser) {
-          const clickUpLogs = await fetchAllClickUpTimeEntries({
-            userId: clickUpUser.id,
-            selectedTeamId,
-            additionalTeams: additionalAssignedTasks,
-            startDate: startDateStr,
-            endDate: endDateStr,
-          });
-          Object.keys(clickUpLogs).forEach((date) => {
-            if (!allLogs[date]) allLogs[date] = [];
-            const logsWithSource = clickUpLogs[date].map((log) => ({
-              ...log,
-              source: "clickup",
-              date,
-            }));
-            allLogs[date].push(...logsWithSource);
-          });
-        }
-      } catch (error) {
-        console.error(`Error fetching ${serviceKey} logs:`, error);
-      }
+    if (service === "redmine") {
+      const host = normalizeServiceScope(preset?.redmineUrl);
+      return [
+        {
+          label: host ? `Redmine · ${host}` : "Redmine",
+          run: async () =>
+            fetchCompareRedmine({
+              ...common,
+              userId: target
+                ? target.redmineId
+                : demo
+                  ? redmineUser.id
+                  : await getMeRedmineId(preset),
+              credentials: preset,
+            }),
+        },
+      ];
     }
 
-    return allLogs;
+    if (service === "jira") {
+      if (!target) {
+        const hosts = demo ? [getDemoJiraHost()] : [...new Set(declaredJiraHosts(preset))];
+        return hosts.map((host) => ({
+          label: `Jira · ${host}`,
+          run: async () =>
+            fetchCompareJira({
+              ...common,
+              host,
+              accountId: demo ? jiraUser.accountId : await getMeJiraAccountId(preset, host),
+              credentials: preset,
+            }),
+        }));
+      }
+      return ctx.connections
+        .filter((connection) => connection.service === "jira")
+        .map((connection) => {
+          const row = ctx.rows[connection.id];
+          const label = `Jira · ${connection.host}`;
+          if (!row?.confirmed || !row.selectedId) return { label, skipped: skipReason(row) };
+          return {
+            label,
+            run: () =>
+              fetchCompareJira({
+                ...common,
+                host: connection.host,
+                accountId: row.selectedId,
+                credentials: connection.credentials,
+              }),
+          };
+        });
+    }
+
+    if (!target) {
+      if (demo) {
+        return [
+          {
+            label: "ClickUp",
+            run: () =>
+              fetchCompareClickUp({ ...common, teamId: null, userId: clickUpUser.id, credentials: preset }),
+          },
+        ];
+      }
+      let me;
+      try {
+        me = await getMeClickUp(preset);
+      } catch (error) {
+        return [{ label: "ClickUp", failed: error.message }];
+      }
+      return me.teams.map((team) => ({
+        label: `ClickUp · ${team.name || team.id}`,
+        run: () =>
+          fetchCompareClickUp({ ...common, teamId: team.id, userId: me.userId, credentials: preset }),
+      }));
+    }
+    return ctx.connections
+      .filter((connection) => connection.service === "clickup")
+      .map((connection) => {
+        const row = ctx.rows[connection.id];
+        const label = `ClickUp · ${connection.name}`;
+        if (!row?.confirmed || !row.selectedId) return { label, skipped: skipReason(row) };
+        return {
+          label,
+          adminNote: true,
+          run: () =>
+            fetchCompareClickUp({
+              ...common,
+              teamId: connection.teamId,
+              userId: row.selectedId,
+              credentials: connection.credentials,
+            }),
+        };
+      });
   };
 
-  const fetchLogs = async () => {
-    if (!range.from || !range.to) return;
-    const startDateStr = format(range.from, "yyyy-MM-dd");
-    const endDateStr = format(range.to, "yyyy-MM-dd");
+  const runSource = async (serviceKeys, ctx) => {
+    const jobs = (
+      await Promise.all(serviceKeys.filter(isAvailable).map((key) => buildJobs(key, ctx)))
+    ).flat();
+    const settled = await Promise.all(
+      jobs.map(async (job) => {
+        if (job.skipped) return { label: job.label, status: "skipped", message: job.skipped };
+        if (job.failed) return { label: job.label, status: "failed", message: job.failed };
+        try {
+          const grouped = await job.run();
+          const count = Object.values(grouped).reduce((sum, logs) => sum + logs.length, 0);
+          return {
+            label: job.label,
+            status: "ok",
+            count,
+            grouped,
+            note: job.adminNote && count === 0 ? `No entries returned. ${CLICKUP_ADMIN_NOTE}` : "",
+          };
+        } catch (error) {
+          return { label: job.label, status: "failed", message: error.message };
+        }
+      }),
+    );
+    const logs = {};
+    settled.forEach((item) => mergeGrouped(logs, item.grouped));
+    return { logs, info: settled.map(({ grouped, ...item }) => item) };
+  };
 
+  // Live context, read by guards captured when a mutation starts. The
+  // generation is read from the ref: invalidate() bumps it before any render.
+  const liveContextRef = useRef({});
+  liveContextRef.current = {
+    personId: person?.id ?? "me",
+    presetId: activePreset?.id,
+  };
+  const captureMutationGuard = () =>
+    captureContext(() => ({ ...liveContextRef.current, generation: generationRef.current }));
+
+  // `stillCurrent` comes from a mutation that started earlier: if person,
+  // preset or generation moved on meanwhile, nothing is refetched.
+  const fetchLogs = async (stillCurrent) => {
+    if (typeof stillCurrent === "function" && !stillCurrent()) return;
+    if (!range?.from) return;
+    const startDate = format(range.from, "yyyy-MM-dd");
+    const endDate = format(range.to || range.from, "yyyy-MM-dd");
+
+    const gen = invalidate();
+    const ctx = {
+      startDate,
+      endDate,
+      preset: activePreset,
+      target: person,
+      connections: resolution.connections,
+      rows: resolution.rows,
+    };
+    const labelOf = (keys) =>
+      keys.filter(isAvailable).map((key) => SERVICE_LABELS[key]).join(" + ");
+    const context = { personId: person?.id ?? "me", presetId: activePreset?.id, generation: gen };
+
+    setLoading(true);
     try {
-      setLoading(true);
-      const [logs1, logs2] = await Promise.all([
-        fetchServiceLogs(source1Services, startDateStr, endDateStr),
-        fetchServiceLogs(source2Services, startDateStr, endDateStr),
+      const [a, b] = await Promise.all([
+        runSource(source1Services, ctx),
+        runSource(source2Services, ctx),
       ]);
-      setSource1Logs(logs1);
-      setSource2Logs(logs2);
+      if (gen !== generationRef.current) return;
+      setResults({
+        context,
+        person,
+        source1Logs: a.logs,
+        source2Logs: b.logs,
+        source1Info: a.info,
+        source2Info: b.info,
+        source1Label: labelOf(source1Services),
+        source2Label: labelOf(source2Services),
+      });
     } catch (error) {
       console.error("Error fetching logs:", error);
     } finally {
-      setLoading(false);
+      if (gen === generationRef.current) setLoading(false);
     }
   };
+
+  const source1Logs = results?.source1Logs;
+  const source2Logs = results?.source2Logs;
   const allDates = useMemo(() => {
-    const dates1 = Object.keys(source1Logs);
-    const dates2 = Object.keys(source2Logs);
+    const dates1 = Object.keys(source1Logs || {});
+    const dates2 = Object.keys(source2Logs || {});
     const uniqueDates = Array.from(new Set([...dates1, ...dates2]));
     uniqueDates.sort(
       (a, b) =>
@@ -357,6 +535,20 @@ const CompareActivityTable = ({ panelSize }) => {
     );
     return uniqueDates;
   }, [source1Logs, source2Logs]);
+
+  // Rows are editable only for the signed-in user, with the preset and the
+  // generation the results were fetched with.
+  const canEdit = canEditResults(results?.context, {
+    personId: person?.id ?? "me",
+    presetId: activePreset?.id,
+    generation,
+  });
+
+  const compareDisabled =
+    !range?.from ||
+    resolution.loading ||
+    !!person?.mailLoading ||
+    [...source1Services, ...source2Services].filter(isAvailable).length === 0;
 
   return (
     <Collapse in={panelSize !== "collapsed"}>
@@ -392,73 +584,40 @@ const CompareActivityTable = ({ panelSize }) => {
           Compare Worklogs
         </Heading>
 
-        <Flex mb={4} gap={6} alignItems="flex-start" flexWrap="wrap">
-          <Stack spacing={2}>
-            <Text fontSize="sm" fontWeight="600">
-              Source 1:
-            </Text>
-            {availableServices.map((service) => (
-              <Checkbox
-                key={service.key}
-                isChecked={source1Services.includes(service.key)}
-                onChange={() => handleSource1Toggle(service.key)}
-                isDisabled={!service.available}
-                size="sm"
-              >
-                {service.label}
-              </Checkbox>
-            ))}
-          </Stack>
+        <CompareToolbar
+          person={person}
+          onPersonChange={handlePersonChange}
+          activePreset={activePreset}
+          resolution={resolution}
+          services={services}
+          source1Services={source1Services}
+          source2Services={source2Services}
+          onToggleSource1={handleSource1Toggle}
+          onToggleSource2={handleSource2Toggle}
+          range={range}
+          onRangeChange={handleRangeChange}
+          onCompare={fetchLogs}
+          loading={loading}
+          compareDisabled={compareDisabled}
+        />
 
-          <Divider orientation="vertical" h="80px" />
+        {person && (
+          <Alert status="info" mb={4} borderRadius={0} fontSize="14px" py={2}>
+            <AlertIcon />
+            Viewing {person.name}
+            {person.mail ? ` (${person.mail})` : ""} · read-only
+          </Alert>
+        )}
 
-          <Stack spacing={2}>
-            <Text fontSize="sm" fontWeight="600">
-              Source 2:
-            </Text>
-            {availableServices.map((service) => (
-              <Checkbox
-                key={service.key}
-                isChecked={source2Services.includes(service.key)}
-                onChange={() => handleSource2Toggle(service.key)}
-                isDisabled={!service.available}
-                size="sm"
-              >
-                {service.label}
-              </Checkbox>
-            ))}
-          </Stack>
+        {results && (
+          <SourceSummary
+            source1Label={results.source1Label}
+            source1Info={results.source1Info}
+            source2Label={results.source2Label}
+            source2Info={results.source2Info}
+          />
+        )}
 
-          <Divider orientation="vertical" h="80px" />
-
-          <Popover>
-            <PopoverTrigger>
-              <Button leftIcon={<CalendarIcon />} variant="outline" size="sm">
-                Select Dates
-              </Button>
-            </PopoverTrigger>
-            <Portal>
-              <PopoverContent>
-                <PopoverArrow />
-                <PopoverCloseButton />
-                <PopoverBody>
-                  <DayPicker mode="range" selected={range} onSelect={setRange} />
-                </PopoverBody>
-              </PopoverContent>
-            </Portal>
-          </Popover>
-          <Button
-            onClick={fetchLogs}
-            isLoading={loading}
-            isDisabled={
-              !range ||
-              (source1Services.length === 0 && source2Services.length === 0)
-            }
-            size="sm"
-          >
-            Compare
-          </Button>
-        </Flex>
         {allDates.length === 0 ? (
           <Text>No data available for the selected period.</Text>
         ) : (
@@ -475,16 +634,6 @@ const CompareActivityTable = ({ panelSize }) => {
               0,
             );
 
-            const source1Label = source1Services
-              .map((s) => availableServices.find((srv) => srv.key === s)?.label)
-              .filter(Boolean)
-              .join(" + ");
-
-            const source2Label = source2Services
-              .map((s) => availableServices.find((srv) => srv.key === s)?.label)
-              .filter(Boolean)
-              .join(" + ");
-
             return (
               <Box key={date} mb={8}>
                 <Heading as="h3" size="sm" mb={2}>
@@ -494,13 +643,13 @@ const CompareActivityTable = ({ panelSize }) => {
                   <Thead>
                     <Tr w="100%">
                       <Th fontSize="14px" width="33.33%">
-                        {source1Label || "Source 1"}
+                        {results.source1Label || "Source A"}
                       </Th>
                       <Th fontSize="14px" width="33.33%" textAlign="center">
                         Difference
                       </Th>
                       <Th fontSize="14px" width="33.33%" textAlign="right">
-                        {source2Label || "Source 2"}
+                        {results.source2Label || "Source B"}
                       </Th>
                     </Tr>
                   </Thead>
@@ -516,8 +665,10 @@ const CompareActivityTable = ({ panelSize }) => {
                     </Tr>
                     {paired.map((row) => {
                       const { log1, log2, difference } = row;
-                      const source1Content = renderLogContent(log1, redmineBaseUrl);
-                      const source2Content = renderLogContent(log2, redmineBaseUrl);
+                      // The edit page link in Redmine is for your own entries only.
+                      const linkBase = canEdit ? redmineBaseUrl : null;
+                      const source1Content = renderLogContent(log1, linkBase);
+                      const source2Content = renderLogContent(log2, linkBase);
                       const rowKey = `${log1?.source || "e"}:${
                         log1?.id || "e"
                       }|${log2?.source || "e"}:${log2?.id || "e"}`;
@@ -532,8 +683,8 @@ const CompareActivityTable = ({ panelSize }) => {
                       return (
                         <Tr key={rowKey} _hover={{ bg: "rgba(0, 0, 0, 0.05)" }}>
                           <Td
-                            onClick={() => log1 && setEditingLog(log1)}
-                            cursor={log1 ? "pointer" : "default"}
+                            onClick={() => log1 && canEdit && setEditingLog(log1)}
+                            cursor={log1 && canEdit ? "pointer" : "default"}
                             bg={hoursDiffer ? "orange.50" : undefined}
                           >
                             {source1Content}
@@ -555,8 +706,8 @@ const CompareActivityTable = ({ panelSize }) => {
                           </Td>
                           <Td
                             textAlign="right"
-                            onClick={() => log2 && setEditingLog(log2)}
-                            cursor={log2 ? "pointer" : "default"}
+                            onClick={() => log2 && canEdit && setEditingLog(log2)}
+                            cursor={log2 && canEdit ? "pointer" : "default"}
                             bg={hoursDiffer ? "orange.50" : undefined}
                           >
                             {source2Content}
@@ -573,9 +724,10 @@ const CompareActivityTable = ({ panelSize }) => {
       </Box>
 
       <WorklogEditModal
-        isOpen={!!editingLog}
-        log={editingLog}
+        isOpen={!!editingLog && canEdit}
+        log={canEdit ? editingLog : null}
         onClose={() => setEditingLog(null)}
+        captureGuard={captureMutationGuard}
         onMutated={fetchLogs}
       />
     </Collapse>

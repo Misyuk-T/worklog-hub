@@ -3,7 +3,7 @@ import { Stack, Text } from "@chakra-ui/react";
 import { toast } from "react-toastify";
 import { endOfDay, format, parse, startOfDay } from "date-fns";
 
-import { instance } from "./axios";
+import { captureCredentials, instance } from "./axios";
 import {
   DEMO_BUILD,
   getDemoCards,
@@ -86,8 +86,11 @@ export const getClickUpTimeEntries = async (
   userId,
   showToast = true,
   throwOnError = false,
+  options = {},
 ) => {
   if (DEMO_BUILD) return getDemoCards(startDate, endDate);
+  const credentials = options.credentials ?? captureCredentials();
+  const { readOnly, skipErrorToast = false } = options;
   try {
     // Local day boundaries of the requested range. ClickUp stores entry starts
     // as absolute timestamps, so we bucket/compare in local time to match how
@@ -113,6 +116,9 @@ export const getClickUpTimeEntries = async (
           end_date: windowEnd + DAY_MS,
           assignee: userId,
         },
+        credentials,
+        readOnly,
+        skipErrorToast,
       },
     );
 
@@ -440,9 +446,11 @@ export const fetchAllClickUpTimeEntries = async ({
   additionalTeams = {},
   startDate,
   endDate,
+  credentials = captureCredentials(),
 }) => {
   if (isDemoActive()) return getDemoClickUpLogs(startDate, endDate);
   const allTimeEntries = {};
+  const options = { credentials };
 
   try {
     if (selectedTeamId && userId) {
@@ -452,6 +460,8 @@ export const fetchAllClickUpTimeEntries = async ({
         endDate,
         userId,
         false,
+        false,
+        options,
       );
       mergeTimeEntries(allTimeEntries, mainTimeEntries);
     }
@@ -464,6 +474,8 @@ export const fetchAllClickUpTimeEntries = async ({
           endDate,
           userId,
           false,
+          false,
+          options,
         );
         mergeTimeEntries(allTimeEntries, timeEntries);
       }
@@ -479,6 +491,7 @@ export const fetchAllClickUpTimeEntries = async ({
 
 export const getLatestClickUpTimeEntries = async () => {
   if (DEMO_BUILD) return;
+  const credentials = captureCredentials();
   const { user, selectedTeamId, additionalAssignedTasks } =
     useClickUpStore.getState();
 
@@ -500,6 +513,7 @@ export const getLatestClickUpTimeEntries = async () => {
     additionalTeams: additionalAssignedTasks,
     startDate,
     endDate,
+    credentials,
   });
 
   useClickUpStore.getState().addAllClickUpTimeEntries(allTimeEntries);

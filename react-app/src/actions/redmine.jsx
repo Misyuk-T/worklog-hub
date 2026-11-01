@@ -2,7 +2,7 @@ import { describeWorklog, submitWorklogRequests } from "../helpers/apiErrors";
 import { Stack, Text } from "@chakra-ui/react";
 
 import { toast } from "react-toastify";
-import { instance } from "./axios";
+import { captureCredentials, instance } from "./axios";
 import {
   DEMO_BUILD,
   getDemoRedmineLogs,
@@ -74,9 +74,13 @@ export const getLatestRedmineWorkLogs = async (
   startDate,
   endDate,
   offset = 0,
-  workLogs = []
+  workLogs = [],
+  options = {}
 ) => {
   if (isDemoActive()) return getDemoRedmineLogs(startDate, endDate);
+  // Captured once and forwarded to every page.
+  const credentials = options.credentials ?? captureCredentials();
+  const { readOnly, throwOnError = false } = options;
   if (!startDate || !endDate) {
     const now = new Date();
     const defaultStartDate = format(startOfMonth(now), "yyyy-MM-dd");
@@ -93,6 +97,9 @@ export const getLatestRedmineWorkLogs = async (
         limit: 100,
         offset: offset,
       },
+      credentials,
+      readOnly,
+      skipErrorToast: throwOnError,
     });
     const data = response.data.time_entries;
     workLogs.push(...data);
@@ -102,13 +109,15 @@ export const getLatestRedmineWorkLogs = async (
         startDate,
         endDate,
         offset + 100,
-        workLogs
+        workLogs,
+        { ...options, credentials }
       );
     } else {
       return workLogs;
     }
   } catch (error) {
     console.error("Error fetching worklogs:", error);
+    if (throwOnError) throw error;
   }
 };
 

@@ -8,6 +8,8 @@ import useJiraStore from "../store/jiraStore";
 import useClickUpStore from "../store/clickupStore";
 import useWorkLogsStore from "../store/worklogsStore";
 import { buildDemoWorkspace } from "./demoData";
+import { filterPeople } from "../helpers/peopleDirectory";
+import { normalizeEmail, normalizeName } from "../helpers/personMatching";
 
 // The demo exists only in builds made with VITE_DEMO=true (the public demo
 // site). The flag is a compile-time constant, so in every other build the
@@ -19,6 +21,9 @@ export const useDemoStore = create(() => ({ isDemo: DEMO_BUILD }));
 export const DEMO_BLOCKED_CODE = "DEMO_MODE";
 
 let demoGenerated = {};
+let demoPeople = [];
+let demoClickUpTeam = null;
+let demoJiraHost = "";
 
 if (DEMO_BUILD) {
   // The demo never talks to a tracker. Reads and writes stop here with a short
@@ -41,6 +46,9 @@ if (DEMO_BUILD) {
   useClickUpStore.setState(demo.clickUp);
   useWorkLogsStore.setState({ workLogs: demo.workLogs });
   demoGenerated = demo.generated;
+  demoPeople = demo.people;
+  demoClickUpTeam = demo.clickUpTeam;
+  demoJiraHost = demo.jiraHost;
 }
 
 // Compare reads date ranges through the action layer. In demo mode the
@@ -118,3 +126,74 @@ export const toastDemoSubmit = (count, trackerName) =>
       theme: "light",
     },
   );
+
+// Compare "Whose logs": colleagues answered from demo data, no request.
+export const DEMO_PRESET = { id: "demo", presetName: "Demo" };
+
+export const searchDemoRedmineUsers = (query) =>
+  filterPeople(
+    demoPeople.map((person) => ({ id: person.redmineId, name: person.name, mail: person.mail })),
+    query,
+    new Map(),
+  );
+
+export const getDemoRedmineUser = (id) => {
+  const person = demoPeople.find((item) => item.redmineId === Number(id));
+  return person ? { id: person.redmineId, name: person.name, mail: person.mail } : null;
+};
+
+// Like Jira Cloud: an email query matches the real address even when the
+// result hides it; a name query matches the display name.
+export const searchDemoJiraUsers = (query) => {
+  const text = String(query ?? "").trim();
+  const byEmail = text.includes("@");
+  return demoPeople
+    .filter((person) =>
+      byEmail
+        ? normalizeEmail(person.mail) === normalizeEmail(text)
+        : normalizeName(person.jira.displayName)
+            .split(" ")
+            .some((part) => normalizeName(text).split(" ").includes(part)),
+    )
+    .map((person) => ({
+      accountId: person.jira.accountId,
+      displayName: person.jira.displayName,
+      ...(person.jira.email ? { emailAddress: person.jira.email } : {}),
+      active: true,
+      accountType: "atlassian",
+    }));
+};
+
+export const getDemoJiraUserById = (accountId) =>
+  searchDemoJiraUsers(
+    demoPeople.find((person) => person.jira.accountId === accountId)?.mail || "",
+  )[0] || null;
+
+export const getDemoJiraHost = () => demoJiraHost;
+
+export const getDemoClickUpTeams = () =>
+  demoClickUpTeam
+    ? [
+        {
+          ...demoClickUpTeam,
+          members: demoPeople
+            .filter((person) => person.clickUp)
+            .map((person) => ({ user: person.clickUp })),
+        },
+      ]
+    : [];
+
+export const getDemoPersonLogs = (tracker, key, startDate, endDate) => {
+  const person = demoPeople.find((item) =>
+    tracker === "redmine"
+      ? item.redmineId === Number(key)
+      : tracker === "jira"
+        ? item.jira.accountId === key
+        : item.clickUp?.id === String(key),
+  );
+  if (!person) return tracker === "redmine" ? [] : {};
+  if (tracker === "redmine") {
+    return person.logs.redmine.filter((entry) => inRange(entry.spent_on, startDate, endDate));
+  }
+  return filterGrouped(person.logs[tracker], startDate, endDate);
+};

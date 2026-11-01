@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { DayPicker } from "react-day-picker";
 import { format } from "date-fns";
+import { toast } from "react-toastify";
 
 import {
   Button,
@@ -17,6 +18,7 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 
+import { captureCredentials } from "../../../actions/axios";
 import useRedmineStore from "../../../store/redmineStore";
 import useWorkLogsStore from "../../../store/worklogsStore";
 import {
@@ -46,19 +48,46 @@ const RedmineModal = ({ isOpen, onClose }) => {
     if (!user?.id || !range?.from || !range?.to) return;
 
     setIsLoading(true);
-    resetWorkLogs();
+    const notify = (type, message) => toast[type](
+      <Stack><Text fontWeight={600}>{message}</Text></Stack>,
+      {
+        position: "bottom-center",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        progress: undefined,
+        theme: "light",
+      },
+    );
 
-    const startDate = format(range.from, "yyyy-MM-dd");
-    const endDate = format(range.to, "yyyy-MM-dd");
-    const redmineWorkLogs = DEMO_BUILD
-      ? getDemoRedmineLogsForCards(startDate, endDate)
-      : await getLatestRedmineWorkLogs(user.id, startDate, endDate);
+    try {
+      const startDate = format(range.from, "yyyy-MM-dd");
+      const endDate = format(range.to, "yyyy-MM-dd");
+      const redmineWorkLogs = DEMO_BUILD
+        ? getDemoRedmineLogsForCards(startDate, endDate)
+        : await getLatestRedmineWorkLogs(user.id, startDate, endDate, 0, [], {
+            credentials: captureCredentials(),
+            throwOnError: true,
+          });
+      if (!redmineWorkLogs) throw new Error("no response");
+      if (!redmineWorkLogs.length) {
+        notify("info", `No Redmine time entries for ${startDate} – ${endDate}`);
+        return;
+      }
 
-    addWorkLogs(transformRedmineWorkLogsToCards(redmineWorkLogs || []));
-    setIsJiraExport(false);
-    setIsClickUpExport(false);
-    onClose();
-    setIsLoading(false);
+      // Existing cards are replaced only now, by a fetch that returned entries.
+      resetWorkLogs();
+      addWorkLogs(transformRedmineWorkLogsToCards(redmineWorkLogs));
+      setIsJiraExport(false);
+      setIsClickUpExport(false);
+      const count = redmineWorkLogs.length;
+      notify("success", `Generated ${count} card${count === 1 ? "" : "s"} from Redmine time entries.`);
+      onClose();
+    } catch (error) {
+      notify("error", `Could not generate Redmine cards: ${error.message || String(error)}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

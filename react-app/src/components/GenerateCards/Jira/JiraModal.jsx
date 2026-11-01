@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { DayPicker } from "react-day-picker";
 import { format } from "date-fns";
+import { toast } from "react-toastify";
 
 import {
   Button,
@@ -14,11 +15,13 @@ import {
   ModalHeader,
   ModalOverlay,
   Stack,
+  Text,
   useColorModeValue,
 } from "@chakra-ui/react";
 
 import useJiraStore from "../../../store/jiraStore";
 import useWorkLogsStore from "../../../store/worklogsStore";
+import { captureCredentials } from "../../../actions/axios";
 import { getJiraWorklogIssues } from "../../../actions/jira";
 
 const JiraModal = ({ isOpen, onClose }) => {
@@ -45,49 +48,93 @@ const JiraModal = ({ isOpen, onClose }) => {
 
   const handleSubmit = async () => {
     setIsLoading(true);
-    resetWorkLogs();
+    const notify = (type, message) => toast[type](
+      <Stack><Text fontWeight={600}>{message}</Text></Stack>,
+      {
+        position: "bottom-center",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        progress: undefined,
+        theme: "light",
+      },
+    );
 
-    const startDate = format(range.from, "yyyy-MM-dd");
-    const endDate = format(range.to, "yyyy-MM-dd");
+    try {
+      if (!range?.from || !range?.to) {
+        throw new Error("Select a complete date range before generating cards.");
+      }
+      if (!user?.accountId) {
+        throw new Error("Connect your Jira user in Settings before generating cards.");
+      }
+      const urls = Object.keys(selectedUrls).filter((url) => selectedUrls[url]);
+      if (!urls.length) {
+        throw new Error("Tick at least one Jira site before generating cards.");
+      }
+      const startDate = format(range.from, "yyyy-MM-dd");
+      const endDate = format(range.to, "yyyy-MM-dd");
 
-    let allWorkLogs = {};
+      const allWorkLogs = {};
+      const failures = [];
+      // One preset for every site of this export, even if the active one changes.
+      const credentials = captureCredentials();
 
-    for (const [url, isSelected] of Object.entries(selectedUrls)) {
-      if (isSelected && user?.emailAddress) {
-        const worklogs = await getJiraWorklogIssues(
-          url,
-          startDate,
-          endDate,
-          user?.emailAddress,
-          null,
-          [],
-          false,
-        );
+      for (const url of urls) {
+        try {
+          const worklogs = await getJiraWorklogIssues(
+            url,
+            startDate,
+            endDate,
+            user.accountId,
+            null,
+            [],
+            false,
+            { credentials, throwOnError: true },
+          );
+          if (!worklogs) throw new Error("no response");
 
-        for (const [date, logs] of Object.entries(worklogs)) {
-          if (allWorkLogs[date]) {
-            allWorkLogs[date] = [...allWorkLogs[date], ...logs];
-          } else {
-            allWorkLogs[date] = logs;
+          for (const [date, logs] of Object.entries(worklogs)) {
+            allWorkLogs[date] = [...(allWorkLogs[date] || []), ...logs];
           }
+        } catch (error) {
+          failures.push(`${url}: ${error.message || String(error)}`);
         }
       }
+      if (failures.length) {
+        throw new Error(failures.join("; "));
+      }
+      const count = Object.values(allWorkLogs).reduce((total, logs) => total + logs.length, 0);
+      if (!count) {
+        notify("info", `No Jira worklogs for ${startDate} – ${endDate}`);
+        return;
+      }
+      // Existing cards are replaced only now, by a fetch that returned entries.
+      resetWorkLogs();
+      addWorkLogs(allWorkLogs);
+      setIsJiraExport(true);
+      notify("success", `Generated ${count} card${count === 1 ? "" : "s"} from Jira worklogs.`);
+      onClose();
+    } catch (error) {
+      notify("error", `Could not generate Jira cards: ${error.message || String(error)}`);
+    } finally {
+      setIsLoading(false);
     }
-
-    addWorkLogs(allWorkLogs);
-    setIsJiraExport(true);
-    onClose();
-    setIsLoading(false);
   };
 
+  // Hosts the active preset declares; when they change (preset switch), the
+  // selection starts over from them instead of keeping hosts that are gone.
+  const declaredKey = [truncatedOrganizationUrl, ...Object.keys(additionalAssignedIssues)].join("|");
   useEffect(() => {
-    if (truncatedOrganizationUrl) {
-      setSelectedUrls((prevSelectedUrls) => ({
-        ...prevSelectedUrls,
-        [truncatedOrganizationUrl]: true,
-      }));
-    }
-  }, [organizationURL]);
+    const declared = new Set(Object.keys(additionalAssignedIssues));
+    setSelectedUrls((prevSelectedUrls) => {
+      const next = {};
+      Object.keys(prevSelectedUrls).forEach((url) => {
+        if (declared.has(url) && prevSelectedUrls[url]) next[url] = true;
+      });
+      if (truncatedOrganizationUrl) next[truncatedOrganizationUrl] = true;
+      return next;
+    });
+  }, [declaredKey]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>

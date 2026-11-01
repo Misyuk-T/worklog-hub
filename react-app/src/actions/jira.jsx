@@ -1,9 +1,9 @@
 import { describeWorklog, submitWorklogRequests } from "../helpers/apiErrors";
 import { Stack, Text } from "@chakra-ui/react";
 import { toast } from "react-toastify";
-import { endOfDay, format, startOfDay, subDays } from "date-fns";
+import { format, subDays } from "date-fns";
 
-import { instance } from "./axios";
+import { captureCredentials, instance } from "./axios";
 import {
   DEMO_BUILD,
   getDemoCards,
@@ -13,6 +13,12 @@ import {
 } from "../demo/demoMode";
 
 import { parseDataFromJira } from "../helpers/parseDataFromJira";
+import {
+  dayRangeToMs,
+  fetchAllIssueWorklogs,
+  filterWorklogs,
+} from "../helpers/jiraWorklogs";
+import { isAccountId } from "../helpers/personMatching";
 import groupByField from "../helpers/groupByField";
 import { formatDateForJira } from "../helpers/getFormattedDate";
 import { validateWorkLogsData } from "../helpers/validateWorklogsData";
@@ -80,19 +86,33 @@ export const jiraLogin = async (jiraUrl) => {
   }
 };
 
+// Worklogs of one Jira user (by accountId) on one site. `options` may carry
+// `credentials` (a preset), `readOnly`, and `throwOnError` for callers that
+// report failures themselves. Credentials are passed on every request and every
+// page, so a preset switch mid-fetch cannot change whose keys are used.
 export const getJiraWorklogIssues = async (
   jiraUrl,
   startDate,
   endDate,
-  jiraEmail,
+  accountId,
   nextPageToken = null,
   prevIssues = [],
   showToast = true,
+  options = {},
 ) => {
   if (DEMO_BUILD) return getDemoCards(startDate, endDate);
+  // Captured once; the recursion below forwards it, so every page and every
+  // per-issue worklog request uses the same preset.
+  const credentials = options.credentials ?? captureCredentials();
+  const { readOnly, throwOnError = false } = options;
+  const fetchOptions = { ...options, credentials };
+  const requestOptions = { credentials, readOnly };
   try {
+    if (!isAccountId(accountId)) {
+      throw new Error("A valid Jira accountId is required to read worklogs.");
+    }
     const requestBody = {
-      jql: `worklogAuthor = '${jiraEmail}' AND worklogDate >= '${startDate}' AND worklogDate <= '${endDate}'`,
+      jql: `worklogAuthor = "${accountId}" AND worklogDate >= '${startDate}' AND worklogDate <= '${endDate}'`,
       maxResults: 100,
       fields: [
         "summary",
@@ -117,6 +137,8 @@ export const getJiraWorklogIssues = async (
         params: {
           jiraUrl,
         },
+        skipErrorToast: throwOnError,
+        ...requestOptions,
       },
     );
 
@@ -128,44 +150,46 @@ export const getJiraWorklogIssues = async (
         jiraUrl,
         startDate,
         endDate,
-        jiraEmail,
+        accountId,
         response.data.nextPageToken,
         updatedIssues,
         showToast,
+        fetchOptions,
       );
     } else {
-      const startOfStartDate = startOfDay(new Date(startDate));
-      const endOfEndDate = endOfDay(new Date(endDate));
-
-      const startTimestamp = startOfStartDate.getTime() - 1;
-      const endTimestamp = endOfEndDate.getTime();
+      const { fromMs, toMs } = dayRangeToMs(startDate, endDate);
 
       const workLogs = [];
 
       const workLogPromises = updatedIssues.map(async (issue) => {
         const issueKey = issue.key;
 
-        const workLogResponse = await instance.get(
-          `/jira/rest/api/3/issue/${issueKey}/worklog`,
-          {
-            params: {
-              jiraUrl,
-              authorAccountId: jiraEmail,
-              startedAfter: startTimestamp,
-              startedBefore: endTimestamp,
-            },
-          },
+        const issueWorklogs = await fetchAllIssueWorklogs(
+          async ({ startAt, maxResults }) =>
+            (
+              await instance.get(`/jira/rest/api/3/issue/${issueKey}/worklog`, {
+                params: {
+                  jiraUrl,
+                  startAt,
+                  maxResults,
+                  startedAfter: fromMs - 1,
+                  startedBefore: toMs,
+                },
+                skipErrorToast: throwOnError,
+                ...requestOptions,
+              })
+            ).data,
         );
 
-        const workLogData = workLogResponse.data;
-
-        const workLogsForIssue = workLogData.worklogs
-          .filter((worklog) => worklog.author.emailAddress === jiraEmail)
-          .map((worklog) => ({
-            ...worklog,
-            task: issueKey,
-            jiraUrl,
-          }));
+        const workLogsForIssue = filterWorklogs(issueWorklogs, {
+          accountId,
+          fromMs,
+          toMs,
+        }).map((worklog) => ({
+          ...worklog,
+          task: issueKey,
+          jiraUrl,
+        }));
 
         workLogs.push(...workLogsForIssue);
       });
@@ -213,6 +237,7 @@ export const getJiraWorklogIssues = async (
       );
     }
     console.error("Error while fetching recent worklogs:", error);
+    if (throwOnError) throw error;
   }
 };
 
@@ -447,39 +472,43 @@ const mergeWorklogs = (allWorklogs, newWorklogs) => {
   });
 };
 export const fetchAllJiraWorklogs = async ({
-  userEmail,
+  accountId,
   organizationURL,
   additionalUrls = {},
   startDate,
   endDate,
+  credentials = captureCredentials(),
 }) => {
   if (isDemoActive()) return getDemoJiraLogs(startDate, endDate);
   const allWorkLogs = {};
+  const options = { credentials };
 
   try {
-    if (organizationURL && userEmail) {
+    if (organizationURL && accountId) {
       const mainWorklogs = await getJiraWorklogIssues(
         organizationURL,
         startDate,
         endDate,
-        userEmail,
+        accountId,
         null,
         [],
         false,
+        options,
       );
       mergeWorklogs(allWorkLogs, mainWorklogs);
     }
 
     const fetchPromises = Object.keys(additionalUrls).map(async (item) => {
-      if (userEmail) {
+      if (accountId) {
         const worklogs = await getJiraWorklogIssues(
           item,
           startDate,
           endDate,
-          userEmail,
+          accountId,
           null,
           [],
           false,
+          options,
         );
         mergeWorklogs(allWorkLogs, worklogs);
       }
@@ -495,9 +524,10 @@ export const fetchAllJiraWorklogs = async ({
 
 export const getLatestJiraWorkLogs = async () => {
   if (DEMO_BUILD) return;
+  const credentials = captureCredentials();
   const { user, organizationURL, additionalAssignedIssues } =
     useJiraStore.getState();
-  if (!user?.emailAddress) return;
+  if (!user?.accountId) return;
   const today = new Date();
   const startDate = format(
     new Date(today.getFullYear(), today.getMonth(), 1),
@@ -509,11 +539,12 @@ export const getLatestJiraWorkLogs = async () => {
   );
   const truncatedOrgUrl = organizationURL?.replace(/^https?:\/\//, "");
   const allWorklogs = await fetchAllJiraWorklogs({
-    userEmail: user?.emailAddress,
+    accountId: user?.accountId,
     organizationURL: truncatedOrgUrl,
     additionalUrls: additionalAssignedIssues,
     startDate,
     endDate,
+    credentials,
   });
 
   useJiraStore.getState().addAllJiraWorklogs(allWorklogs);

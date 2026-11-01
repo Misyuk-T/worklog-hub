@@ -23,6 +23,7 @@ import useClickUpStore from "../../../store/clickupStore";
 import useWorkLogsStore from "../../../store/worklogsStore";
 import useJiraStore from "../../../store/jiraStore";
 import { normalizeServiceScope } from "../../../helpers/matchWorklogTasks";
+import { captureCredentials } from "../../../actions/axios";
 import { getClickUpTimeEntries, getAssignedTasks } from "../../../actions/clickup";
 
 const ClickUpModal = ({ isOpen, onClose }) => {
@@ -82,11 +83,13 @@ const ClickUpModal = ({ isOpen, onClose }) => {
       const endDate = format(range.to, "yyyy-MM-dd");
       const allWorkLogs = {};
       const failures = [];
+      // One preset for every team of this export, even if the active one changes.
+      const credentials = captureCredentials();
 
       for (const teamId of teamIds) {
         try {
           const timeEntries = await getClickUpTimeEntries(
-            teamId, startDate, endDate, user.id, false, true,
+            teamId, startDate, endDate, user.id, false, true, { credentials },
           );
           for (const [date, entries] of Object.entries(timeEntries)) {
             allWorkLogs[date] = [

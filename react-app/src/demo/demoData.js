@@ -75,6 +75,139 @@ const REDMINE_ISSUES = {
   4108: ["Acme Shop", "QA automation"],
 };
 
+
+// Colleagues for the Compare "Whose logs" picker. Each exists in Redmine (with a
+// mail); Marek's Jira email is hidden, so he can only be found by name and has
+// to be confirmed; Iryna is not in ClickUp at all.
+const DEMO_PEOPLE = [
+  {
+    key: "olena",
+    name: "Olena Koval",
+    mail: "olena.koval@acme.example",
+    redmineId: 201,
+    jira: {
+      accountId: "712020:0a1b2c3d-1111-4a00-8000-000000000001",
+      displayName: "Olena Koval",
+      email: "olena.koval@acme.example",
+    },
+    clickUp: { id: "50001", username: "Olena Koval", email: "olena.koval@acme.example" },
+    // [jira key, redmine issue, clickup key, text, hours] per entry, one list per day
+    days: [
+      [["WEB-121", 4104, "CU-34", "Search: ranking tweaks", 4], ["OPS-7", 4105, "CU-40", "Team standup", 1]],
+      [["WEB-121", 4104, "CU-34", "Search: highlight matched words", 3.5], ["WEB-115", 4102, "CU-32", "Review payments adapters", 2]],
+      [["WEB-127", 4108, "CU-36", "Stabilise login e2e test", 3], ["OPS-9", 4106, "CU-41", "Staging deploy", 2]],
+      [["WEB-118", 4103, "CU-33", "Gallery: swipe on touch devices", 5], ["OPS-7", 4105, "CU-40", "Team standup", 0.5]],
+      [["WEB-124", 4107, "CU-35", "Email change: confirmation page", 4], ["WEB-112", 4101, "CU-31", "Discount rounding follow-up", 2]],
+    ],
+    // Real gaps between the trackers, keyed "dayIndex:entryIndex".
+    skip: { jira: ["2:1"] },
+    shortBy: { redmine: { "1:0": 1 } },
+  },
+  {
+    key: "marek",
+    name: "Marek Dudek",
+    mail: "marek.dudek@acme.example",
+    redmineId: 202,
+    jira: {
+      accountId: "712020:0a1b2c3d-2222-4a00-8000-000000000002",
+      displayName: "Dudek Marek",
+      email: "",
+    },
+    clickUp: { id: "50002", username: "Marek Dudek", email: "marek.dudek@acme.example" },
+    days: [
+      [["WEB-112", 4101, "CU-31", "Cart: percentage discount edge cases", 5], ["OPS-7", 4105, "CU-40", "Team standup", 0.5]],
+      [["WEB-115", 4102, "CU-32", "Payments: retry failed captures", 6]],
+      [["WEB-115", 4102, "CU-32", "Payments: webhook signature check", 4], ["OPS-9", 4106, "CU-41", "Release notes", 1.5]],
+      [["WEB-127", 4108, "CU-36", "Fix flaky checkout test", 3], ["WEB-112", 4101, "CU-31", "Cart totals regression tests", 3]],
+      [["OPS-9", 4106, "CU-41", "Production release", 2.5], ["OPS-7", 4105, "CU-40", "Team standup and retro", 1.5]],
+    ],
+    skip: { redmine: ["4:0", "4:1"] },
+    shortBy: {},
+  },
+  {
+    key: "iryna",
+    name: "Iryna Bondar",
+    mail: "iryna.bondar@acme.example",
+    redmineId: 203,
+    jira: {
+      accountId: "712020:0a1b2c3d-3333-4a00-8000-000000000003",
+      displayName: "Iryna Bondar",
+      email: "iryna.bondar@acme.example",
+    },
+    clickUp: null,
+    days: [
+      [["WEB-124", 4107, "CU-35", "Account: password rules copy", 3], ["OPS-7", 4105, "CU-40", "Team standup", 1]],
+      [["WEB-124", 4107, "CU-35", "Account: email change tests", 4.5]],
+      [["WEB-118", 4103, "CU-33", "Gallery: lazy-load placeholders", 5], ["OPS-7", 4105, "CU-40", "Team standup", 0.5]],
+      [["WEB-121", 4104, "CU-34", "Search: empty state", 3], ["WEB-127", 4108, "CU-36", "E2E: search suite", 3]],
+      [["WEB-118", 4103, "CU-33", "Gallery: keyboard navigation", 4], ["OPS-9", 4106, "CU-41", "Release smoke check", 1.5]],
+    ],
+    skip: {},
+    shortBy: { redmine: { "0:0": 1 } },
+  },
+];
+
+const buildDemoPeople = (days) =>
+  DEMO_PEOPLE.map((person) => {
+    const logs = { redmine: [], jira: {}, clickup: {} };
+    let n = 0;
+    const skipped = (tracker, key) => (person.skip[tracker] || []).includes(key);
+
+    days.forEach((day, dayIndex) => {
+      const date = dmy(day);
+      (person.days[dayIndex] || []).forEach(
+        ([jiraKey, redmineId, clickUpKey, text, hours], i) => {
+          n += 1;
+          const key = `${dayIndex}:${i}`;
+          const blb = jiraKey.startsWith("OPS") ? "nblb" : "blb";
+
+          if (!skipped("jira", key)) {
+            (logs.jira[date] ||= []).push({
+              id: `demo-${person.key}-jira-${n}`,
+              task: jiraKey,
+              jiraUrl: JIRA_HOST,
+              description: text,
+              hours,
+              blb,
+              date,
+            });
+          }
+
+          if (person.clickUp && !skipped("clickup", key)) {
+            (logs.clickup[date] ||= []).push({
+              id: `demo-${person.key}-cu-${n}`,
+              clickupTask: clickUpTaskId(clickUpKey),
+              taskKey: clickUpKey,
+              taskName: ISSUES[jiraKey],
+              description: text,
+              hours,
+              date,
+              clickupTeamId: TEAM_ID,
+              teamId: TEAM_ID,
+              blb,
+              billable: blb === "blb",
+              url: null,
+            });
+          }
+
+          if (!skipped("redmine", key)) {
+            logs.redmine.push({
+              id: 9500 + person.redmineId * 10 + n,
+              spent_on: ymd(day),
+              hours: hours - (person.shortBy.redmine?.[key] || 0),
+              comments: text,
+              issue: { id: redmineId },
+              project: { name: REDMINE_ISSUES[redmineId][0] },
+              custom_fields: [{ id: 7, name: "Type", value: blb === "blb" ? "1" : "3" }],
+            });
+          }
+        },
+      );
+    });
+
+    return { ...person, logs };
+  });
+
 export const buildDemoWorkspace = (today = new Date()) => {
   const days = lastWorkdays(DAY_PLANS.length, today);
 
@@ -206,5 +339,8 @@ export const buildDemoWorkspace = (today = new Date()) => {
     },
     workLogs: cards,
     generated,
+    people: buildDemoPeople(days),
+    clickUpTeam: { id: TEAM_ID, name: "Acme Studio" },
+    jiraHost: JIRA_HOST,
   };
 };
