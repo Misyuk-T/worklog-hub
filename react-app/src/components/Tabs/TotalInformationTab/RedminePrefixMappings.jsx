@@ -74,15 +74,17 @@ const RedminePrefixMappings = () => {
     <>
       <Button
         onClick={onOpen}
+        h="32px"
+        borderRadius={0}
         size="sm"
         variant="outline"
         colorScheme="teal"
         flexShrink={0}
         aria-haspopup="dialog"
       >
-        Redmine mappings
+        Mappings
         {Object.keys(mappings).length > 0 && (
-          <Badge ml={2} colorScheme="teal" borderRadius="full" px={2}>
+          <Badge fontSize="sm" ml={2} colorScheme="teal" borderRadius="full" px={2}>
             {Object.keys(mappings).length}
           </Badge>
         )}
@@ -131,7 +133,7 @@ const RedminePrefixMappings = () => {
                   py={2}
                   bg="gray.50"
                   borderTopRadius="md"
-                  fontSize="xs"
+                  fontSize="sm"
                   fontWeight={700}
                   color="gray.600"
                 >
@@ -172,7 +174,7 @@ const RedminePrefixMappings = () => {
                         </Badge>
                         <Text
                           display={{ base: "block", md: "none" }}
-                          fontSize="xs"
+                          fontSize="sm"
                           color="gray.500"
                           mt={1}
                         >
@@ -214,7 +216,7 @@ const RedminePrefixMappings = () => {
                           }}
                         />
                         {unavailable && (
-                          <Text fontSize="xs" color="red.600" mt={1}>
+                          <Text fontSize="sm" color="red.600" mt={1}>
                             This saved task is unavailable. Choose another to
                             apply this rule.
                           </Text>
@@ -270,7 +272,7 @@ const RedminePrefixMappings = () => {
               </Flex>
             )}
             {(!storageKey || storageFailed) && (
-              <Text fontSize="xs" color="orange.700" mt={3}>
+              <Text fontSize="sm" color="orange.700" mt={3}>
                 {storageFailed
                   ? "Browser storage is unavailable. Rules will only last for this session."
                   : "Connect a Redmine profile to remember these rules in this browser."}
@@ -282,7 +284,7 @@ const RedminePrefixMappings = () => {
               <Text fontSize="sm" fontWeight={600} aria-live="polite">
                 {preview.updatedCount} card(s) will change
               </Text>
-              <Text fontSize="xs" color="gray.500">
+              <Text fontSize="sm" color="gray.500">
                 {onlyEmpty
                   ? "Existing assignments will be kept."
                   : "Replaces existing assignments for mapped prefixes."}

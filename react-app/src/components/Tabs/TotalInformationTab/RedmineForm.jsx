@@ -10,6 +10,7 @@ import {
   PopoverCloseButton,
   PopoverContent,
   PopoverTrigger,
+  Portal,
   Stack,
   Switch,
   Text,
@@ -55,54 +56,34 @@ import {
 
 import ModalDialog from "../../ModalDialog";
 import { DEMO_BUILD } from "../../../demo/demoMode";
-import { QuestionIcon } from "@chakra-ui/icons";
+import { QuestionOutlineIcon } from "@chakra-ui/icons";
 import RedminePrefixMappings from "./RedminePrefixMappings";
 
-const renderPopover = () => {
-  return (
-    <Popover boundary="scrollParent" size={"xl"} placement={"top"}>
-      <PopoverTrigger>
-        <Box>
-          <IconButton
-            opacity={0.5}
-            p={0}
-            h="15px"
-            w="10px"
-            background="transparent"
-            aria-label="helper popup"
-            icon={<QuestionIcon />}
-            transition="all .3s"
-            _hover={{
-              background: "transparent",
-              svg: {
-                opacity: "0.5",
-              },
-            }}
-          />
-        </Box>
-      </PopoverTrigger>
-      <PopoverContent p={5}>
+const ControlHelp = ({ control, children }) => (
+  <Popover placement="top">
+    <PopoverTrigger>
+      <IconButton
+        size="xs" variant="ghost" borderRadius={0}
+        aria-label={`What does ${control} do?`}
+        icon={<QuestionOutlineIcon />}
+      />
+    </PopoverTrigger>
+    <Portal>
+      <PopoverContent borderRadius={0} maxW="calc(100vw - 24px)" fontSize="sm">
         <PopoverArrow />
         <PopoverCloseButton />
-        <PopoverBody>
-          <Text>
-            These buttons will attempt to match Jira issues or ClickUp tasks to
-            card descriptions, but only if the description starts with a valid
-            task ID (e.g.,
-            <strong> CE-580:</strong> some text here for Jira or{" "}
-            <strong> CP-47:</strong> for ClickUp).
-          </Text>
-          <Text mt={2}>
-            Missing items are loaded from the Jira instance or ClickUp team
-            selected on each card, including items no longer assigned to you.
-            Matching only reads issue/task details; it does not create remote
-            worklogs.
-          </Text>
-        </PopoverBody>
+        <PopoverBody pr={8}>{children}</PopoverBody>
       </PopoverContent>
-    </Popover>
-  );
-};
+    </Portal>
+  </Popover>
+);
+
+const BulkRow = ({ label, children }) => (
+  <Flex gap={3} direction={{ base: "column", md: "row" }} alignItems={{ base: "stretch", md: "center" }}>
+    <Text fontSize="sm" fontWeight={600} minW="90px">{label}</Text>
+    <Flex gap={3} alignItems="center" flexWrap="wrap" minW={0} flex={1}>{children}</Flex>
+  </Flex>
+);
 
 const RedmineForm = () => {
   const {
@@ -269,42 +250,27 @@ const RedmineForm = () => {
     <Stack spacing={4}>
       <Card boxShadow="sm" sx={{ borderRadius: "0" }}>
         <CardBody>
-          <Text
-            fontWeight={700}
-            fontSize={"xs"}
-            textTransform={"uppercase"}
-            color="gray.600"
-            mb={4}
-            letterSpacing="wide"
-          >
-            Bulk Edit Block: Functionality here will edit all existing cards
-          </Text>
-
-          <Flex
-            gap={4}
-            direction={{ base: "column", md: "row" }}
-            alignItems={{ base: "stretch", md: "center" }}
-            flexWrap="wrap"
-          >
-            <Flex alignItems="center" gap={2}>
-              <Text fontSize={"sm"} fontWeight={600}>
-                Billability toggle:
-              </Text>
-              <Switch
-                id="blb"
-                size="sm"
-                isDisabled={!user?.id || !isWorkLogsExist}
-                onChange={handleBlbStatus}
-              />
-            </Flex>
-
-            <Flex gap={2} alignItems={"center"} flex={1} minW="0">
+          <Text fontWeight={700}>Bulk edit</Text>
+          <Text fontSize="sm" color="gray.600" mb={4}>Applies to every card in all tabs</Text>
+          <Stack spacing={3} sx={{ button: { borderRadius: 0 }, "button:not([aria-label])": { height: "32px" } }}>
+            <BulkRow label="Billability">
+              <Flex alignItems="center" gap={1} minH="32px">
+                <Switch
+                  id="blb" aria-label="Billability toggle" size="sm"
+                  isDisabled={!user?.id || !isWorkLogsExist}
+                  onChange={handleBlbStatus}
+                />
+                <ControlHelp control="Billability toggle">Marks every card billable or non-billable.</ControlHelp>
+              </Flex>
+            </BulkRow>
+            <BulkRow label="Redmine">
               <Box
                 flex={1}
-                maxW={{ base: "none", md: "300px" }}
-                minW={{ base: 0, md: "200px" }}
+                maxW="360px"
+                minW={{ base: "100%", md: "220px" }}
               >
                 <Select
+                  aria-label="Redmine project"
                   value={selectedItem}
                   onChange={setSelectedItem}
                   options={formattedProjectData}
@@ -313,6 +279,7 @@ const RedmineForm = () => {
                   styles={{
                     control: (baseStyles) => ({
                       ...baseStyles,
+                      borderRadius: 0,
                       minHeight: "32px",
                       height: "32px",
                       fontSize: "14px",
@@ -320,13 +287,12 @@ const RedmineForm = () => {
                     valueContainer: (baseStyles) => ({
                       ...baseStyles,
                       padding: "0 8px",
-                      height: "32px",
+                      height: "30px",
                       display: "flex",
                       alignItems: "center",
                     }),
                     placeholder: (baseStyles) => ({
                       ...baseStyles,
-                      padding: "0 0 5px 0",
                       fontSize: "14px",
                       minWidth: 0,
                       maxWidth: "100%",
@@ -343,6 +309,14 @@ const RedmineForm = () => {
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                     }),
+                    indicatorsContainer: (baseStyles) => ({
+                      ...baseStyles,
+                      height: "30px",
+                    }),
+                    dropdownIndicator: (baseStyles) => ({
+                      ...baseStyles,
+                      padding: "4px",
+                    }),
                     menuList: (baseStyles) => ({
                       ...baseStyles,
                       maxHeight: "250px",
@@ -350,63 +324,37 @@ const RedmineForm = () => {
                   }}
                 />
               </Box>
-              <Button
-                onClick={handleAddProject}
-                variant="outline"
-                colorScheme="orange"
-                size={"sm"}
-                isDisabled={!selectedItem || !isWorkLogsExist}
-                flexShrink={0}
-              >
-                Set project
-              </Button>
+              <Flex alignItems="center" gap={1}>
+                <Button onClick={handleAddProject} variant="outline" colorScheme="orange" size="sm" isDisabled={!selectedItem || !isWorkLogsExist}>
+                  Set project
+                </Button>
+                <ControlHelp control="Set project">Sets the chosen Redmine project on every card.</ControlHelp>
+              </Flex>
+              <Flex alignItems="center" gap={1}>
+                <RedminePrefixMappings />
+                <ControlHelp control="Mappings">Links description prefixes (e.g. CP-) to Redmine tasks. Open Mappings, choose tasks, then apply the rules to matching cards; existing assignments can be kept.</ControlHelp>
+              </Flex>
+            </BulkRow>
+            <BulkRow label="Match">
+              <Flex alignItems="center" gap={1}>
+                <Button variant="outline" colorScheme="blue" size="sm" onClick={handleBulkUpdate} isDisabled={!isWorkLogsExist || isMatchingJira} isLoading={isMatchingJira}>
+                  Match jira issues
+                </Button>
+                <ControlHelp control="Match jira issues">Links descriptions starting with Jira keys (e.g. CE-580:) to issues, loading missing issues even when you are no longer assigned. Uses the card's Jira instance; cards on the main instance can also match a unique issue on another configured instance.</ControlHelp>
+              </Flex>
+              <Flex alignItems="center" gap={1}>
+                <Button variant="outline" colorScheme="purple" size="sm" onClick={handleClickUpBulkUpdate} isDisabled={!isWorkLogsExist || isMatchingClickUp} isLoading={isMatchingClickUp}>
+                  Match ClickUp tasks
+                </Button>
+                <ControlHelp control="Match ClickUp tasks">Links descriptions starting with ClickUp task IDs (e.g. CP-47:) to tasks in the card's team, falling back to the team selected in Settings. Missing tasks are loaded from ClickUp; in the demo this action only shows a notice.</ControlHelp>
+              </Flex>
+            </BulkRow>
+            <Divider />
+            <Flex alignItems="center" gap={1} justifyContent="flex-end">
+              <Button variant="outline" colorScheme="red" size="sm" onClick={resetWorkLogs} isDisabled={!isWorkLogsExist}>Clear Cards</Button>
+              <ControlHelp control="Clear cards">Removes all cards from this page. Nothing is deleted in Redmine, Jira or ClickUp.</ControlHelp>
             </Flex>
-          </Flex>
-
-          <Divider my={4} />
-
-          <Flex
-            gap={3}
-            flexWrap="wrap"
-            justifyContent="space-between"
-            alignItems="center"
-          >
-            <Flex gap={2} alignItems={"center"} flexWrap="wrap">
-              <Button
-                variant="outline"
-                colorScheme="blue"
-                size={"sm"}
-                onClick={handleBulkUpdate}
-                isDisabled={!isWorkLogsExist || isMatchingJira}
-                isLoading={isMatchingJira}
-              >
-                Match jira issues
-              </Button>
-
-              <Button
-                variant="outline"
-                colorScheme="purple"
-                size={"sm"}
-                onClick={handleClickUpBulkUpdate}
-                isDisabled={!isWorkLogsExist || isMatchingClickUp}
-                isLoading={isMatchingClickUp}
-              >
-                Match ClickUp tasks
-              </Button>
-
-              {renderPopover()}
-            </Flex>
-
-            <Button
-              variant="outline"
-              colorScheme="red"
-              size={"sm"}
-              onClick={resetWorkLogs}
-              isDisabled={!isWorkLogsExist}
-            >
-              Clear Cards
-            </Button>
-          </Flex>
+          </Stack>
         </CardBody>
       </Card>
 
@@ -417,7 +365,6 @@ const RedmineForm = () => {
         flexWrap="wrap"
         maxW={{ base: "calc(100vw - 32px)", sm: "calc(100vw - 48px)" }}
       >
-        <RedminePrefixMappings />
         <Flex
           gap={3}
           ml="auto"

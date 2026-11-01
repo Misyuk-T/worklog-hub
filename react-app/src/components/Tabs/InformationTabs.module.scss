@@ -1,20 +1,22 @@
 .informationTabs {
   .tabsList {
     position: relative;
+    height: 42px;
     border: none;
     gap: 1px;
   }
-    .tabItem {
+
+  .tabItem {
+    height: 42px;
+    margin-bottom: 0;
+    border-color: #b7aeae;
+    border-bottom: 1px solid #b7aeae;
+
+    &[aria-selected='true'] {
+      // The canvas below is #f5f5f5 under the page-wide 4% overlay from App, which shows as #ebebeb; tabs sit above that overlay.
+      background: #ebebeb;
       border-color: #b7aeae;
-      border-bottom: 1px solid;
-
-      &[aria-selected='false']{
-        border-bottom-color: transparent;
-      }
-
-      &[aria-selected='true'] {
-        border-color: #b7aeae;
-        border-bottom-color: #eaeaea;
-      }
+      border-bottom: 0;
     }
+  }
 }

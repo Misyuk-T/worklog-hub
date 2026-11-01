@@ -8,6 +8,7 @@ import { getCorrectGMTDateObject } from "../../helpers/getFormattedDate";
 
 import TotalInformationTab from "./TotalInformationTab/TotalnformationTab";
 import TabItem from "./TabItem";
+import DayDatePicker from "./DayDatePicker";
 import BoxOverlay from "../BoxOverlay";
 
 import styles from "./InformationTabs.module.scss";
@@ -22,7 +23,7 @@ const getSortedByDate = (data) =>
   });
 
 const InformationTabs = () => {
-  const { workLogs, addWorkLog, setIsJiraExport } = useWorkLogsStore();
+  const { workLogs, addWorkLog, moveDayWorkLogs, setIsJiraExport } = useWorkLogsStore();
   const { organizationURL } = useJiraStore();
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
 
@@ -52,6 +53,15 @@ const InformationTabs = () => {
     setIsJiraExport(false);
   };
 
+  const handleMoveDay = (fromDate, toDate) => {
+    const nextDates = getSortedByDate([
+      ...sortedArray.filter(([date]) => date !== fromDate && date !== toDate),
+      [toDate],
+    ]);
+    moveDayWorkLogs(fromDate, toDate);
+    setSelectedTabIndex(nextDates.findIndex(([date]) => date === toDate) + 1);
+  };
+
   useEffect(() => {
     setSelectedTabIndex((index) => Math.min(index, workLogsArray.length));
   }, [workLogsArray.length]);
@@ -74,7 +84,7 @@ const InformationTabs = () => {
           <Tab
             minW="130px"
             className={styles.tabItem}
-            bgColor="blackAlpha.50"
+            bgColor="#ebebeb"
             fontWeight={600}
           >
             Total
@@ -84,20 +94,24 @@ const InformationTabs = () => {
             const [month, day] = date.split("-");
 
             return (
-              <Tab
-                key={date}
-                className={styles.tabItem}
-                bgColor="blackAlpha.50"
-                fontWeight={600}
-                minW="90px"
-              >
-                {`${month}-${day}`}
-              </Tab>
+              <Box key={date} position="relative" flex={1} minW="120px">
+                <Tab
+                  w="100%"
+                  pr="36px"
+                  className={styles.tabItem}
+                  bgColor="#ebebeb"
+                  fontWeight={600}
+                  minW="90px"
+                >
+                  {`${month}-${day}`}
+                </Tab>
+                <DayDatePicker date={date} onMove={handleMoveDay} />
+              </Box>
             );
           })}
 
           <Button
-            bgColor="blackAlpha.50"
+            bgColor="#ebebeb"
             fontWeight={600}
             borderBottomRadius={0}
             borderBottom="1px solid"
@@ -125,11 +139,10 @@ const InformationTabs = () => {
         </TabPanels>
       </Tabs>
       <BoxOverlay
-        bgColor="blackAlpha.50"
+        bgColor="#f5f5f5"
         height="calc(100% - 41px)"
         top="41px"
-        borderTop="1px solid"
-        borderColor="#b7aeae"
+        borderTop="1px solid #b7aeae"
       />
     </Box>
   );

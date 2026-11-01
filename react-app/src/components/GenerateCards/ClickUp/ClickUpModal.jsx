@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { DayPicker } from "react-day-picker";
 import { format } from "date-fns";
+import { toast } from "react-toastify";
 
 import {
   Button,
@@ -14,16 +15,20 @@ import {
   ModalHeader,
   ModalOverlay,
   Stack,
+  Text,
   useColorModeValue,
 } from "@chakra-ui/react";
 
 import useClickUpStore from "../../../store/clickupStore";
 import useWorkLogsStore from "../../../store/worklogsStore";
+import useJiraStore from "../../../store/jiraStore";
+import { normalizeServiceScope } from "../../../helpers/matchWorklogTasks";
 import { getClickUpTimeEntries, getAssignedTasks } from "../../../actions/clickup";
 
 const ClickUpModal = ({ isOpen, onClose }) => {
   const { user, selectedTeamId, additionalAssignedTasks, teams, addAdditionalAssignedTasks } = useClickUpStore();
-  const { addWorkLogs, setIsClickUpExport, resetWorkLogs } = useWorkLogsStore();
+  const { addWorkLogs, setIsClickUpExport } = useWorkLogsStore();
+  const { organizationURL } = useJiraStore();
 
   const [range, setRange] = useState({ from: new Date(), to: new Date() });
   const [selectedTeams, setSelectedTeams] = useState({});
@@ -47,37 +52,74 @@ const ClickUpModal = ({ isOpen, onClose }) => {
 
   const handleSubmit = async () => {
     setIsLoading(true);
-    resetWorkLogs();
+    const notify = (type, message) => toast[type](
+      <Stack><Text fontWeight={600}>{message}</Text></Stack>,
+      {
+        position: "bottom-center",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        progress: undefined,
+        theme: "light",
+      },
+    );
 
-    const startDate = format(range.from, "yyyy-MM-dd");
-    const endDate = format(range.to, "yyyy-MM-dd");
+    try {
+      if (!user?.id) {
+        throw new Error("Connect your ClickUp user in Settings before generating cards.");
+      }
+      const teamIds = [...new Set([
+        ...(selectedTeamId ? [String(selectedTeamId)] : []),
+        ...Object.keys(selectedTeams).filter((teamId) => selectedTeams[teamId]),
+      ])];
+      if (!teamIds.length) {
+        throw new Error("Pick a ClickUp team in Settings or tick a team before generating cards.");
+      }
+      if (!range?.from || !range?.to) {
+        throw new Error("Select a complete date range before generating cards.");
+      }
+      const startDate = format(range.from, "yyyy-MM-dd");
+      const endDate = format(range.to, "yyyy-MM-dd");
+      const allWorkLogs = {};
+      const failures = [];
 
-    let allWorkLogs = {};
-
-    for (const [teamId, isSelected] of Object.entries(selectedTeams)) {
-      if (isSelected && user?.id) {
-        const timeEntries = await getClickUpTimeEntries(
-          teamId,
-          startDate,
-          endDate,
-          user.id,
-          false
-        );
-
-        for (const [date, entries] of Object.entries(timeEntries)) {
-          if (allWorkLogs[date]) {
-            allWorkLogs[date] = [...allWorkLogs[date], ...entries];
-          } else {
-            allWorkLogs[date] = entries;
+      for (const teamId of teamIds) {
+        try {
+          const timeEntries = await getClickUpTimeEntries(
+            teamId, startDate, endDate, user.id, false, true,
+          );
+          for (const [date, entries] of Object.entries(timeEntries)) {
+            allWorkLogs[date] = [
+              ...(allWorkLogs[date] || []),
+              ...entries.map((entry) => ({
+                ...entry,
+                task: entry.task ?? "",
+                project: entry.project ?? "",
+                jiraUrl: entry.jiraUrl ?? normalizeServiceScope(organizationURL),
+              })),
+            ];
           }
+        } catch (error) {
+          failures.push(`Team ${teamId}: ${error.message || String(error)}`);
         }
       }
+      if (failures.length) {
+        throw new Error(failures.join("; "));
+      }
+      const count = Object.values(allWorkLogs).reduce((total, entries) => total + entries.length, 0);
+      if (!count) {
+        notify("info", `No ClickUp time entries for ${startDate} – ${endDate}`);
+        return;
+      }
+      addWorkLogs(allWorkLogs);
+      setIsClickUpExport(true);
+      notify("success", `Generated ${count} card${count === 1 ? "" : "s"} from ClickUp time entries.`);
+      onClose();
+    } catch (error) {
+      notify("error", `Could not generate ClickUp cards: ${error.message || String(error)}`);
+    } finally {
+      setIsLoading(false);
     }
-
-    addWorkLogs(allWorkLogs);
-    setIsClickUpExport(true);
-    onClose();
-    setIsLoading(false);
   };
 
   useEffect(() => {

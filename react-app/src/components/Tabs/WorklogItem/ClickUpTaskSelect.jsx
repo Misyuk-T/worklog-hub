@@ -67,11 +67,11 @@ const ClickUpTaskSelect = ({
               <Text mb={2}>
                 Worklogs with{" "}
                 <Text as="span" color="orange">
-                  undefined
+                  no selected
                 </Text>{" "}
                 task <strong>will not be logged in ClickUp</strong>
               </Text>
-              <Text fontSize="13px" color="gray.600">
+              <Text fontSize="14px" color="gray.600">
                 Task not listed (e.g. you were unassigned)? Type its id —{" "}
                 <strong>86abc123</strong> or <strong>CP-170</strong> — and press
                 Enter to load it.
@@ -92,11 +92,11 @@ const ClickUpTaskSelect = ({
           <Box position="relative">
             <Select
               {...field}
-              value={value}
+              value={isUndefinedValue ? null : value}
               menuPlacement="auto"
               onChange={onChange}
               options={formattedTaskData}
-              placeholder="undefined"
+              placeholder="Select task"
               menuPortalTarget={document.body}
               isLoading={taskSearch.isLoading}
               onInputChange={taskSearch.onInputChange}

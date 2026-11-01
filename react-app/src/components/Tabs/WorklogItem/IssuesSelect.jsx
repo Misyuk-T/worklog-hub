@@ -54,7 +54,7 @@ const IssuesSelect = ({ onChange, control, value, assignedIssues }) => {
             <PopoverBody>
               Worklogs with{" "}
               <Text as="span" color="orange">
-                undefined
+                no selected
               </Text>{" "}
               task <strong>will not be logged in Jira</strong>
             </PopoverBody>
@@ -73,11 +73,11 @@ const IssuesSelect = ({ onChange, control, value, assignedIssues }) => {
           <Box position="relative">
             <Select
               {...field}
-              value={value}
+              value={isUndefinedValue ? null : value}
               menuPlacement="auto"
               onChange={onChange}
               options={formattedIssueData}
-              placeholder="undefined"
+              placeholder="Select issue"
               menuPortalTarget={document.body}
               styles={{
                 control: (baseStyles, state) => ({

@@ -1,6 +1,5 @@
 import { Controller } from "react-hook-form";
 import {
-  Box,
   Flex,
   IconButton,
   Image,
@@ -12,6 +11,7 @@ import {
   PopoverBody,
   PopoverCloseButton,
   PopoverContent,
+  Portal,
   PopoverHeader,
   PopoverTrigger,
   Radio,
@@ -172,14 +172,16 @@ const RadioGroup = ({ control, onToggle }) => {
                       }}
                     />
                   </PopoverTrigger>
-                  <PopoverContent width="100%" borderRadius="0">
-                    <PopoverArrow />
-                    <PopoverCloseButton />
-                    <PopoverHeader fontWeight={600} fontSize={18}>
-                      How to get:{" "}
-                    </PopoverHeader>
-                    <PopoverBody>{item.helper}</PopoverBody>
-                  </PopoverContent>
+                  <Portal>
+                    <PopoverContent zIndex="popover" width="100%" borderRadius="0">
+                      <PopoverArrow />
+                      <PopoverCloseButton />
+                      <PopoverHeader fontWeight={600} fontSize={18}>
+                        How to get:{" "}
+                      </PopoverHeader>
+                      <PopoverBody>{item.helper}</PopoverBody>
+                    </PopoverContent>
+                  </Portal>
                 </Popover>
               </Flex>
             );

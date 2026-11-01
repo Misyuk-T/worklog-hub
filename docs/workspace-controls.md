@@ -1,0 +1,18 @@
+# ClickUp generation and workspace controls
+
+- Problem: failed/empty ClickUp generation cleared local cards, exceptions left loading active, and generated cards lacked Jira form defaults.
+- Choice/change: the generator opts into helper errors, gathers all requested teams, and replaces local cards only when every team succeeds and at least one entry exists. One summary toast reports the result; empty/error keeps the dialog open for retry. Compare's helper behavior and the demo shortcut are unchanged.
+- Problem: selected day tabs retained a line against the panel; there was no whole-day date move.
+- Choice/change: tabs are opaque #ebebeb; the canvas stays #f5f5f5 but sits under App's page-wide 4% overlay, so it shows as #ebebeb too (tabs paint above that overlay; #f5f5f5 tabs looked lighter than the canvas). A 42px tab row over the canvas line at 41px; selected tabs cover that line. Pencil buttons are siblings of their tabs, with a portaled single-date calendar; calendar key events stop before reaching the tab list's arrow navigation. Date tabs use 120px minimum width for the pencil.
+- Day move: the pure helper changes only local cards, appends into an existing date, preserves IDs and removes the source key. Selection follows the destination in ascending date order. Card keys now use IDs so existing destination cards retain their form identity.
+- Unsaved edits: source panels remount because their date key changes, so source card drafts are discarded; the date calendar states this before selection. Saved fields survive and saving/deleting moved cards uses the destination date. Existing destination drafts retain their components.
+- Bulk edit: mappings now sits in the labelled Redmine row; Billability/Redmine/Match rows stack on small screens, with Clear Cards separated by a divider. Six adjacent help popovers explain existing behavior, including Jira cross-instance matching, ClickUp's Settings-team fallback and explicit mapping application.
+- Validation: 50 helper tests passed, including four new day-move/store tests. Normal and VITE_DEMO=true Vite builds and targeted ESLint passed. ClickUp handler/helper mock checks covered success, empty, team failure, missing prerequisites, loading cleanup, legacy error behavior and demo bypass.
+- Review (Claude Opus 5.5, implementation by GPT-6.1 Sol): one blocker. The demo's ClickUp cards lost their project and Jira issue because the defaults overwrote them. Fixed with `entry.task ?? ""`, `entry.project ?? ""` and `entry.jiraUrl ?? …` in `ClickUpModal.jsx`.
+- Browser validation (2026-11-01, VITE_DEMO=true at 1440×900):
+  - ClickUp Generate produced 7 cards and the toast "Generated 7 cards from ClickUp time entries.". Every card kept its Redmine project/issue, ClickUp task and Jira issue, and no "undefined" text was shown.
+  - Moving 29-10 → 31-10 selected the new tab, and all cards were dated 31-10-2026.
+  - Moving 31-10 → 30-10 merged the days into 7 cards, 16h.
+  - Keyboard: Enter opens the calendar, arrows pick a day, Enter applies it.
+  - Selected tab: pixels inside the tab measure 231–234 and the canvas below 233 (JPEG noise).
+- Next: real authenticated ClickUp reads.

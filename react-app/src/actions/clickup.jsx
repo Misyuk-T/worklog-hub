@@ -85,6 +85,7 @@ export const getClickUpTimeEntries = async (
   endDate,
   userId,
   showToast = true,
+  throwOnError = false,
 ) => {
   if (DEMO_BUILD) return getDemoCards(startDate, endDate);
   try {
@@ -186,6 +187,7 @@ export const getClickUpTimeEntries = async (
       );
     }
     console.error("Error while fetching ClickUp time entries:", error);
+    if (throwOnError) throw error;
     return {};
   }
 };

@@ -7,6 +7,7 @@ import {
   PopoverBody,
   PopoverCloseButton,
   PopoverContent,
+  Portal,
   PopoverHeader,
   Popover,
   PopoverTrigger,
@@ -63,14 +64,16 @@ const SettingModalFieldItem = ({
                 }}
               />
             </PopoverTrigger>
-            <PopoverContent width="100%" p={5}>
-              <PopoverArrow />
-              <PopoverCloseButton />
-              <PopoverHeader fontWeight={600} fontSize={18}>
-                How to get:
-              </PopoverHeader>
-              <PopoverBody>{children}</PopoverBody>
-            </PopoverContent>
+            <Portal>
+              <PopoverContent zIndex="popover" width="100%" p={5}>
+                <PopoverArrow />
+                <PopoverCloseButton />
+                <PopoverHeader fontWeight={600} fontSize={18}>
+                  How to get:
+                </PopoverHeader>
+                <PopoverBody>{children}</PopoverBody>
+              </PopoverContent>
+            </Portal>
           </Popover>
         )}
       </Flex>

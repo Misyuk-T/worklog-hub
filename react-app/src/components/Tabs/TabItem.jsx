@@ -64,8 +64,8 @@ const TabItem = ({ dayLogs, date }) => {
           gap={4}
           mt={4}
         >
-          {dayLogs.map((item, index) => {
-            return <WorkLogItem data={item} key={item.description + index} />;
+          {dayLogs.map((item) => {
+            return <WorkLogItem data={item} key={item.id} />;
           })}
 
           <Flex alignItems="center" justifyContent="center">

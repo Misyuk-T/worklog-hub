@@ -14,6 +14,7 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
+  Portal,
   PopoverArrow,
   PopoverBody,
   PopoverCloseButton,
@@ -436,13 +437,15 @@ const CompareActivityTable = ({ panelSize }) => {
                 Select Dates
               </Button>
             </PopoverTrigger>
-            <PopoverContent>
-              <PopoverArrow />
-              <PopoverCloseButton />
-              <PopoverBody>
-                <DayPicker mode="range" selected={range} onSelect={setRange} />
-              </PopoverBody>
-            </PopoverContent>
+            <Portal>
+              <PopoverContent>
+                <PopoverArrow />
+                <PopoverCloseButton />
+                <PopoverBody>
+                  <DayPicker mode="range" selected={range} onSelect={setRange} />
+                </PopoverBody>
+              </PopoverContent>
+            </Portal>
           </Popover>
           <Button
             onClick={fetchLogs}
