@@ -16,3 +16,7 @@
   - Keyboard: Enter opens the calendar, arrows pick a day, Enter applies it.
   - Selected tab: pixels inside the tab measure 231–234 and the canvas below 233 (JPEG noise).
 - Next: real authenticated ClickUp reads.
+- Release result (2026-11-01): source commit `c0c5678` deployed to [Firebase Hosting](https://redmine-scheduler-app.web.app/). Firebase reported `Deploy complete!`.
+  - Served HTML references `index-ChTcRY03.js` and `index-B2_Oly4f.css`; both match the built files byte for byte.
+  - JavaScript SHA-256: `31eb243e08aabab34669255fd26f98254971083337fd07d5e152785ccbc35f66`.
+  - Not pushed to the remote at release time.
