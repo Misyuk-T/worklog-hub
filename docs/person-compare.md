@@ -65,3 +65,9 @@
 - Validation:
   - 108 helper tests pass and `npx vite build` passes.
   - Demo, by project: WEB 62h / 0h, OPS 14.5h / 0h. The OPS filter left only OPS entries, and its day totals sum to 14.5h.
+
+## ClickUp entries start at midday (2026-11-02)
+- Problem: Liubov's report showed HPE for October as 52h in Redmine and 46h in ClickUp. Both trackers actually hold 52.25h (Redmine: 43 entries read from the work-profile session; ClickUp: the connector).
+  - The two 1 Oct entries (HPE-224 2.75h, HPE-223 3h) started at 00:00 Kyiv = 30 Sep 21:00 UTC, so UTC reports counted them in September. This had happened before.
+- Change: `createClickUpTimeEntries` starts entries at 12:00 local time instead of 00:00. Jira already writes `T12:00:00+0000`.
+- Review: GPT-6.1 Sol, no blockers. Noon Kyiv on 1 Oct is 09:00 UTC, and read-back buckets by local day.

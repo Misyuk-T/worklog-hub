@@ -340,7 +340,9 @@ export const createClickUpTimeEntries = async (worklogs) => {
         const { description, hours, date, task, teamId } = worklog;
 
         const dateObj = parse(date, "dd-MM-yyyy", new Date());
-        const startTimestamp = dateObj.getTime();
+        // Midday, not midnight: a 00:00 local start falls on the previous day
+        // in UTC reports, so the first day of a month lands in the month before.
+        const startTimestamp = dateObj.setHours(12, 0, 0, 0);
         const durationMs = hours * 3600 * 1000;
 
         const data = {
