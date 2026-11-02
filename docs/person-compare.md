@@ -50,3 +50,18 @@
 - Source commit `8e0b1b2` deployed to [Firebase Hosting](https://redmine-scheduler-app.web.app/). Firebase reported `Deploy complete!`.
 - Served HTML references `index-DgAuYUL_.js` and `index-B2_Oly4f.css`. Both match the built files byte for byte. JS SHA-256: `1cbdb5e01444603ce79658cd41833ab2bc933867573044db9cba16e8d65be09a`.
 - Not pushed at release time.
+
+## Hours and per-project breakdown (2026-11-02)
+- Problem: Taras was told "HPE: Redmine 52 hrs, ClickUp 46 hrs" for October, but the Compare summary showed only entry counts.
+  - His ClickUp HPE entries for October sum to 46.5h (41 entries, read through the ClickUp connector).
+- Change: each connection line now shows hours and the entry count, and each source shows a total.
+  - A "By project" table (`ProjectBreakdown.jsx`) has the columns Project, Source A, Source B and Difference. Clicking a row filters the daily tables to that project.
+  - The project key comes from `helpers/projectKey.js`:
+    - Jira: the issue key, with letters, digits and `_` allowed;
+    - ClickUp: the description prefix, else the task key;
+    - Redmine: the comment prefix, else the project name.
+  - Cyrillic look-alikes are mapped to Latin (`СTV-26` → `CTV`).
+- Review: GPT-6.1 Sol found one issue: Jira keys like `E2E-124` were parsed with the description rule. Fixed, with regression tests.
+- Validation:
+  - 108 helper tests pass and `npx vite build` passes.
+  - Demo, by project: WEB 62h / 0h, OPS 14.5h / 0h. The OPS filter left only OPS entries, and its day totals sum to 14.5h.

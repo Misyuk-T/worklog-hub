@@ -14,10 +14,17 @@ import {
   Flex,
   Link,
   Collapse,
+  Tag,
+  TagLabel,
+  TagCloseButton,
 } from "@chakra-ui/react";
 import { DEMO_PRESET, getDemoJiraHost, isDemoActive } from "../../../demo/demoMode";
 import { format, parse, subDays } from "date-fns";
 import { round } from "../../../helpers/getHours";
+import {
+  filterByProject,
+  summarizeByProject,
+} from "../../../helpers/projectKey";
 import {
   fetchCompareClickUp,
   fetchCompareJira,
@@ -41,6 +48,7 @@ import useClickUpStore from "../../../store/clickupStore";
 import WorklogEditModal from "./WorklogEditModal";
 import CompareToolbar from "./CompareToolbar";
 import SourceSummary from "./SourceSummary";
+import ProjectBreakdown from "./ProjectBreakdown";
 import usePersonResolution from "./usePersonResolution";
 import { CLICKUP_ADMIN_NOTE } from "./ResolutionPanel";
 
@@ -243,6 +251,7 @@ const CompareActivityTable = ({ panelSize }) => {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [editingLog, setEditingLog] = useState(null);
+  const [projectFilter, setProjectFilter] = useState(null);
   const [generation, setGeneration] = useState(0);
   const generationRef = useRef(0);
   const personTokenRef = useRef(0);
@@ -263,12 +272,14 @@ const CompareActivityTable = ({ panelSize }) => {
 
   useEffect(() => {
     invalidate();
+    setProjectFilter(null);
     personTokenRef.current += 1;
     setPerson(null);
   }, [presetSignature, invalidate]);
 
   const handlePersonChange = async (picked) => {
     invalidate();
+    setProjectFilter(null);
     // A mail answer belongs to the person and preset it was asked for.
     const personToken = ++personTokenRef.current;
     if (!picked) {
@@ -295,6 +306,7 @@ const CompareActivityTable = ({ panelSize }) => {
   const handleRangeChange = (next) => {
     if (sameRange(next, range)) return;
     invalidate();
+    setProjectFilter(null);
     setRange(next);
   };
 
@@ -317,6 +329,7 @@ const CompareActivityTable = ({ panelSize }) => {
   const isAvailable = (key) => services.find((service) => service.key === key)?.available;
 
   const handleSource1Toggle = (serviceKey) => {
+    setProjectFilter(null);
     setSource1Services((prev) =>
       prev.includes(serviceKey)
         ? prev.filter((s) => s !== serviceKey)
@@ -327,6 +340,7 @@ const CompareActivityTable = ({ panelSize }) => {
   };
 
   const handleSource2Toggle = (serviceKey) => {
+    setProjectFilter(null);
     setSource2Services((prev) =>
       prev.includes(serviceKey)
         ? prev.filter((s) => s !== serviceKey)
@@ -454,6 +468,10 @@ const CompareActivityTable = ({ panelSize }) => {
             label: job.label,
             status: "ok",
             count,
+            hours: Object.values(grouped).reduce(
+              (sum, logs) => sum + logs.reduce((s, log) => s + (parseFloat(log.hours) || 0), 0),
+              0,
+            ),
             grouped,
             note: job.adminNote && count === 0 ? `No entries returned. ${CLICKUP_ADMIN_NOTE}` : "",
           };
@@ -522,8 +540,23 @@ const CompareActivityTable = ({ panelSize }) => {
     }
   };
 
-  const source1Logs = results?.source1Logs;
-  const source2Logs = results?.source2Logs;
+  const projectRows = useMemo(
+    () =>
+      results ? summarizeByProject(results.source1Logs, results.source2Logs) : [],
+    [results],
+  );
+  // A filter whose project is not in the new results is ignored.
+  const activeProject = projectRows.some((row) => row.project === projectFilter)
+    ? projectFilter
+    : null;
+  const source1Logs = useMemo(
+    () => filterByProject(results?.source1Logs, activeProject),
+    [results, activeProject],
+  );
+  const source2Logs = useMemo(
+    () => filterByProject(results?.source2Logs, activeProject),
+    [results, activeProject],
+  );
   const allDates = useMemo(() => {
     const dates1 = Object.keys(source1Logs || {});
     const dates2 = Object.keys(source2Logs || {});
@@ -616,6 +649,36 @@ const CompareActivityTable = ({ panelSize }) => {
             source2Label={results.source2Label}
             source2Info={results.source2Info}
           />
+        )}
+
+        {results && (
+          <ProjectBreakdown
+            rows={projectRows}
+            selected={activeProject}
+            onSelect={setProjectFilter}
+          />
+        )}
+
+        {activeProject && (
+          <Flex gap={2} mb={4} align="center" wrap="wrap">
+            <Tag size="lg" borderRadius={0} colorScheme="blue">
+              <TagLabel fontSize="14px">Project: {activeProject}</TagLabel>
+              <TagCloseButton
+                aria-label="Clear project filter"
+                onClick={() => setProjectFilter(null)}
+              />
+            </Tag>
+            <Tag
+              as="button"
+              type="button"
+              size="lg"
+              borderRadius={0}
+              cursor="pointer"
+              onClick={() => setProjectFilter(null)}
+            >
+              <TagLabel fontSize="14px">All projects</TagLabel>
+            </Tag>
+          </Flex>
         )}
 
         {allDates.length === 0 ? (
