@@ -46,9 +46,26 @@ export const describeWorklog = ({ date, hours, task, description }) =>
   }`;
 
 // Wait for every response so partial success is reported accurately.
-export const submitWorklogRequests = async (requests, service) => {
+// `onSuccess(request)` runs the moment that one request fulfils, before the
+// others finish, so the caller can record it at once. It cannot fail a request.
+export const submitWorklogRequests = async (
+  requests,
+  service,
+  { onSuccess } = {}
+) => {
   const results = await Promise.allSettled(
-    requests.map(({ send }) => Promise.resolve().then(send))
+    requests.map((request) =>
+      Promise.resolve()
+        .then(request.send)
+        .then((response) => {
+          try {
+            onSuccess?.(request);
+          } catch (error) {
+            console.error("Could not record a sent worklog:", error);
+          }
+          return response;
+        })
+    )
   );
   const failures = results.flatMap((result, index) =>
     result.status === "rejected"

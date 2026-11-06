@@ -42,9 +42,20 @@ import {
 } from "../../../actions/clickup";
 import { transformToProjectData } from "../../../helpers/transformToSelectData";
 import { getTotalHoursFromObject, round } from "../../../helpers/getHours";
-import { filterWorklogsByTask } from "../../../helpers/filterWorklogsForJira";
-import { filterWorklogsForRedmine } from "../../../helpers/filterWorklogsForRedmine";
-import { filterWorklogsForClickUp } from "../../../helpers/filterWorklogsForClickUp";
+import {
+  canSendToJira,
+  filterWorklogsByTask,
+} from "../../../helpers/filterWorklogsForJira";
+import {
+  canSendToRedmine,
+  filterWorklogsForRedmine,
+} from "../../../helpers/filterWorklogsForRedmine";
+import {
+  canSendToClickUp,
+  filterWorklogsForClickUp,
+} from "../../../helpers/filterWorklogsForClickUp";
+import { dropSent, sentSummary } from "../../../helpers/sentMarks";
+import { runWithSubmitLock, submitLockKey } from "../../../helpers/submitLock";
 import {
   buildJiraIssuePool,
   collectScopedTaskCodes,
@@ -55,7 +66,11 @@ import {
   resolveMissingScopedItems,
 } from "../../../helpers/matchWorklogTasks";
 
-import { captureCardsOwner } from "../../../store/cardsPersistence";
+import {
+  captureCardsOwner,
+  getSubmitOwnerId,
+  syncSentMarks,
+} from "../../../store/cardsPersistence";
 import ModalDialog from "../../ModalDialog";
 import { DEMO_BUILD } from "../../../demo/demoMode";
 import { QuestionOutlineIcon } from "@chakra-ui/icons";
@@ -95,6 +110,7 @@ const RedmineForm = () => {
     bulkUpdateWorkLogsWithJira,
     bulkUpdateWorkLogsWithClickUp,
     resetWorkLogs,
+    markCardsSent,
   } = useWorkLogsStore();
   const { projects, resetLatestActivity, addLatestActivity, user } =
     useRedmineStore();
@@ -125,7 +141,6 @@ const RedmineForm = () => {
   const jiraHours = round(getTotalHoursFromObject(jiraWoklogs));
   const redmineWorklogs = filterWorklogsForRedmine(workLogs);
   const redmineHours = round(getTotalHoursFromObject(redmineWorklogs));
-  const redmineCardCount = Object.values(redmineWorklogs).flat().length;
   const allCards = Object.values(workLogs || {}).flat();
   const cardsWithoutJiraTask = allCards.filter((card) => !card.task).length;
   const cardsWithoutProject = allCards.filter((card) => !card.project).length;
@@ -133,6 +148,12 @@ const RedmineForm = () => {
   const cardsWithoutClickUpTeam = allCards.filter(
     (card) => card.clickupTask && !card.clickupTeamId && !selectedTeamId
   ).length;
+  // Cards that could go to a tracker, and how many of them already did.
+  const redmineSent = sentSummary(workLogs, "redmine", canSendToRedmine);
+  const jiraSent = sentSummary(workLogs, "jira", canSendToJira);
+  const clickUpSent = sentSummary(workLogs, "clickup", (card) =>
+    canSendToClickUp(card, selectedTeamId)
+  );
   const formattedProjectData = transformToProjectData(projects);
   const worklogsArray = workLogs && Object.entries(workLogs);
   const isWorkLogsExist = worklogsArray?.length > 0;
@@ -244,24 +265,47 @@ const RedmineForm = () => {
     setIsBlbLog((prevState) => !prevState);
   };
 
-  const handleRedmineSubmit = async () => {
-    await trackTimeToRedmine(redmineWorklogs).then(async () => {
-      // The demo sent nothing, so there is nothing new to read back.
-      if (DEMO_BUILD) return;
-      resetLatestActivity();
-      addLatestActivity(await getLatestRedmineWorkLogs(user.id));
+  // One send per tracker at a time across tabs. Inside the lock the marks other
+  // tabs saved are read again, and only cards still unsent go: a second tab
+  // pressing Confirm after the first finished sends nothing twice.
+  const runSubmit = async (service, label, shown, send) => {
+    const { busy } = await runWithSubmitLock({
+      locks: typeof navigator === "undefined" ? undefined : navigator.locks,
+      key: submitLockKey(getSubmitOwnerId(), service),
+      run: async () => {
+        syncSentMarks();
+        const toSend = dropSent(shown, useWorkLogsStore.getState().workLogs, service);
+        if (!Object.keys(toSend).length) {
+          toast.info(`Nothing to send: every card was already sent to ${label}.`);
+          return;
+        }
+        await send(toSend, (cardId) => markCardsSent(service, [cardId]));
+      },
     });
+    if (busy) toast.info(`Already sending to ${label} in another tab.`);
   };
 
-  const handleJiraSubmit = async () => {
-    await createJiraWorklogs(jiraWoklogs);
-    await getLatestJiraWorkLogs();
-  };
+  const handleRedmineSubmit = () =>
+    runSubmit("redmine", "Redmine", redmineWorklogs, async (cards, onCardSent) => {
+      await trackTimeToRedmine(cards, { onCardSent }).then(async () => {
+        // The demo sent nothing, so there is nothing new to read back.
+        if (DEMO_BUILD) return;
+        resetLatestActivity();
+        addLatestActivity(await getLatestRedmineWorkLogs(user.id));
+      });
+    });
 
-  const handleClickUpSubmit = async () => {
-    await createClickUpTimeEntries(clickUpWorklogs);
-    await getLatestClickUpTimeEntries();
-  };
+  const handleJiraSubmit = () =>
+    runSubmit("jira", "Jira", jiraWoklogs, async (cards, onCardSent) => {
+      await createJiraWorklogs(cards, { onCardSent });
+      await getLatestJiraWorkLogs();
+    });
+
+  const handleClickUpSubmit = () =>
+    runSubmit("clickup", "ClickUp", clickUpWorklogs, async (cards, onCardSent) => {
+      await createClickUpTimeEntries(cards, { onCardSent });
+      await getLatestClickUpTimeEntries();
+    });
 
   return (
     <Stack spacing={4}>
@@ -414,10 +458,17 @@ const RedmineForm = () => {
                 {cardsWithoutJiraTask} of {allCards.length} cards have no Jira issue and will be skipped.
               </Text>
             )}
+            {jiraSent.sent > 0 && (
+              <Text mt={2}>
+                {jiraSent.sent} of {allCards.length} cards were already sent to Jira and will be skipped.
+              </Text>
+            )}
             {jiraHours === 0 && (
               <Text mt={2}>
                 {allCards.every((card) => !card.task)
                   ? "No cards have a Jira issue yet."
+                  : jiraSent.sent === jiraSent.qualifying
+                  ? "All cards with a Jira issue were already sent to Jira."
                   : "No hours are available to submit to Jira."}
               </Text>
             )}
@@ -455,10 +506,17 @@ const RedmineForm = () => {
                 {cardsWithoutClickUpTeam} of {allCards.length} cards have no ClickUp team and will be skipped. Select a team in Settings or on the card.
               </Text>
             )}
+            {clickUpSent.sent > 0 && (
+              <Text mt={2}>
+                {clickUpSent.sent} of {allCards.length} cards were already sent to ClickUp and will be skipped.
+              </Text>
+            )}
             {clickUpHours === 0 && (
               <Text mt={2}>
                 {allCards.every((card) => !card.clickupTask)
                   ? "No cards have a ClickUp task yet."
+                  : clickUpSent.qualifying > 0 && clickUpSent.sent === clickUpSent.qualifying
+                  ? "All cards with a ClickUp task were already sent to ClickUp."
                   : "No hours are available to submit to ClickUp."}
               </Text>
             )}
@@ -468,7 +526,7 @@ const RedmineForm = () => {
             headerTitle="Submitting to Redmine"
             trigger={
               <Button
-                isDisabled={!redmineCardCount || !user?.id}
+                isDisabled={!redmineSent.qualifying || !user?.id}
                 colorScheme="red"
                 size="sm"
                 minW="160px"
@@ -489,10 +547,17 @@ const RedmineForm = () => {
                 {cardsWithoutProject} of {allCards.length} cards have no Redmine project and will be skipped.
               </Text>
             )}
+            {redmineSent.sent > 0 && (
+              <Text mt={2}>
+                {redmineSent.sent} of {allCards.length} cards were already sent to Redmine and will be skipped.
+              </Text>
+            )}
             {redmineHours === 0 && (
               <Text mt={2}>
                 {allCards.every((card) => !card.project)
                   ? "No cards have a Redmine project yet."
+                  : redmineSent.sent === redmineSent.qualifying
+                  ? "All cards with a Redmine project were already sent to Redmine."
                   : "No hours are available to submit to Redmine."}
               </Text>
             )}

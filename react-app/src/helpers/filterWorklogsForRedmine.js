@@ -1,4 +1,9 @@
-// Redmine logs only cards that have a Redmine project; the rest are skipped.
+import { isSentTo } from "./sentMarks.js";
+
+export const canSendToRedmine = (worklog) => Boolean(worklog?.project);
+
+// Redmine logs only cards that have a Redmine project and were not sent to it
+// before; the rest are skipped.
 export const filterWorklogsForRedmine = (worklogs) => {
   const filteredWorklogs = {};
 
@@ -6,7 +11,7 @@ export const filterWorklogsForRedmine = (worklogs) => {
     const worklogsForDate = worklogs[date];
     if (!Array.isArray(worklogsForDate)) continue;
     const filteredWorklogsForDate = worklogsForDate.filter(
-      (worklog) => worklog?.project
+      (worklog) => canSendToRedmine(worklog) && !isSentTo(worklog, "redmine")
     );
 
     if (filteredWorklogsForDate.length > 0) {

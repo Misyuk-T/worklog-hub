@@ -11,6 +11,7 @@ import { applyRedminePrefixMappings } from "../helpers/redminePrefixMappings.js"
 
 import { moveDayWorkLogs } from "../helpers/moveDayWorkLogs.js";
 import { ensureWorkLogIds } from "../helpers/ensureWorkLogIds.js";
+import { clearSent, markSent } from "../helpers/sentMarks.js";
 
 const initialState = {
   workLogs: null,
@@ -38,7 +39,23 @@ const useWorkLogsStore = create((set, get) => ({
       return { workLogs: oldState };
     });
   },
-  updateWorkLog: (date, id, updatedData) => {
+  // Marks change only through markCardsSent / clearCardSent, so an edit made
+  // from a stale card never brings back or drops a mark.
+  markCardsSent: (service, cardIds) =>
+    set((state) => {
+      const workLogs = markSent(state.workLogs, service, cardIds);
+      return workLogs === state.workLogs ? state : { workLogs };
+    }),
+  clearCardSent: (service, cardId) =>
+    set((state) => {
+      const workLogs = clearSent(state.workLogs, service, cardId);
+      return workLogs === state.workLogs ? state : { workLogs };
+    }),
+  updateWorkLog: (date, id, edited) => {
+    const current = (get().workLogs?.[date] || []).find((card) => card.id === id);
+    const updatedData = { ...edited };
+    if (current?.sentTo) updatedData.sentTo = current.sentTo;
+    else delete updatedData.sentTo;
     set(() => {
       let oldState;
 

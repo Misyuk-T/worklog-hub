@@ -1,10 +1,19 @@
+import { isSentTo } from "./sentMarks.js";
+
+export const canSendToClickUp = (worklog, defaultTeamId) =>
+  Boolean(worklog?.clickupTask && (worklog.clickupTeamId || defaultTeamId));
+
+// ClickUp logs only cards with a task and a team that were not sent to
+// ClickUp before.
 export const filterWorklogsForClickUp = (worklogs, defaultTeamId) => {
   const filteredWorklogs = {};
 
   for (const date in worklogs) {
     const worklogsForDate = worklogs[date];
+    if (!Array.isArray(worklogsForDate)) continue;
     const filteredWorklogsForDate = worklogsForDate.filter(
-      (worklog) => worklog.clickupTask && (worklog.clickupTeamId || defaultTeamId)
+      (worklog) =>
+        canSendToClickUp(worklog, defaultTeamId) && !isSentTo(worklog, "clickup")
     );
 
     if (filteredWorklogsForDate.length > 0) {

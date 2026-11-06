@@ -21,6 +21,7 @@ import {
 
 import useClickUpStore from "../../../store/clickupStore";
 import { captureCardsOwner } from "../../../store/cardsPersistence";
+import { markAllSent } from "../../../helpers/sentMarks";
 import useWorkLogsStore from "../../../store/worklogsStore";
 import useJiraStore from "../../../store/jiraStore";
 import { normalizeServiceScope } from "../../../helpers/matchWorklogTasks";
@@ -118,7 +119,8 @@ const ClickUpModal = ({ isOpen, onClose }) => {
       }
       // The account changed while this was loading: leave the new account's cards alone.
       if (!isCurrentOwner()) return;
-      addWorkLogs(allWorkLogs);
+      // These time entries are already in ClickUp; a new Submit must not log them again.
+      addWorkLogs(markAllSent(allWorkLogs, "clickup"));
       setIsClickUpExport(true);
       notify("success", `Generated ${count} card${count === 1 ? "" : "s"} from ClickUp time entries.`);
       onClose();

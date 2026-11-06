@@ -172,12 +172,16 @@ export const deleteRedmineTimeEntry = async (id) => {
   await instance.delete(`/redmine/time_entries/${id}.json`);
 };
 
-export const trackTimeToRedmine = async (data) => {
+// `onCardSent(cardId)` runs as soon as that card's own entry is saved.
+export const trackTimeToRedmine = async (data, { onCardSent } = {}) => {
   try {
     validateWorkLogsData(data, false);
     const redmineData = transformToRedmineData(data);
+    // transformToRedmineData walks the days and cards in this same order.
+    const cardIds = Object.values(data).flat().map((card) => card.id);
 
-    const requests = redmineData.map((entry) => ({
+    const requests = redmineData.map((entry, index) => ({
+      cardId: cardIds[index],
       context: describeWorklog({
         date: entry.time_entry.spent_on,
         hours: entry.time_entry.hours,
@@ -189,10 +193,13 @@ export const trackTimeToRedmine = async (data) => {
 
     if (DEMO_BUILD) {
       toastDemoSubmit(requests.length, "Redmine");
+      requests.forEach((request) => onCardSent?.(request.cardId));
       return;
     }
 
-    await submitWorklogRequests(requests, "Redmine").then(() => {
+    await submitWorklogRequests(requests, "Redmine", {
+      onSuccess: (request) => onCardSent?.(request.cardId),
+    }).then(() => {
       toast.success(
         <Stack>
           <Text fontWeight={600}>

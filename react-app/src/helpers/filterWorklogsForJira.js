@@ -1,3 +1,8 @@
+import { isSentTo } from "./sentMarks.js";
+
+export const canSendToJira = (worklog) => Boolean(worklog?.task);
+
+// Jira logs only cards with an issue that were not sent to Jira before.
 export const filterWorklogsByTask = (worklogs) => {
   const filteredWorklogs = {};
 
@@ -5,7 +10,7 @@ export const filterWorklogsByTask = (worklogs) => {
     const worklogsForDate = worklogs[date];
     if (!Array.isArray(worklogsForDate)) continue;
     const filteredWorklogsForDate = worklogsForDate.filter(
-      (worklog) => worklog?.task
+      (worklog) => canSendToJira(worklog) && !isSentTo(worklog, "jira")
     );
 
     if (filteredWorklogsForDate.length > 0) {

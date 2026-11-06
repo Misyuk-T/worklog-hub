@@ -21,6 +21,7 @@ import {
 import { captureCredentials } from "../../../actions/axios";
 import useRedmineStore from "../../../store/redmineStore";
 import { captureCardsOwner } from "../../../store/cardsPersistence";
+import { markAllSent } from "../../../helpers/sentMarks";
 import useWorkLogsStore from "../../../store/worklogsStore";
 import {
   getLatestRedmineWorkLogs,
@@ -81,7 +82,10 @@ const RedmineModal = ({ isOpen, onClose }) => {
       if (!isCurrentOwner()) return;
       // Existing cards are replaced only now, by a fetch that returned entries.
       resetWorkLogs();
-      addWorkLogs(transformRedmineWorkLogsToCards(redmineWorkLogs));
+      // These entries are already in Redmine; a new Submit must not log them again.
+      addWorkLogs(
+        markAllSent(transformRedmineWorkLogsToCards(redmineWorkLogs), "redmine")
+      );
       setIsJiraExport(false);
       setIsClickUpExport(false);
       const count = redmineWorkLogs.length;

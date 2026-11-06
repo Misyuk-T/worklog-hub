@@ -13,7 +13,7 @@ import {
   Icon,
   Box,
 } from "@chakra-ui/react";
-import { DeleteIcon } from "@chakra-ui/icons";
+import { CloseIcon, DeleteIcon } from "@chakra-ui/icons";
 
 import useJiraStore from "../../../store/jiraStore";
 import useClickUpStore from "../../../store/clickupStore";
@@ -29,6 +29,7 @@ import {
 import { getAssignedTasks } from "../../../actions/clickup";
 import { normalizeServiceScope } from "../../../helpers/matchWorklogTasks";
 import { validateWorklogHours } from "../../../helpers/validateWorklogsData";
+import { SERVICE_LABELS, sentServices } from "../../../helpers/sentMarks";
 
 import DescriptionInput from "./DescriptionInput";
 import DatePicker from "./DatePicker";
@@ -61,7 +62,8 @@ const WorkLogItem = ({ data }) => {
     user: clickUpUser,
     addAdditionalAssignedTasks,
   } = useClickUpStore();
-  const { updateWorkLog, deleteWorkLog } = useWorkLogsStore();
+  const { updateWorkLog, deleteWorkLog, clearCardSent } = useWorkLogsStore();
+  const sentTo = sentServices(data);
 
   const truncatedOrganizationURL = normalizeServiceScope(organizationURL);
 
@@ -362,6 +364,38 @@ const WorkLogItem = ({ data }) => {
             />
           </Flex>
         </Flex>
+
+        {sentTo.length > 0 && (
+          <Box mb={2}>
+            <Flex alignItems="center" flexWrap="wrap" gap={1} color="gray.600" fontSize="sm">
+              <Text as="span" m={0}>Sent:</Text>
+              {sentTo.map((service, index) => (
+                <Flex key={service} alignItems="center">
+                  <Text as="span" m={0}>
+                    {SERVICE_LABELS[service]}
+                    {index < sentTo.length - 1 ? "," : ""}
+                  </Text>
+                  <IconButton
+                    size="xs"
+                    variant="ghost"
+                    minW="20px"
+                    h="20px"
+                    ml={0.5}
+                    aria-label={`Send to ${SERVICE_LABELS[service]} again`}
+                    title={`Send to ${SERVICE_LABELS[service]} again`}
+                    icon={<CloseIcon boxSize="8px" />}
+                    onClick={() => clearCardSent(service, data.id)}
+                  />
+                </Flex>
+              ))}
+            </Flex>
+            {isEdited && (
+              <Text m={0} fontSize="sm" color="gray.600">
+                Changes here are not sent to trackers it was already sent to.
+              </Text>
+            )}
+          </Box>
+        )}
 
         <Stack gap={2}>
           {/* Redmine Block */}

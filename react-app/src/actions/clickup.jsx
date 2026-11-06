@@ -329,7 +329,8 @@ export const getClickUpTaskById = async (rawTaskId, teamId, showToast = true) =>
   }
 };
 
-export const createClickUpTimeEntries = async (worklogs) => {
+// `onCardSent(cardId)` runs as soon as that card's own time entry is saved.
+export const createClickUpTimeEntries = async (worklogs, { onCardSent } = {}) => {
   try {
     validateWorkLogsData(worklogs, true);
     const requests = [];
@@ -353,6 +354,7 @@ export const createClickUpTimeEntries = async (worklogs) => {
         };
 
         requests.push({
+          cardId: worklog.id,
           context: describeWorklog(worklog),
           send: () => instance.post(
             `/clickup/team/${teamId}/time_entries`,
@@ -365,10 +367,13 @@ export const createClickUpTimeEntries = async (worklogs) => {
 
     if (DEMO_BUILD) {
       toastDemoSubmit(requests.length, "ClickUp");
+      requests.forEach((request) => onCardSent?.(request.cardId));
       return;
     }
 
-    await submitWorklogRequests(requests, "ClickUp").then(() => {
+    await submitWorklogRequests(requests, "ClickUp", {
+      onSuccess: (request) => onCardSent?.(request.cardId),
+    }).then(() => {
       toast.success(
         <Stack>
           <Text fontWeight={600}>

@@ -333,7 +333,8 @@ export const getJiraIssueByKey = async (rawIssueKey, jiraUrl) => {
   }
 };
 
-export const createJiraWorklogs = async (worklogs) => {
+// `onCardSent(cardId)` runs as soon as that card's own worklog is saved.
+export const createJiraWorklogs = async (worklogs, { onCardSent } = {}) => {
   try {
     validateWorkLogsData(worklogs, true);
     const requests = [];
@@ -352,6 +353,7 @@ export const createJiraWorklogs = async (worklogs) => {
 
         // Make an API call to create the worklog and store the promise
         requests.push({
+          cardId: worklog.id,
           context: describeWorklog(worklog),
           send: () => instance.post(
             `/jira/rest/api/3/issue/${task}/worklog`,
@@ -364,11 +366,14 @@ export const createJiraWorklogs = async (worklogs) => {
 
     if (DEMO_BUILD) {
       toastDemoSubmit(requests.length, "Jira");
+      requests.forEach((request) => onCardSent?.(request.cardId));
       return;
     }
 
     // Wait for all responses and report any partial success.
-    await submitWorklogRequests(requests, "Jira").then(() => {
+    await submitWorklogRequests(requests, "Jira", {
+      onSuccess: (request) => onCardSent?.(request.cardId),
+    }).then(() => {
       toast.success(
         <Stack>
           <Text fontWeight={600}>

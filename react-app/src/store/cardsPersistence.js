@@ -39,3 +39,11 @@ export const captureCardsOwner = () =>
   captureOwner(() => getCardsOwnerId(useAuthStore.getState()));
 
 export const unbindCardsOwner = () => persistence.unbind();
+
+// Pulls the "sent" marks other tabs have saved into this page's cards, so a
+// send is planned from the latest marks and not from this tab's last event.
+export const syncSentMarks = () => persistence.syncMarks();
+
+// Who the submit lock belongs to; builds with no signed-in owner share one.
+export const getSubmitOwnerId = () =>
+  getCardsOwnerId(useAuthStore.getState()) || "local";

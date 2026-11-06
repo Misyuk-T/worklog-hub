@@ -21,6 +21,7 @@ import {
 
 import useJiraStore from "../../../store/jiraStore";
 import { captureCardsOwner } from "../../../store/cardsPersistence";
+import { markAllSent } from "../../../helpers/sentMarks";
 import useWorkLogsStore from "../../../store/worklogsStore";
 import { captureCredentials } from "../../../actions/axios";
 import { getJiraWorklogIssues } from "../../../actions/jira";
@@ -114,7 +115,8 @@ const JiraModal = ({ isOpen, onClose }) => {
       if (!isCurrentOwner()) return;
       // Existing cards are replaced only now, by a fetch that returned entries.
       resetWorkLogs();
-      addWorkLogs(allWorkLogs);
+      // These worklogs are already in Jira; a new Submit must not log them again.
+      addWorkLogs(markAllSent(allWorkLogs, "jira"));
       setIsJiraExport(true);
       notify("success", `Generated ${count} card${count === 1 ? "" : "s"} from Jira worklogs.`);
       onClose();

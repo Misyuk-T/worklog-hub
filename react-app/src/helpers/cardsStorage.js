@@ -45,8 +45,13 @@ const isScalarOrNullish = (value) =>
 // Cards from every source (Jira, ClickUp, Redmine, file import, "+") carry a
 // date string, hours as a number or numeric string, and a description that may
 // be empty. The UI cannot render a card without them.
+const isSentToMap = (value) =>
+  value === undefined ||
+  (isPlainObject(value) && Object.values(value).every((mark) => mark === true));
+
 const isCard = (card) =>
   isPlainObject(card) &&
+  isSentToMap(card.sentTo) &&
   isCardDate(card.date) &&
   typeof card.description === "string" &&
   (typeof card.hours === "number" ||
