@@ -218,6 +218,24 @@ const WorkLogItem = ({ data }) => {
     deleteWorkLog(originDate.current, data.id);
   };
 
+  // Follow changes made elsewhere (another tab, a bulk update) unless the user
+  // is mid-edit; the draft wins until Save or Cancel.
+  useEffect(() => {
+    if (isEdited) return;
+    setValue("description", data.description);
+  }, [data.description, isEdited, setValue]);
+
+  useEffect(() => {
+    if (isEdited) return;
+    setValue("hours", data.hours);
+  }, [data.hours, isEdited, setValue]);
+
+  useEffect(() => {
+    originDate.current = data.date;
+    if (isEdited) return;
+    setValue("date", getCorrectGMTDateObject(data.date));
+  }, [data.date, isEdited, setValue]);
+
   useEffect(() => {
     setValue("blb", data.blb);
   }, [data.blb, setValue]);

@@ -20,6 +20,7 @@ import {
 } from "@chakra-ui/react";
 
 import useJiraStore from "../../../store/jiraStore";
+import { captureCardsOwner } from "../../../store/cardsPersistence";
 import useWorkLogsStore from "../../../store/worklogsStore";
 import { captureCredentials } from "../../../actions/axios";
 import { getJiraWorklogIssues } from "../../../actions/jira";
@@ -47,6 +48,7 @@ const JiraModal = ({ isOpen, onClose }) => {
   };
 
   const handleSubmit = async () => {
+    const isCurrentOwner = captureCardsOwner();
     setIsLoading(true);
     const notify = (type, message) => toast[type](
       <Stack><Text fontWeight={600}>{message}</Text></Stack>,
@@ -108,6 +110,8 @@ const JiraModal = ({ isOpen, onClose }) => {
         notify("info", `No Jira worklogs for ${startDate} – ${endDate}`);
         return;
       }
+      // The account changed while this was loading: leave the new account's cards alone.
+      if (!isCurrentOwner()) return;
       // Existing cards are replaced only now, by a fetch that returned entries.
       resetWorkLogs();
       addWorkLogs(allWorkLogs);

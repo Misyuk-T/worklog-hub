@@ -18,6 +18,7 @@ import useClickUpStore from "./store/clickupStore";
 
 import GenerateCards from "./components/GenerateCards/GenerateCards";
 import InformationTabs from "./components/Tabs/InformationTabs";
+import CardsErrorBoundary from "./components/Tabs/CardsErrorBoundary";
 import BoxOverlay from "./components/BoxOverlay";
 import Avatar from "./components/Avatar";
 import SettingModal from "./components/SettingModal/SettingModal";
@@ -26,6 +27,7 @@ import Loader from "./components/Loader";
 
 import theme from "./styles/index";
 import { observeAuth } from "./actions/auth";
+import { startCardsPersistence } from "./store/cardsPersistence";
 import useAuthStore from "./store/userStore";
 import { fetchAllData } from "./actions/workLogs";
 import { getOrganizationUrls } from "./helpers/getOrganizationUrl";
@@ -100,6 +102,7 @@ const App = () => {
 
   useEffect(() => {
     if (!isAuthObserve) {
+      startCardsPersistence();
       observeAuth();
       useAuthStore.setState({ isAuthObserve: true });
     }
@@ -217,7 +220,11 @@ const App = () => {
           )}
         </Stack>
 
-        {showWorkspace && <InformationTabs />}
+        {showWorkspace && (
+          <CardsErrorBoundary>
+            <InformationTabs />
+          </CardsErrorBoundary>
+        )}
 
         <Flex as="footer" justify="center" w="100%" mt={"-15px"} py={"5px"}>
           <Link

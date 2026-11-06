@@ -20,6 +20,7 @@ import {
 } from "@chakra-ui/react";
 
 import useClickUpStore from "../../../store/clickupStore";
+import { captureCardsOwner } from "../../../store/cardsPersistence";
 import useWorkLogsStore from "../../../store/worklogsStore";
 import useJiraStore from "../../../store/jiraStore";
 import { normalizeServiceScope } from "../../../helpers/matchWorklogTasks";
@@ -52,6 +53,7 @@ const ClickUpModal = ({ isOpen, onClose }) => {
   };
 
   const handleSubmit = async () => {
+    const isCurrentOwner = captureCardsOwner();
     setIsLoading(true);
     const notify = (type, message) => toast[type](
       <Stack><Text fontWeight={600}>{message}</Text></Stack>,
@@ -114,6 +116,8 @@ const ClickUpModal = ({ isOpen, onClose }) => {
         notify("info", `No ClickUp time entries for ${startDate} – ${endDate}`);
         return;
       }
+      // The account changed while this was loading: leave the new account's cards alone.
+      if (!isCurrentOwner()) return;
       addWorkLogs(allWorkLogs);
       setIsClickUpExport(true);
       notify("success", `Generated ${count} card${count === 1 ? "" : "s"} from ClickUp time entries.`);

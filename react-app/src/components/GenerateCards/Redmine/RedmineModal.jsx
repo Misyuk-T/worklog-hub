@@ -20,6 +20,7 @@ import {
 
 import { captureCredentials } from "../../../actions/axios";
 import useRedmineStore from "../../../store/redmineStore";
+import { captureCardsOwner } from "../../../store/cardsPersistence";
 import useWorkLogsStore from "../../../store/worklogsStore";
 import {
   getLatestRedmineWorkLogs,
@@ -46,6 +47,7 @@ const RedmineModal = ({ isOpen, onClose }) => {
 
   const handleSubmit = async () => {
     if (!user?.id || !range?.from || !range?.to) return;
+    const isCurrentOwner = captureCardsOwner();
 
     setIsLoading(true);
     const notify = (type, message) => toast[type](
@@ -75,6 +77,8 @@ const RedmineModal = ({ isOpen, onClose }) => {
         return;
       }
 
+      // The account changed while this was loading: leave the new account's cards alone.
+      if (!isCurrentOwner()) return;
       // Existing cards are replaced only now, by a fetch that returned entries.
       resetWorkLogs();
       addWorkLogs(transformRedmineWorkLogsToCards(redmineWorkLogs));

@@ -21,6 +21,7 @@ import useRedmineStore from "../store/redmineStore";
 import useClickUpStore from "../store/clickupStore";
 import useSettingsStore from "../store/settingsStore";
 import useWorkLogsStore from "../store/worklogsStore";
+import { unbindCardsOwner } from "../store/cardsPersistence";
 
 const provider = new GoogleAuthProvider();
 
@@ -32,6 +33,9 @@ export const openLoginPopup = async () => {
 };
 
 export const loginUser = async (googleUserData) => {
+  // A callback that finishes after logout or an account switch must not set
+  // the user it started with.
+  const isStillCurrent = () => auth?.currentUser?.uid === googleUserData.uid;
   try {
     useAuthStore.setState({ isLoading: true });
     const { displayName, email, photoURL, uid } = googleUserData;
@@ -49,6 +53,7 @@ export const loginUser = async (googleUserData) => {
     const userQuery = await get(
       query(usersRef, orderByChild("uid"), equalTo(uid)),
     );
+    if (!isStillCurrent()) return;
     let existingUserData = null;
 
     // If a uid somehow has several records, keep the last one, as the old
@@ -62,6 +67,7 @@ export const loginUser = async (googleUserData) => {
       const newUserId = newUserRef.key;
       existingUserData = { ...userData, ownerId: newUserId };
       await set(newUserRef, existingUserData);
+      if (!isStillCurrent()) return;
     }
 
     useAuthStore.setState({ user: existingUserData });
@@ -78,6 +84,8 @@ export const logoutUser = async () => {
 
     await signOut(auth);
 
+    // Before the resets, so clearing the store does not erase the saved cards.
+    unbindCardsOwner();
     useJiraStore.getState().resetAll();
     useRedmineStore.getState().resetAll();
     useClickUpStore.getState().resetAll();

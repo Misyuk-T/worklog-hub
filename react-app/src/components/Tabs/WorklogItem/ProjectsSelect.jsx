@@ -11,7 +11,19 @@ const ProjectsSelect = ({ onChange, control, value }) => {
   const { projects } = useRedmineStore();
 
   const formattedProjectData = transformToProjectData(projects);
-  const listValue = isNaN(value) ? value : getProjectValue(value, projects);
+  // No project (or an id not loaded yet) never shows as "undefined": an empty
+  // value falls back to the placeholder, an unknown id shows its number.
+  const resolved = !value
+    ? null
+    : isNaN(value)
+      ? value
+      : getProjectValue(value, projects);
+  const listValue =
+    resolved && resolved.value
+      ? resolved
+      : value && !isNaN(value)
+        ? { value, label: `Project #${value}` }
+        : null;
   const isUndefinedValue = !listValue || !listValue.value;
 
   return (
@@ -26,7 +38,7 @@ const ProjectsSelect = ({ onChange, control, value }) => {
             menuPlacement="auto"
             onChange={onChange}
             options={formattedProjectData}
-            placeholder="Select project ..."
+            placeholder="Select project"
             menuPortalTarget={document.body}
             styles={{
               control: (baseStyles, state) => ({

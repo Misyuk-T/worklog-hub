@@ -15,6 +15,7 @@ import {
 } from "@chakra-ui/react";
 
 import useWorkLogsStore from "../../../store/worklogsStore";
+import { captureCardsOwner } from "../../../store/cardsPersistence";
 import FileUpload from "./FileUpload";
 import RadioGroup from "./RadioGroup";
 import { sendWorkLogs } from "../../../actions/workLogs";
@@ -58,8 +59,11 @@ const Form = () => {
     formData.append("type", data.type);
 
     setImportError("");
+    const isCurrentOwner = captureCardsOwner();
     try {
       const workLogs = await sendWorkLogs(formData);
+      // The account changed while this was loading: leave the new account's cards alone.
+      if (!isCurrentOwner()) return;
       addWorkLogs(workLogs);
       setIsSent(true);
       setIsJiraExport(isJiraType);

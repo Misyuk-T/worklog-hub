@@ -41,8 +41,9 @@ import {
   getLatestClickUpTimeEntries,
 } from "../../../actions/clickup";
 import { transformToProjectData } from "../../../helpers/transformToSelectData";
-import { getTotalHoursFromObject } from "../../../helpers/getHours";
+import { getTotalHoursFromObject, round } from "../../../helpers/getHours";
 import { filterWorklogsByTask } from "../../../helpers/filterWorklogsForJira";
+import { filterWorklogsForRedmine } from "../../../helpers/filterWorklogsForRedmine";
 import { filterWorklogsForClickUp } from "../../../helpers/filterWorklogsForClickUp";
 import {
   buildJiraIssuePool,
@@ -54,6 +55,7 @@ import {
   resolveMissingScopedItems,
 } from "../../../helpers/matchWorklogTasks";
 
+import { captureCardsOwner } from "../../../store/cardsPersistence";
 import ModalDialog from "../../ModalDialog";
 import { DEMO_BUILD } from "../../../demo/demoMode";
 import { QuestionOutlineIcon } from "@chakra-ui/icons";
@@ -119,8 +121,14 @@ const RedmineForm = () => {
 
   const jiraWoklogs = filterWorklogsByTask(workLogs);
   const clickUpWorklogs = filterWorklogsForClickUp(workLogs, selectedTeamId);
-  const clickUpHours = getTotalHoursFromObject(clickUpWorklogs);
+  const clickUpHours = round(getTotalHoursFromObject(clickUpWorklogs));
+  const jiraHours = round(getTotalHoursFromObject(jiraWoklogs));
+  const redmineWorklogs = filterWorklogsForRedmine(workLogs);
+  const redmineHours = round(getTotalHoursFromObject(redmineWorklogs));
+  const redmineCardCount = Object.values(redmineWorklogs).flat().length;
   const allCards = Object.values(workLogs || {}).flat();
+  const cardsWithoutJiraTask = allCards.filter((card) => !card.task).length;
+  const cardsWithoutProject = allCards.filter((card) => !card.project).length;
   const cardsWithoutClickUpTask = allCards.filter((card) => !card.clickupTask).length;
   const cardsWithoutClickUpTeam = allCards.filter(
     (card) => card.clickupTask && !card.clickupTeamId && !selectedTeamId
@@ -128,8 +136,6 @@ const RedmineForm = () => {
   const formattedProjectData = transformToProjectData(projects);
   const worklogsArray = workLogs && Object.entries(workLogs);
   const isWorkLogsExist = worklogsArray?.length > 0;
-  const isWorklogHaveProject =
-    isWorkLogsExist && worklogsArray[0][1][0].project;
 
   const handleBulkUpdate = async () => {
     if (!jiraUser) {
@@ -137,6 +143,7 @@ const RedmineForm = () => {
       return;
     }
     setIsMatchingJira(true);
+    const isCurrentOwner = captureCardsOwner();
     try {
       const mainJiraUrl = normalizeServiceScope(organizationURL);
       const allJiraIssues = buildJiraIssuePool(
@@ -153,6 +160,8 @@ const RedmineForm = () => {
         onLoaded: (issue, jiraUrl) => addFetchedIssue(jiraUrl, issue),
       });
 
+      // The account changed while issues were loading: leave the new account's cards alone.
+      if (!isCurrentOwner()) return;
       bulkUpdateWorkLogsWithJira(allJiraIssues, mainJiraUrl);
       if (notFound.length) {
         toast.warning(formatMissingJiraCodes(notFound));
@@ -169,6 +178,7 @@ const RedmineForm = () => {
       return;
     }
     setIsMatchingClickUp(true);
+    const isCurrentOwner = captureCardsOwner();
     try {
       const allClickUpTasks = [
         ...clickUpTasks.map((task) => ({
@@ -198,6 +208,7 @@ const RedmineForm = () => {
         onLoaded: (task, teamId) => addManualTask(teamId, task),
       });
 
+      if (!isCurrentOwner()) return;
       bulkUpdateWorkLogsWithClickUp(allClickUpTasks, selectedTeamId);
       if (failedLookups) {
         toast.warning(
@@ -234,7 +245,7 @@ const RedmineForm = () => {
   };
 
   const handleRedmineSubmit = async () => {
-    await trackTimeToRedmine(workLogs).then(async () => {
+    await trackTimeToRedmine(redmineWorklogs).then(async () => {
       // The demo sent nothing, so there is nothing new to read back.
       if (DEMO_BUILD) return;
       resetLatestActivity();
@@ -391,12 +402,25 @@ const RedmineForm = () => {
               </Button>
             }
             onConfirm={handleJiraSubmit}
+            isConfirmDisabled={jiraHours === 0}
           >
             <Text>
               Do you really want to submit{" "}
-              <strong> {getTotalHoursFromObject(jiraWoklogs)} </strong>
+              <strong>{jiraHours} </strong>
               hours to <strong>Jira</strong>?
             </Text>
+            {cardsWithoutJiraTask > 0 && (
+              <Text mt={2}>
+                {cardsWithoutJiraTask} of {allCards.length} cards have no Jira issue and will be skipped.
+              </Text>
+            )}
+            {jiraHours === 0 && (
+              <Text mt={2}>
+                {allCards.every((card) => !card.task)
+                  ? "No cards have a Jira issue yet."
+                  : "No hours are available to submit to Jira."}
+              </Text>
+            )}
           </ModalDialog>
 
           <ModalDialog
@@ -444,9 +468,7 @@ const RedmineForm = () => {
             headerTitle="Submitting to Redmine"
             trigger={
               <Button
-                isDisabled={
-                  !isWorklogHaveProject || !user?.id || !isWorkLogsExist
-                }
+                isDisabled={!redmineCardCount || !user?.id}
                 colorScheme="red"
                 size="sm"
                 minW="160px"
@@ -455,12 +477,25 @@ const RedmineForm = () => {
               </Button>
             }
             onConfirm={handleRedmineSubmit}
+            isConfirmDisabled={redmineHours === 0}
           >
             <Text>
               Do you really want to submit{" "}
-              <strong>{getTotalHoursFromObject(workLogs)} </strong>
+              <strong>{redmineHours} </strong>
               hours to <strong>Redmine</strong>?
             </Text>
+            {cardsWithoutProject > 0 && (
+              <Text mt={2}>
+                {cardsWithoutProject} of {allCards.length} cards have no Redmine project and will be skipped.
+              </Text>
+            )}
+            {redmineHours === 0 && (
+              <Text mt={2}>
+                {allCards.every((card) => !card.project)
+                  ? "No cards have a Redmine project yet."
+                  : "No hours are available to submit to Redmine."}
+              </Text>
+            )}
           </ModalDialog>
         </Flex>
       </Flex>

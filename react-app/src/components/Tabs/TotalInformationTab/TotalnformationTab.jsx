@@ -15,16 +15,13 @@ import getProjectName from "../../../helpers/getProjectName";
 
 import RedmineForm from "./RedmineForm";
 
-const getUniqueProjectIds = (dataItem) => {
+const NO_PROJECT = "no-project";
+
+const getUniqueProjectIds =(dataItem) => {
   const uniqueProjectIds = new Set();
 
   for (const log of dataItem) {
-    const { project } = log;
-    if (project !== "") {
-      uniqueProjectIds.add(project);
-    } else {
-      uniqueProjectIds.add("undefined");
-    }
+    uniqueProjectIds.add(log.project || NO_PROJECT);
   }
 
   return Array.from(uniqueProjectIds);
@@ -122,19 +119,19 @@ const TotalInformationTab = ({ data }) => {
                     >
                       {projectsByDay.length ? (
                         projectsByDay.map((item, idx) => {
-                          const hasUndefinedProject = item === "undefined";
+                          const hasNoProject = item === NO_PROJECT;
                           return (
                             <Text
                               key={idx}
                               textAlign="center"
                               fontWeight={500}
-                              fontSize="xs"
+                              fontSize={hasNoProject ? "sm" : "xs"}
                               my={1}
                               h="100%"
-                              color={hasUndefinedProject ? "tomato" : "black"}
+                              color={hasNoProject ? "gray.500" : "black"}
                             >
-                              {hasUndefinedProject
-                                ? item
+                              {hasNoProject
+                                ? "No project"
                                 : getProjectName(item, projects)}
                             </Text>
                           );

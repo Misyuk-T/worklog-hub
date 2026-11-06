@@ -1,0 +1,10 @@
+# Redmine project optional per card; cards survive a refresh
+
+- Problem: Submit to Redmine was disabled unless the first card had a project, and it sent every card. Cards with no project showed "undefined" in the Total table and the Project select. Jira kept cards with an undefined task. A refresh lost all cards.
+- Redmine/Jira: `filterWorklogsForRedmine` (truthy `project`) and `filterWorklogsByTask` (truthy `task`) pick what is sent, as ClickUp does. The button needs one card with a project. Dialogs show rounded hours and "N of M cards have no Redmine project / Jira issue and will be skipped."; Confirm is disabled at 0 hours. Skipped cards do not reach `validateWorkLogsData`, so their dates cannot trip the same-month check.
+- "undefined" is gone: the Total table shows a muted "No project"; the card's project select shows the "Select project" placeholder (an id not yet loaded shows "Project #id").
+- Storage: `worklog-hub:cards:<ownerId>` in localStorage, `{ v: 1, workLogs, isJiraExport, isClickUpExport }` (`helpers/cardsStorage.js`). Corrupt JSON, a wrong version or shape returns null and removes the key. Storage errors never throw; a failed save drops the old entry so deleted cards cannot come back. No cards (null, `{}`) means no key.
+- Sync: `helpers/cardsPersistence.js` subscribes to the worklogs store, so every mutation is saved. The owner is known only once auth has resolved. Restoring runs `ensureWorkLogIds` and does not write back.
+- Logout: `logoutUser` calls `unbindCardsOwner()` before the store resets, so the reset does not erase the saved cards; signing back in restores them. Switching account clears the previous account's cards from the store before binding, so they are never saved under the new one.
+- Tabs: the `storage` event for this key is applied to the store without being written back. Cards are keyed by id, so open forms keep their state. Last write wins.
+- Not persisted: unsaved form edits (only saved card data). Demo build: no persistence. Builds without Firebase have no owner, so nothing is saved.
