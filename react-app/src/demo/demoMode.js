@@ -148,6 +148,7 @@ export const searchDemoJiraUsers = (query) => {
   const text = String(query ?? "").trim();
   const byEmail = text.includes("@");
   return demoPeople
+    .filter((person) => person.jira)
     .filter((person) =>
       byEmail
         ? normalizeEmail(person.mail) === normalizeEmail(text)
@@ -166,7 +167,7 @@ export const searchDemoJiraUsers = (query) => {
 
 export const getDemoJiraUserById = (accountId) =>
   searchDemoJiraUsers(
-    demoPeople.find((person) => person.jira.accountId === accountId)?.mail || "",
+    demoPeople.find((person) => person.jira?.accountId === accountId)?.mail || "",
   )[0] || null;
 
 export const getDemoJiraHost = () => demoJiraHost;
@@ -188,7 +189,7 @@ export const getDemoPersonLogs = (tracker, key, startDate, endDate) => {
     tracker === "redmine"
       ? item.redmineId === Number(key)
       : tracker === "jira"
-        ? item.jira.accountId === key
+        ? item.jira?.accountId === key
         : item.clickUp?.id === String(key),
   );
   if (!person) return tracker === "redmine" ? [] : {};

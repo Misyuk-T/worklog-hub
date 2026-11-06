@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -11,8 +11,9 @@ import {
 } from "@chakra-ui/react";
 import Select from "react-select";
 
-import { getJiraUserByAccountId } from "../../../actions/people";
+import { getJiraUserByAccountId, searchJiraUsers } from "../../../actions/people";
 import {
+  classifyCandidate,
   describeCandidate,
   isAccountId,
   jiraUserToCandidate,
@@ -30,7 +31,7 @@ const STATUS = {
   matched: { text: "Matched", color: "green.700" },
   suggest: { text: "Suggested by name, confirm", color: "orange.600" },
   choose: { text: "Choose a match", color: "orange.600" },
-  notFound: { text: "Not found", color: "gray.700" },
+  notFound: { text: "Not found by email or name, pick from the list", color: "gray.700" },
   noPermission: { text: "No permission to search users on this site", color: "red.600" },
   error: { text: "Error", color: "red.600" },
 };
@@ -116,13 +117,51 @@ const ManualAccountId = ({ connection, onValid, beginAction }) => {
 };
 
 const ResolutionRow = ({ connection, row, person, onChoose, onConfirm, onManual, beginAction }) => {
+  const [query, setQuery] = useState("");
+  const [search, setSearch] = useState({ candidates: [], loading: false, error: "" });
+  const requestRef = useRef(0);
+  const isJira = connection.service === "jira";
+  const canSearch = isJira && row.status !== "noPermission" && row.status !== "loading";
+  const { id: personId, name: personName, mail: personMail } = person;
+
+  useEffect(() => {
+    const request = ++requestRef.current;
+    const isCurrent = beginAction();
+    setSearch({ candidates: [], loading: false, error: "" });
+    if (!canSearch || query.trim().length < 2) return undefined;
+    setSearch({ candidates: [], loading: true, error: "" });
+    const timer = setTimeout(async () => {
+      try {
+        const users = await searchJiraUsers(connection, query.trim());
+        if (!isCurrent() || request !== requestRef.current) return;
+        const candidates = users.map(jiraUserToCandidate).map((candidate) => ({
+          ...candidate,
+          kind: classifyCandidate(candidate, { name: personName, mail: personMail }) || "other",
+        }));
+        setSearch({ candidates, loading: false, error: "" });
+      } catch (error) {
+        if (isCurrent() && request === requestRef.current) {
+          setSearch({ candidates: [], loading: false, error: error.message || "Search failed" });
+        }
+      }
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+      requestRef.current += 1;
+    };
+  }, [query, canSearch, connection, beginAction, personId, personName, personMail]);
+
   const status = STATUS[row.status] || STATUS.error;
-  const options = row.candidates.map((candidate) => ({
+  const candidates = canSearch && query.trim().length >= 2 ? search.candidates : row.candidates;
+  const options = candidates.map((candidate) => ({
     value: candidate.id,
     label: describeCandidate(candidate),
     candidate,
   }));
-  const selected = options.find((option) => option.value === row.selectedId) || null;
+  const selectedCandidate = row.candidates.find((candidate) => candidate.id === row.selectedId);
+  const selected = selectedCandidate
+    ? { value: selectedCandidate.id, label: describeCandidate(selectedCandidate), candidate: selectedCandidate }
+    : null;
   const warning = candidateWarning(selected?.candidate, person);
   const rowId = `resolution-${connection.id}`;
 
@@ -143,10 +182,20 @@ const ResolutionRow = ({ connection, row, person, onChoose, onConfirm, onManual,
             aria-labelledby={rowId}
             options={options}
             value={selected}
-            onChange={(option) => onChoose(option ? option.value : null)}
+            onChange={(option) => {
+              // Store search results only on an explicit pick; searching never confirms a row.
+              onChoose(option?.value ?? null, isJira ? option?.candidate : undefined);
+              setQuery("");
+            }}
+            onInputChange={(input) => setQuery(input)}
+            isLoading={search.loading}
+            filterOption={isJira ? null : undefined}
+            noOptionsMessage={() => search.error || (isJira && query.trim().length < 2
+              ? "Type at least 2 characters to search"
+              : "No people found")}
             isClearable
-            isDisabled={options.length === 0}
-            placeholder={options.length ? "Choose a match…" : "No candidates"}
+            isDisabled={isJira ? !canSearch : options.length === 0}
+            placeholder={isJira ? "Search by name or email…" : "Choose a match…"}
             styles={compareSelectStyles}
             menuPortalTarget={document.body}
             menuPosition="fixed"
@@ -209,7 +258,7 @@ const ResolutionPanel = ({ person, resolution }) => {
           connection={connection}
           row={rows[connection.id] || LOADING_ROW}
           person={person}
-          onChoose={(candidateId) => resolution.choose(connection.id, candidateId)}
+          onChoose={(candidateId, candidate) => resolution.choose(connection.id, candidateId, candidate)}
           onConfirm={() => resolution.confirm(connection.id)}
           onManual={(candidate, isCurrent) =>
             resolution.setManual(connection.id, candidate, isCurrent)

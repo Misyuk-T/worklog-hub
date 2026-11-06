@@ -1,10 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { buildDemoWorkspace } from "../demo/demoData.js";
 import {
   classifyCandidates,
   clickUpMemberToCandidate,
   isAccountId,
   namesMatch,
+  namesLikelyMatch,
   normalizeName,
   resolveCandidates,
   resolveClickUpMembers,
@@ -125,4 +127,67 @@ test("ClickUp members: exact email selects, name-only waits, nobody is not found
   assert.equal(nameOnly.confirmed, false);
 
   assert.equal(resolveClickUpMembers([], person).status, "notFound");
+});
+
+
+test("surname hints tolerate Cyrillic transliteration and initials, but exclude unrelated names", () => {
+  assert.ok(namesLikelyMatch("Любов Кудрявцева", "Liubov Kudriavtseva"));
+  assert.ok(namesLikelyMatch("Olena Koval", "Koval O."));
+  assert.ok(!namesLikelyMatch("Olena Koval", "Marek Dudek"));
+  assert.ok(!namesLikelyMatch("Li A.", "Li B."));
+  assert.ok(!namesLikelyMatch("", ""));
+  for (const [cyrillic, latin] of [
+    ["Яценко", "Iatsenko"], ["Юрченко", "Iurchenko"], ["Йосипенко", "Iosipenko"],
+    ["Хоменко", "Homenko"], ["Щербак", "Shcherbak"], ["Гнатюк", "Gnatiuk"],
+    ["Євченко", "Ievchenko"], ["Їжакевич", "Izhakevich"], ["Коваль", "Koval"],
+  ]) assert.ok(namesLikelyMatch(cyrillic, latin), `${cyrillic} / ${latin}`);
+});
+
+test("likely names with different visible emails are never confirmed", () => {
+  const row = resolveCandidates(classifyCandidates([
+    { id: "a", name: "Liubov Kudriavtseva", email: "other@example.com" },
+  ], { name: "Любов Кудрявцева", mail: "liubov@example.com" }));
+  assert.equal(row.candidates[0].kind, "conflict");
+  assert.equal(row.status, "suggest");
+  assert.equal(row.confirmed, false);
+});
+
+test("all ClickUp members remain available, sorted by likelihood then name", () => {
+  const members = [
+    { user: { id: 1, username: "Zed Unrelated", email: "z@example.com" } },
+    { user: { id: 2, username: "Koval O.", email: "other@example.com" } },
+    { user: { id: 3, username: "A Unrelated", email: "a@example.com" } },
+    { user: { id: 4, username: "Olena Koval", email: "" } },
+    { user: { id: 5, username: "Z Exact", email: person.mail } },
+  ];
+  const exact = resolveClickUpMembers(members, person);
+  assert.equal(exact.confirmed, true);
+  assert.deepEqual(exact.candidates.map((candidate) => candidate.id), ["5", "2", "4", "3", "1"]);
+  const likely = resolveClickUpMembers(members.slice(0, 4), person);
+  assert.equal(likely.status, "choose");
+  assert.equal(likely.confirmed, false);
+  const none = resolveClickUpMembers(members, { name: "Iryna Bondar", mail: "iryna@example.com" });
+  assert.equal(none.status, "notFound");
+  assert.equal(none.selectedId, null);
+  assert.equal(none.confirmed, false);
+  assert.equal(none.candidates.length, members.length);
+  assert.ok(none.candidates.every((candidate) => candidate.kind === "other"));
+});
+
+
+test("demo includes an unconfirmed identity and an unrelated person with the full directory", () => {
+  const demo = buildDemoWorkspace(new Date(2026, 10, 6));
+  const yuliia = demo.people.find((person) => person.key === "yuliia");
+  const iryna = demo.people.find((person) => person.key === "iryna");
+  const members = demo.people.filter((person) => person.clickUp).map((person) => ({ user: person.clickUp }));
+  for (const person of [yuliia, iryna]) {
+    const row = resolveClickUpMembers(members, person);
+    assert.equal(row.status, person === yuliia ? "suggest" : "notFound");
+    assert.equal(row.confirmed, false);
+    assert.equal(row.candidates.length, members.length);
+  }
+  assert.equal(yuliia.jira, null);
+  assert.deepEqual(yuliia.logs.jira, {});
+  assert.ok(yuliia.logs.redmine.length > 0);
+  assert.ok(Object.keys(yuliia.logs.clickup).length > 0);
 });

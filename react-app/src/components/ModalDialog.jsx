@@ -13,7 +13,13 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 
-const ModalDialog = ({ trigger, children, onConfirm, headerTitle }) => {
+const ModalDialog = ({
+  trigger,
+  children,
+  onConfirm,
+  headerTitle,
+  isConfirmDisabled = false,
+}) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -37,6 +43,7 @@ const ModalDialog = ({ trigger, children, onConfirm, headerTitle }) => {
               mr={3}
               isLoading={isLoading}
               loadingText="Submitting..."
+              isDisabled={isConfirmDisabled}
               onClick={async () => {
                 setIsLoading(true);
                 await onConfirm();

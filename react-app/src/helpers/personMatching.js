@@ -21,6 +21,31 @@ export const namesMatch = (a, b) => {
   return left !== "" && left === normalizeName(b);
 };
 
+// Suggestions only: fold common Ukrainian/Russian transliteration variants.
+// Map before NFD so й and ї retain their sounds rather than losing their marks.
+const CYRILLIC = {
+  а: "a", б: "b", в: "v", г: "h", ґ: "g", д: "d", е: "e", ё: "yo",
+  є: "ye", ж: "zh", з: "z", и: "y", і: "i", ї: "yi", й: "y", к: "k",
+  л: "l", м: "m", н: "n", о: "o", п: "p", р: "r", с: "s", т: "t",
+  у: "u", ф: "f", х: "kh", ц: "ts", ч: "ch", ш: "sh", щ: "shch",
+  ъ: "", ы: "y", ь: "", э: "e", ю: "yu", я: "ya",
+};
+
+const suggestionTokens = (name) =>
+  normalizeName(String(name ?? "").toLowerCase().replace(/[а-яёіїєґ]/g, (letter) => CYRILLIC[letter]))
+    .split(" ")
+    .map((token) => token
+      .replace(/kh/g, "h")
+      .replace(/g/g, "h")
+      .replace(/yi/g, "i")
+      .replace(/y/g, "i"));
+
+// A shared surname-like token is a hint, never proof of identity.
+export const namesLikelyMatch = (a, b) => {
+  const right = new Set(suggestionTokens(b));
+  return suggestionTokens(a).some((token) => token.length >= 4 && right.has(token));
+};
+
 // Atlassian account ids: "5b10ac8d82e05b22cc7d4ef5" or "712020:uuid".
 const ACCOUNT_ID_PATTERN = /^[A-Za-z0-9:_-]{10,128}$/;
 export const isAccountId = (value) => ACCOUNT_ID_PATTERN.test(String(value ?? ""));
@@ -31,18 +56,19 @@ export const sanitizeAccountIdInput = (value) =>
 // kind:
 //   exact     - visible email equals the person's email
 //   suggested - same name (or found by email query) but the email is hidden
-//   conflict  - same name but a different visible email
+//   conflict  - likely name but a different visible email
+//   other     - workspace member offered for a manual pick
 export const classifyCandidate = (candidate, person, { foundByEmail = false } = {}) => {
   const personMail = normalizeEmail(person?.mail);
   const candidateMail = normalizeEmail(candidate.email);
 
   if (candidateMail) {
     if (personMail && candidateMail === personMail) return "exact";
-    return namesMatch(candidate.name, person?.name) || foundByEmail
+    return namesMatch(candidate.name, person?.name) || namesLikelyMatch(candidate.name, person?.name) || foundByEmail
       ? "conflict"
       : null;
   }
-  return namesMatch(candidate.name, person?.name) || foundByEmail
+  return namesMatch(candidate.name, person?.name) || namesLikelyMatch(candidate.name, person?.name) || foundByEmail
     ? "suggested"
     : null;
 };
@@ -97,8 +123,12 @@ export const describeCandidate = (candidate) =>
   [candidate.name, candidate.email || "email hidden"].join(" · ") +
   ` · ${shortId(candidate.id)}`;
 
-// ClickUp lists every workspace member with an email, so matching is local.
-export const resolveClickUpMembers = (members, person) =>
-  resolveCandidates(
-    classifyCandidates((members || []).map(clickUpMemberToCandidate), person),
-  );
+// Resolve likely matches first, but retain the entire directory for manual picks.
+export const resolveClickUpMembers = (members, person) => {
+  const rank = { exact: 0, suggested: 1, conflict: 1, other: 2 };
+  const candidates = (members || []).map(clickUpMemberToCandidate)
+    .map((candidate) => ({ ...candidate, kind: classifyCandidate(candidate, person) || "other" }))
+    .sort((a, b) => rank[a.kind] - rank[b.kind] || a.name.localeCompare(b.name));
+  const resolved = resolveCandidates(candidates.filter((candidate) => candidate.kind !== "other"));
+  return { ...resolved, candidates };
+};

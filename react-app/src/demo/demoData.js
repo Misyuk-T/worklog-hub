@@ -78,7 +78,7 @@ const REDMINE_ISSUES = {
 
 // Colleagues for the Compare "Whose logs" picker. Each exists in Redmine (with a
 // mail); Marek's Jira email is hidden, so he can only be found by name and has
-// to be confirmed; Iryna is not in ClickUp at all.
+// to be confirmed; Iryna is not in ClickUp at all. Yuliia has another name/email.
 const DEMO_PEOPLE = [
   {
     key: "olena",
@@ -145,6 +145,21 @@ const DEMO_PEOPLE = [
     skip: {},
     shortBy: { redmine: { "0:0": 1 } },
   },
+  {
+    key: "yuliia",
+    name: "Юлія Шевченко",
+    mail: "yuliia.shevchenko@acme.example",
+    redmineId: 204,
+    jira: null,
+    clickUp: { id: "50004", username: "Yuliia S.", email: "julia.s@mail.example" },
+    days: [
+      [["WEB-118", 4103, "CU-33", "Gallery: check image captions", 2]],
+      [["WEB-121", 4104, "CU-34", "Search: review suggestions", 3]],
+      [["OPS-7", 4105, "CU-40", "Team standup", 0.5]],
+    ],
+    skip: {},
+    shortBy: {},
+  },
 ];
 
 const buildDemoPeople = (days) =>
@@ -161,7 +176,7 @@ const buildDemoPeople = (days) =>
           const key = `${dayIndex}:${i}`;
           const blb = jiraKey.startsWith("OPS") ? "nblb" : "blb";
 
-          if (!skipped("jira", key)) {
+          if (person.jira && !skipped("jira", key)) {
             (logs.jira[date] ||= []).push({
               id: `demo-${person.key}-jira-${n}`,
               task: jiraKey,

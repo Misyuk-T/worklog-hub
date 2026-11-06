@@ -10,6 +10,7 @@ import {
 import { applyRedminePrefixMappings } from "../helpers/redminePrefixMappings.js";
 
 import { moveDayWorkLogs } from "../helpers/moveDayWorkLogs.js";
+import { ensureWorkLogIds } from "../helpers/ensureWorkLogIds.js";
 
 const initialState = {
   workLogs: null,
@@ -21,7 +22,7 @@ const useWorkLogsStore = create((set, get) => ({
   workLogs: null,
   isJiraExport: false,
   isClickUpExport: false,
-  addWorkLogs: (workLogs) => set({ workLogs }),
+  addWorkLogs: (workLogs) => set({ workLogs: ensureWorkLogIds(workLogs) }),
   moveDayWorkLogs: (fromDate, toDate) =>
     set((state) => ({ workLogs: moveDayWorkLogs(state.workLogs, fromDate, toDate) })),
   resetWorkLogs: () => set({ workLogs: null }),

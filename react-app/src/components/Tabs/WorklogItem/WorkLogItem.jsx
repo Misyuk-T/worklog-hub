@@ -203,7 +203,10 @@ const WorkLogItem = ({ data }) => {
         jiraUrl?.value ||
         normalizeServiceScope(data.jiraUrl) ||
         truncatedOrganizationURL,
-      clickupTeamId: clickupTeamId?.value || data.clickupTeamId,
+      clickupTeamId:
+        clickupTeamId?.value ||
+        (typeof clickupTeamId === "string" ? clickupTeamId : "") ||
+        data.clickupTeamId,
       clickupTask: clickupTask?.value || data.clickupTask || "",
     };
 

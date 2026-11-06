@@ -71,3 +71,15 @@
   - The two 1 Oct entries (HPE-224 2.75h, HPE-223 3h) started at 00:00 Kyiv = 30 Sep 21:00 UTC, so UTC reports counted them in September. This had happened before.
 - Change: `createClickUpTimeEntries` starts entries at 12:00 local time instead of 00:00. Jira already writes `T12:00:00+0000`.
 - Review: GPT-6.1 Sol, no blockers. Noon Kyiv on 1 Oct is 09:00 UTC, and read-back buckets by local day.
+
+## Manual identities and card input fixes (2026-11-06)
+
+- Problem: different emails and display names left Compare without a selectable identity; card hours treated Home/End as min/max and reformatted unchanged values on blur.
+- Choice: only a unique exact email still auto-confirms. Name hints use Cyrillic transliteration and a shared token of at least four letters; every other identity needs an explicit pick/Confirm. Mappings remain in memory and the read-only/fetch guards are unchanged.
+- Change: ClickUp retains every workspace member, ordered exact → suggested/conflict → other, then by name. Jira rows search manually after 300 ms and two characters, with both context and request checks to discard late responses. The no-permission accountId field remains.
+- Demo: Yuliia has a Cyrillic Redmine name, a shortened ClickUp name with another email, three worklogs and no Jira account. Iryna remains unrelated to every ClickUp member and gets the full manual list.
+- Hours: Home/End move the caret; blur does not cast/clamp the value; equivalent numeric changes do not notify the parent. Typing/steppers still notify immediately. Positive input below the card minimum 0.1 is rejected, as is input above 24; empty/zero intermediate text still fails save validation.
+- Card IDs: file import parsers, Redmine and Jira generate UUIDs; ClickUp copies the tracker entry ID. `addWorkLogs` now repairs missing/duplicate IDs once, preserving the first original ID and avoiding collisions across dates. Tests cover saving one formerly id-less card without changing its neighbor.
+- Validation: `node --experimental-default-type=module --test src/helpers/*.test.js`: 114 passed, 0 failed. Normal and demo Vite builds pass. ESLint on every changed JS/JSX file and `git diff --check` pass. Builds still report CJS/Sass deprecations and a large-chunk warning.
+- Additional DOM checks (temporary scripts in `/private/tmp/redmine-brief-browser`): 5/24 remain unchanged on blur and Home/End; numeric-equivalent input does not notify; 0.05/25 are rejected; typing, arrows and steppers notify immediately. Jira checks cover minimum query length, debounce, unrelated manual results, explicit picks and dropping a stale context response.
+- Next: browser smoke test and real tracker permission checks. Browser verification was blocked here: Vite preview could not listen (`EPERM`) and Chrome could not launch. No commit, push or deployment was made.

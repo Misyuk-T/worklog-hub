@@ -104,11 +104,14 @@ const usePersonResolution = ({ person, settings, activePreset }) => {
 
   // Picking from the list is the user's explicit confirmation.
   const choose = useCallback(
-    (id, candidateId) =>
+    (id, candidateId, candidate) =>
       patchRow(
         id,
         candidateId
-          ? { selectedId: candidateId, confirmed: true, status: "matched" }
+          ? {
+              selectedId: candidateId, confirmed: true, status: "matched",
+              ...(candidate ? { candidates: [candidate] } : {}),
+            }
           : { selectedId: null, confirmed: false, status: "choose" },
       ),
     [patchRow],

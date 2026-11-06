@@ -118,6 +118,13 @@ const RedmineForm = () => {
   const [isMatchingClickUp, setIsMatchingClickUp] = useState(false);
 
   const jiraWoklogs = filterWorklogsByTask(workLogs);
+  const clickUpWorklogs = filterWorklogsForClickUp(workLogs, selectedTeamId);
+  const clickUpHours = getTotalHoursFromObject(clickUpWorklogs);
+  const allCards = Object.values(workLogs || {}).flat();
+  const cardsWithoutClickUpTask = allCards.filter((card) => !card.clickupTask).length;
+  const cardsWithoutClickUpTeam = allCards.filter(
+    (card) => card.clickupTask && !card.clickupTeamId && !selectedTeamId
+  ).length;
   const formattedProjectData = transformToProjectData(projects);
   const worklogsArray = workLogs && Object.entries(workLogs);
   const isWorkLogsExist = worklogsArray?.length > 0;
@@ -241,7 +248,6 @@ const RedmineForm = () => {
   };
 
   const handleClickUpSubmit = async () => {
-    const clickUpWorklogs = filterWorklogsForClickUp(workLogs);
     await createClickUpTimeEntries(clickUpWorklogs);
     await getLatestClickUpTimeEntries();
   };
@@ -406,14 +412,32 @@ const RedmineForm = () => {
               </Button>
             }
             onConfirm={handleClickUpSubmit}
+            isConfirmDisabled={clickUpHours === 0}
           >
             <Text>
               Do you really want to submit{" "}
               <strong>
-                {getTotalHoursFromObject(filterWorklogsForClickUp(workLogs))}{" "}
+                {clickUpHours}{" "}
               </strong>
               hours to <strong>ClickUp</strong>?
             </Text>
+            {cardsWithoutClickUpTask > 0 && (
+              <Text mt={2}>
+                {cardsWithoutClickUpTask} of {allCards.length} cards have no ClickUp task and will be skipped.
+              </Text>
+            )}
+            {cardsWithoutClickUpTeam > 0 && (
+              <Text mt={2}>
+                {cardsWithoutClickUpTeam} of {allCards.length} cards have no ClickUp team and will be skipped. Select a team in Settings or on the card.
+              </Text>
+            )}
+            {clickUpHours === 0 && (
+              <Text mt={2}>
+                {allCards.every((card) => !card.clickupTask)
+                  ? "No cards have a ClickUp task yet."
+                  : "No hours are available to submit to ClickUp."}
+              </Text>
+            )}
           </ModalDialog>
 
           <ModalDialog
